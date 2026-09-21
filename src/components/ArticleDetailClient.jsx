@@ -929,7 +929,7 @@ const ArticleDetail = () => {
                 </div>
 
                 {/* Video Wrapper */}
-                {videoData.type === 'youtube' && (
+                {videoData?.type === 'youtube' && (
                   <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '24px', background: 'var(--color-bg-secondary)', position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px' }}>
                     <iframe 
                       src={`https://www.youtube.com/embed/${videoData.id}?autoplay=1&mute=0`} 
@@ -941,13 +941,13 @@ const ArticleDetail = () => {
                     ></iframe>
                   </div>
                 )}
-                {videoData.type === 'facebook' && (
+                {videoData?.type === 'facebook' && (
                   <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden', padding: '16px 0' }}>
                     <div className="fb-video" data-href={videoData.url} data-width="auto" data-show-text="false"></div>
                     <Script src="https://connect.facebook.net/id_ID/sdk.js#xfbml=1&version=v18.0" strategy="lazyOnload" crossOrigin="anonymous" />
                   </div>
                 )}
-                {videoData.type === 'tiktok' && (
+                {videoData?.type === 'tiktok' && (
                   <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
                     {videoData.id ? (
                       <>
