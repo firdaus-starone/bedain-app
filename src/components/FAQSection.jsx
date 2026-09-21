@@ -163,7 +163,7 @@ const FAQSection = () => {
         }}>
           <HelpCircle size={16} /> PUSAT BANTUAN & INFORMASI
         </div>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: '0 0 10px 0', fontFamily: 'var(--font-heading)' }}>
+        <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 1.7rem)', fontWeight: 800, color: 'var(--color-text-primary)', margin: '0 0 10px 0', fontFamily: 'var(--font-heading)' }}>
           Bagaimana kami dapat membantu Anda hari ini?
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '14.5px', maxWidth: '620px', margin: '0 auto 24px', lineHeight: 1.6 }}>
@@ -249,8 +249,8 @@ const FAQSection = () => {
                 border: isActive ? 'none' : '1px solid var(--color-border)',
                 background: isActive ? 'linear-gradient(135deg, var(--color-accent), #6366f1)' : 'var(--color-bg-secondary)',
                 color: isActive ? '#fff' : 'var(--color-text-primary)',
-                fontSize: '13.5px',
-                fontWeight: isActive ? 700 : 600,
+                fontSize: '13px',
+                fontWeight: isActive ? 700 : 500,
                 cursor: 'pointer',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: isActive ? '0 6px 16px rgba(59, 130, 246, 0.3)' : 'none',
@@ -334,7 +334,7 @@ const FAQSection = () => {
                     <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                       {item.category}
                     </span>
-                    <h3 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.4, fontFamily: 'var(--font-heading)' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.45, fontFamily: 'var(--font-heading)' }}>
                       {item.question}
                     </h3>
                   </div>
@@ -464,7 +464,7 @@ const FAQSection = () => {
         }}>
           <MessageSquare size={26} />
         </div>
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: '0 0 10px 0', fontFamily: 'var(--font-heading)' }}>
+        <h3 style={{ fontSize: 'clamp(1.3rem, 2.5vw, 1.45rem)', fontWeight: 800, color: 'var(--color-text-primary)', margin: '0 0 10px 0', fontFamily: 'var(--font-heading)' }}>
           Masih Memiliki Pertanyaan atau Butuh Bantuan Redaksi?
         </h3>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '14.5px', maxWidth: '560px', margin: '0 auto 24px', lineHeight: 1.6 }}>

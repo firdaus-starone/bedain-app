@@ -274,16 +274,16 @@ const StaticPageView = () => {
                                 padding: `6px ${heading.level <= 2 ? '10px' : '10px'} 6px ${(heading.level - 1) * 10 + 8}px`,
                                 color: activeId === heading.id ? 'var(--color-text-accent)' : 'var(--color-text-secondary)',
                                 fontSize: heading.level <= 2 ? '13px' : '12px',
-                                fontWeight: heading.level <= 2 ? 600 : 400,
+                                fontWeight: activeId === heading.id ? 600 : 500,
                                 cursor: 'pointer',
                                 lineHeight: 1.4,
                                 transition: 'all 0.2s ease',
                                 display: 'flex',
                                 alignItems: 'flex-start',
-                                gap: '4px'
+                                gap: '6px'
                               }}
                             >
-                              {heading.level >= 3 && <ChevronRight size={10} style={{ marginTop: '3px', flexShrink: 0 }} />}
+                              {heading.level >= 3 && <ChevronRight size={10} style={{ marginTop: '4px', flexShrink: 0, opacity: 0.7 }} />}
                               {heading.text}
                             </button>
                           </li>
@@ -315,7 +315,7 @@ const StaticPageView = () => {
                                 borderRadius: '0 6px 6px 0',
                                 textDecoration: 'none',
                                 fontSize: '13px',
-                                fontWeight: p.slug === slug ? 600 : 400,
+                                fontWeight: p.slug === slug ? 600 : 500,
                                 transition: 'all 0.2s ease',
                                 borderLeft: p.slug === slug ? '3px solid var(--color-text-accent)' : '3px solid transparent',
                               }}
@@ -353,12 +353,12 @@ const StaticPageView = () => {
 
               {/* Header */}
               <header style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '28px', marginBottom: '36px' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '50px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-text-accent)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '16px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '50px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-text-accent)', fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.8px', marginBottom: '16px' }}>
                   <ShieldCheck size={14} /> INFORMASI RESMI BEDAIN NEWS
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap' }}>
-                  <h1 style={{ fontSize: '2.6rem', fontWeight: 800, color: 'var(--color-text-primary)', lineHeight: 1.2, margin: 0, flex: 1, fontFamily: 'var(--font-heading)', letterSpacing: '-0.5px' }}>
+                  <h1 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.1rem)', fontWeight: 800, color: 'var(--color-text-primary)', lineHeight: 1.3, margin: 0, flex: 1, fontFamily: 'var(--font-heading)', letterSpacing: '-0.3px' }}>
                     {page.title}
                   </h1>
                   <div style={{ display: 'flex', gap: '10px' }}>
