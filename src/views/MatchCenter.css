@@ -1,0 +1,255 @@
+.match-center-page {
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.mc-header-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 40px 0;
+  border-bottom: 4px solid #3b82f6;
+  position: relative;
+  overflow: hidden;
+}
+
+.mc-header-bg::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.mc-scoreboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.mc-league {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.mc-venue {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 16px;
+  border-radius: 20px;
+}
+
+.mc-scoreboard {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 800px;
+  gap: 20px;
+}
+
+.mc-team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mc-flag {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  margin-bottom: 16px;
+}
+
+.mc-team-name {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0 0 12px 0;
+}
+
+.mc-scorers {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mc-score-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.mc-status-badge {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  padding: 6px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  margin-bottom: 12px;
+}
+
+.mc-score {
+  font-family: var(--font-heading);
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  margin-bottom: 12px;
+  white-space: nowrap;
+}
+
+.mc-minute {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.mc-content {
+  margin-top: -30px;
+  position: relative;
+  z-index: 10;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  overflow: hidden;
+  max-width: 900px;
+  border: 1px solid var(--color-border);
+}
+
+.mc-tabs {
+  display: flex;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mc-tab {
+  flex: 1;
+  padding: 16px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mc-tab:hover {
+  color: var(--color-text-primary);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.mc-tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: var(--color-bg-secondary);
+}
+
+.mc-tab-content {
+  padding: 24px;
+}
+
+.mc-commentary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mc-comment-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  align-items: flex-start;
+}
+
+.mc-comment-item.goal {
+  border-left: 4px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.mc-comment-item.yellow-card {
+  border-left: 4px solid #eab308;
+}
+
+.mc-comment-item.red-card {
+  border-left: 4px solid #ef4444;
+}
+
+.mc-comment-minute {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  min-width: 40px;
+}
+
+.mc-comment-icon {
+  font-size: 1.2rem;
+  margin-top: -2px;
+}
+
+.mc-comment-text {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.mc-placeholder-content {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .mc-scoreboard {
+    gap: 10px;
+  }
+  .mc-flag {
+    width: 70px;
+    height: 46px;
+  }
+  .mc-team-name {
+    font-size: 1.2rem;
+  }
+  .mc-score {
+    font-size: 2.5rem;
+  }
+  .mc-scorers {
+    font-size: 0.75rem;
+  }
+  .mc-tab {
+    font-size: 0.9rem;
+    padding: 12px 8px;
+  }
+}

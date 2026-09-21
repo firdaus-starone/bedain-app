@@ -1,0 +1,169 @@
+.sticky-ads-container {
+  display: none; /* Hidden on mobile/tablets by default */
+}
+
+/* Show on standard desktops and laptops (1024px and up) */
+@media (min-width: 1024px) {
+  .sticky-ads-container {
+    display: block;
+  }
+
+  .sticky-ad {
+    position: fixed;
+    top: 220px; 
+    width: 120px; /* Dikecilkan lagi agar muat di laptop 1024px - 1366px */
+    z-index: 99; /* Dinaikkan z-index agar tidak tertutup elemen lain */
+  }
+
+  .sticky-ad.left-ad {
+    /* 1080px adalah max-width container utama */
+    left: max(5px, calc((100vw - 1080px) / 2 - 130px));
+  }
+
+  .sticky-ad.right-ad {
+    right: max(5px, calc((100vw - 1080px) / 2 - 130px));
+  }
+
+  @media (min-width: 1366px) {
+    .sticky-ad {
+      width: 170px;
+    }
+    .sticky-ad.left-ad {
+      left: max(5px, calc((100vw - 1080px) / 2 - 180px));
+    }
+    .sticky-ad.right-ad {
+      right: max(5px, calc((100vw - 1080px) / 2 - 180px));
+    }
+  }
+
+  .ad-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease;
+  }
+
+  .ad-link:hover {
+    transform: translateY(-4px);
+  }
+
+  .ad-image-only {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: block;
+  }
+
+  .text-ad-card {
+    background-color: #f5f8ff;
+    border-radius: 12px;
+    padding: 24px 14px 16px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .text-ad-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #2563EB;
+    color: white;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  }
+
+  .text-ad-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background-color: #eff6ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px auto 12px;
+  }
+
+  .text-ad-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #111;
+    margin: 0 0 10px 0;
+    line-height: 1.2;
+    font-family: var(--font-heading, sans-serif);
+  }
+
+  .text-ad-desc {
+    font-size: 12px;
+    color: #4b5563;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+  }
+
+  .text-ad-cta {
+    background-color: #2563EB;
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transition: background-color 0.2s;
+  }
+
+  .ad-link:hover .text-ad-cta {
+    background-color: #1d4ed8;
+  }
+
+  .text-ad-footer {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 10px;
+    width: 100%;
+    font-size: 10px;
+    color: #9ca3af;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .close-ad-btn {
+    position: absolute;
+    top: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #e5e7eb;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 100;
+    color: #6b7280;
+    transition: all 0.2s;
+  }
+
+  .close-ad-btn:hover {
+    background: #d1d5db;
+    color: #374151;
+    transform: translateX(-50%) scale(1.1);
+  }
+}

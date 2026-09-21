@@ -1,0 +1,138 @@
+.match-schedule-widget {
+  background: var(--color-bg-secondary, #1e293b);
+  border: 1px solid var(--color-border, #334155);
+  border-radius: var(--radius-md, 8px);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
+  height: 90px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.msw-header {
+  padding-right: 16px;
+  border-right: 1px solid var(--color-border, #334155);
+  margin-right: 16px;
+  min-width: 80px;
+}
+
+.msw-header h4 {
+  color: var(--color-text-secondary, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.msw-slider {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scroll-behavior: smooth;
+  flex: 1;
+}
+
+.msw-slider::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.msw-card {
+  background: var(--color-bg-primary, #0f172a);
+  border: 1px solid var(--color-border, #334155);
+  border-radius: 6px;
+  padding: 6px 12px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.msw-league {
+  font-size: 0.6rem;
+  color: var(--color-primary, #e63946);
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msw-datetime {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: var(--color-text-secondary, #94a3b8);
+  border-bottom: 1px solid var(--color-border, #334155);
+  padding-bottom: 4px;
+}
+
+.msw-date {
+  font-weight: 600;
+}
+
+.msw-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.msw-team {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.msw-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.msw-shortname {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #f8fafc);
+}
+
+.msw-vs {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--color-text-muted, #64748b);
+}
+
+.schedule-widget-skeleton {
+  background: var(--color-bg-secondary, #1e293b);
+  border-radius: var(--radius-md, 8px);
+  padding: 24px;
+  color: var(--color-text-muted, #64748b);
+  text-align: center;
+  font-size: 0.9rem;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (max-width: 768px) {
+  .match-schedule-widget {
+    height: auto;
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
+  }
+  .msw-header {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border, #334155);
+    padding-right: 0;
+    padding-bottom: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,129 @@
+rules_version = '2';
+
+/**
+ * PIONIRHOUSE - Portal Berita Nasional & CMS Editorial
+ * Production Firestore Security Rules
+ *
+ * Prinsip Keamanan:
+ * 1. Baca Publik (Public Read): Artikel, Kategori, Halaman Statis, Pengaturan Situs, dan Komentar dapat dibaca publik.
+ * 2. Penulisan Editorial (Authenticated Write): Hanya tim redaksi/admin yang terotentikasi (request.auth != null) yang dapat membuat, mengubah, atau menghapus berita, kategori, halaman statis, dan pengaturan.
+ * 3. Moderasi Komentar (Secure Commenting): Publik dapat mengirim komentar baru, namun SECARA WAJIB berstatus awal 'pending' sehingga tidak bisa langsung tayang tanpa disetujui (moderasi) oleh redaksi.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Fungsi bantu pengecekan login redaksi
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Fungsi ambil role pengguna dari koleksi users
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Pengecekan role
+    function hasRole(roles) {
+      return isAuthenticated() && getUserRole() in roles;
+    }
+
+    // Role yang boleh mengelola konten
+    function isEditorOrAdmin() {
+      return hasRole(['editor', 'admin', 'superadmin']);
+    }
+
+    // Koleksi Artikel Berita
+    match /articles/{articleId} {
+      allow read: if true;
+      allow create, update, delete: if isEditorOrAdmin();
+      
+      // Sub-koleksi terjemahan
+      match /translations/{langCode} {
+        allow read: if true;
+        allow create, update: if true; // Cache publik
+      }
+    }
+
+    // Koleksi Kategori Berita
+    match /categories/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Profil Pengguna / Redaksi CMS
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Boleh membuat profil awal saat login pertama kali ATAU ditambahkan oleh admin
+      allow create: if (isAuthenticated() && request.auth.uid == userId) || hasRole(['superadmin', 'admin']);
+      // Hanya admin yang boleh ubah role. Pengguna biasa hanya boleh ubah profilnya sendiri selain field 'role'.
+      allow update: if hasRole(['superadmin', 'admin']) 
+                    || (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+      allow delete: if hasRole(['superadmin', 'admin']);
+    }
+
+    // Koleksi Pengaturan Portal (Logo, Nama Situs, Kontak)
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if hasRole(['superadmin', 'admin']);
+    }
+
+    // Koleksi Halaman Statis (Tentang Kami, Pedoman Media Siber, dll)
+    match /pages/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Komentar Pembaca & Moderasi Redaksi
+    match /comments/{document=**} {
+      allow read: if true;
+      // Publik boleh membuat komentar, TAPI wajib berstatus awal 'pending' (mencegah bypass moderasi)
+      allow create: if true 
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.content is string
+                    && request.resource.data.content.size() > 0;
+      // Hanya redaksi yang boleh menyetujui, menolak, atau menghapus komentar
+      allow update, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Iklan & Banner Sponsor
+    match /banners/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Menu Navigasi
+    match /menus/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Kiriman Tulisan Pembaca / Suara Warga (User Submissions)
+    match /user_submissions/{submissionId} {
+      // Publik (maupun login) boleh mengirim tulisan, TAPI wajib berstatus awal 'pending'
+      allow create: if true 
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.title is string
+                    && request.resource.data.content is string
+                    && request.resource.data.authorName is string;
+      // Hanya admin/redaksi yang boleh membaca daftar kiriman, menyunting, atau mengubah statusnya
+      allow read, update, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Pelanggan Newsletter (Newsletter Subscribers)
+    match /newsletter_subscribers/{subscriberId} {
+      allow create: if true
+                    && request.resource.data.email is string
+                    && request.resource.data.email.matches('.*@.*');
+      allow read, update, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Pelanggan Push Notification
+    match /push_subscriptions/{subscriptionId} {
+      allow create, update: if true;
+      allow read, delete: if isEditorOrAdmin();
+    }
+  }
+}
+
+

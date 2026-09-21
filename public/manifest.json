@@ -1,0 +1,27 @@
+{
+  "short_name": "Pionir House",
+  "name": "Pionir House - Portal Berita Terpercaya",
+  "description": "Menyajikan berita terkini, teknologi, finansial, dan kebudayaan dengan standar jurnalisme modern.",
+  "icons": [
+    {
+      "src": "/favicon-64.png",
+      "type": "image/png",
+      "sizes": "64x64"
+    },
+    {
+      "src": "/favicon-128.png",
+      "type": "image/png",
+      "sizes": "128x128"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0a0a0f",
+  "theme_color": "#e63946",
+  "display": "standalone",
+  "orientation": "portrait-primary"
+}

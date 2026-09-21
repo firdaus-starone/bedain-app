@@ -1,0 +1,31 @@
+.football-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.football-item {
+  position: absolute;
+  bottom: -100px;
+  color: var(--primary-color, #E31837);
+  animation-name: floatAndRotate;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes floatAndRotate {
+  0% {
+    transform: translateY(0) rotate(0deg) translateX(0);
+  }
+  50% {
+    transform: translateY(-55vh) rotate(180deg) translateX(50px);
+  }
+  100% {
+    transform: translateY(-110vh) rotate(360deg) translateX(-50px);
+  }
+}

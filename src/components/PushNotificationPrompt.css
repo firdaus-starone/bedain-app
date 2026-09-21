@@ -1,0 +1,125 @@
+.push-prompt-overlay {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 9999;
+  animation: slideUp 0.4s ease-out;
+}
+
+.push-prompt-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  width: 320px;
+  display: flex;
+  gap: 16px;
+  position: relative;
+  border-left: 4px solid #e50914;
+}
+
+.push-prompt-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.push-prompt-close:hover {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.push-prompt-icon {
+  background: #fee2e2;
+  color: #e50914;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.push-prompt-content h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.push-prompt-content p {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+.push-prompt-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.push-prompt-actions button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.btn-later {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+}
+
+.btn-later:hover {
+  background: #e5e7eb;
+}
+
+.btn-allow {
+  background: #e50914;
+  border: 1px solid #e50914;
+  color: white;
+}
+
+.btn-allow:hover {
+  background: #b90710;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .push-prompt-overlay {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+  }
+  
+  .push-prompt-card {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
