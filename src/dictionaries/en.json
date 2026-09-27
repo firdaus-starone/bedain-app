@@ -1,0 +1,31 @@
+{
+  "navigation": {
+    "home": "Home",
+    "trending": "Trending",
+    "search": "Search news...",
+    "contact": "Contact Editorial",
+    "send_article": "Submit Article"
+  },
+  "article": {
+    "readTime": "min read",
+    "share": "Share",
+    "save": "Save",
+    "saved": "Saved",
+    "contributor": "Contributor",
+    "editor": "Editor",
+    "editorial": "Bedain Editorial",
+    "readAlso": "READ ALSO",
+    "tags": "TAGS",
+    "related": "Related",
+    "popular": "Popular",
+    "comments": "Comments",
+    "translate": "Translating to local language..."
+  },
+  "home": {
+    "latest": "Latest",
+    "popular": "Trending Now",
+    "seeMore": "See More",
+    "editorialDesk": "Editorial Desk",
+    "editorialChoice": "Best Articles Chosen by Our Editors"
+  }
+}

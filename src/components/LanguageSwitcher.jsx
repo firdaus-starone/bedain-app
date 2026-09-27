@@ -1,134 +1,106 @@
-"use client";
-import React, { useState, useEffect } from 'react';
+'use client';
 
-const LanguageSwitcher = () => {
-  const [currentLang, setCurrentLang] = useState('id');
-  const [isTranslating, setIsTranslating] = useState(false);
+import React, { useState, useRef, useEffect } from 'react';
+import { useI18n } from '@/hooks/useI18n';
+import { Globe } from 'lucide-react';
+
+export default function LanguageSwitcher() {
+  const { lang, changeLanguage } = useI18n();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const languages = [
-    { code: 'id', label: 'Indonesian', flag: '🇮🇩' },
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-    { code: 'ja', label: 'Japanese', flag: '🇯🇵' },
-    { code: 'zh-CN', label: 'Chinese', flag: '🇨🇳' },
-    { code: 'ar', label: 'Arabic', flag: '🇸🇦' }
+    { code: 'id', label: 'ID - Indonesia' },
+    { code: 'en', label: 'EN - English' },
+    { code: 'zh', label: 'ZH - Mandarin' },
   ];
 
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const checkLang = setInterval(() => {
-      const select = document.querySelector('.goog-te-combo');
-      if (select && select.value) {
-        setCurrentLang(select.value);
-      } else if (document.cookie.includes('googtrans')) {
-        const match = document.cookie.match(/googtrans=\/auto\/([^;]+)|\/id\/([^;]+)/);
-        if (match && (match[1] || match[2])) {
-          setCurrentLang(match[1] || match[2]);
-        }
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
       }
-    }, 1000);
-    return () => clearInterval(checkLang);
-  }, []);
-
-  // Restore scroll after reload (when reverting to ID)
-  useEffect(() => {
-    const saved = sessionStorage.getItem('restoreScrollY');
-    if (saved) {
-      sessionStorage.removeItem('restoreScrollY');
-      const y = parseInt(saved, 10);
-      setTimeout(() => window.scrollTo({ top: y, behavior: 'instant' }), 400);
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleLanguageChange = (langCode) => {
-    if (langCode === currentLang) return;
-
-    // Show overlay to hide the translation shake
-    setIsTranslating(true);
-
-    const savedScrollY = window.scrollY;
-
-    setTimeout(() => {
-      const select = document.querySelector('.goog-te-combo');
-
-      if (langCode === 'id') {
-        // Reset to original language
-        const domain = window.location.hostname;
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
-        sessionStorage.setItem('restoreScrollY', savedScrollY);
-        window.location.reload();
-      } else if (select) {
-        select.value = langCode;
-        select.dispatchEvent(new Event('change'));
-        setCurrentLang(langCode);
-        // Hide overlay after translation settles
-        setTimeout(() => {
-          setIsTranslating(false);
-          window.scrollTo({ top: savedScrollY, behavior: 'instant' });
-        }, 1800);
-      } else {
-        // Widget not ready, use cookie + reload
-        document.cookie = `googtrans=/id/${langCode}; path=/;`;
-        document.cookie = `googtrans=/id/${langCode}; path=/; domain=.${window.location.hostname};`;
-        sessionStorage.setItem('restoreScrollY', savedScrollY);
-        window.location.reload();
-      }
-    }, 80); // small delay so overlay renders first
-  };
 
   return (
-    <>
-      {/* Full-screen translation overlay - hides the shake from user */}
-      {isTranslating && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'var(--color-bg, #0a0a0b)',
-          zIndex: 999999,
+    <div className="language-switcher-container" ref={dropdownRef} style={{ position: 'relative', zIndex: 50 }}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="language-btn"
+        style={{
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: '16px',
-          animation: 'translateFadeIn 0.15s ease'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid rgba(255,255,255,0.1)',
-            borderTop: '3px solid #e63946',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite'
-          }} />
-          <p style={{
-            color: 'rgba(255,255,255,0.6)',
-            fontSize: '0.9rem',
-            margin: 0,
-            fontFamily: 'inherit'
-          }}>Menerjemahkan halaman...</p>
-        </div>
-      )}
+          gap: '6px',
+          background: 'var(--color-bg-secondary)',
+          border: '1px solid var(--color-border)',
+          padding: '6px 12px',
+          borderRadius: '20px',
+          cursor: 'pointer',
+          color: 'var(--color-text-primary)',
+          fontSize: '14px',
+          fontWeight: 600,
+          transition: 'all 0.2s ease'
+        }}
+        title="Ganti Bahasa"
+      >
+        <Globe size={16} />
+        <span>{lang.toUpperCase()}</span>
+      </button>
 
-      <div className="language-switcher-container">
-        <div className="language-btn">
-          <span className="lang-icon">🌐</span>
-          <span className="lang-code">{currentLang.toUpperCase()}</span>
-        </div>
-        <div className="language-dropdown">
-          {languages.map((lang) => (
-            <div
-              key={lang.code}
-              className={`lang-option ${currentLang === lang.code ? 'active' : ''}`}
-              onClick={() => handleLanguageChange(lang.code)}
+      {isOpen && (
+        <div 
+          className="language-dropdown"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            marginTop: '8px',
+            background: 'var(--color-bg-primary)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            padding: '8px',
+            minWidth: '150px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px'
+          }}
+        >
+          {languages.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => {
+                changeLanguage(l.code);
+                setIsOpen(false);
+              }}
+              style={{
+                background: lang === l.code ? 'var(--color-accent-light, rgba(37, 99, 235, 0.1))' : 'transparent',
+                color: lang === l.code ? 'var(--color-accent)' : 'var(--color-text-primary)',
+                border: 'none',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: lang === l.code ? 700 : 500,
+                transition: 'background 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                if (lang !== l.code) e.currentTarget.style.background = 'var(--color-bg-secondary)';
+              }}
+              onMouseOut={(e) => {
+                if (lang !== l.code) e.currentTarget.style.background = 'transparent';
+              }}
             >
-              <span className="lang-flag">{lang.flag}</span>
-              <span className="lang-label">{lang.label}</span>
-            </div>
+              {l.label}
+            </button>
           ))}
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
-};
-
-export default LanguageSwitcher;
+}

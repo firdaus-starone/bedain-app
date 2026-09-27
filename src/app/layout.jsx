@@ -4,6 +4,8 @@ import GlobalAdsense from '../components/GlobalAdsense';
 import StickySideAds from '../components/StickySideAds';
 import PushNotificationPrompt from '../components/PushNotificationPrompt';
 import CustomAlert from '../components/CustomAlert';
+import { headers } from 'next/headers';
+import { I18nProvider } from '@/hooks/useI18n';
 
 const poppins = Poppins({
   weight: ['400', '500', '600', '700', '800'],
@@ -37,14 +39,19 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
+  const headersList = headers();
+  const locale = headersList.get('x-next-locale') || 'id';
+
   return (
-    <html lang="id">
+    <html lang={locale}>
       <body className={`bg-[#121214] text-white ${poppins.variable} ${inter.variable}`}>
         <GlobalAdsense />
         <StickySideAds />
         <PushNotificationPrompt />
         <CustomAlert />
-        {children}
+        <I18nProvider initialLang={locale}>
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );

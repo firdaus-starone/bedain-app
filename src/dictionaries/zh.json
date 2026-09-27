@@ -1,0 +1,31 @@
+{
+  "navigation": {
+    "home": "主页",
+    "trending": "热门话题",
+    "search": "搜索新闻...",
+    "contact": "联系编辑",
+    "send_article": "提交文章"
+  },
+  "article": {
+    "readTime": "分钟阅读",
+    "share": "分享",
+    "save": "保存",
+    "saved": "已保存",
+    "contributor": "撰稿人",
+    "editor": "编辑",
+    "editorial": "Bedain 编辑部",
+    "readAlso": "相关阅读",
+    "tags": "标签",
+    "related": "相关",
+    "popular": "热门",
+    "comments": "评论",
+    "translate": "正在翻译成当地语言..."
+  },
+  "home": {
+    "latest": "最新",
+    "popular": "当下热门",
+    "seeMore": "查看更多",
+    "editorialDesk": "编辑部",
+    "editorialChoice": "编辑精选文章"
+  }
+}

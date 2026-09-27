@@ -1,0 +1,31 @@
+{
+  "navigation": {
+    "home": "Beranda",
+    "trending": "Topik Hangat",
+    "search": "Cari berita...",
+    "contact": "Hubungi Redaksi",
+    "send_article": "Kirim Tulisan"
+  },
+  "article": {
+    "readTime": "menit baca",
+    "share": "Bagikan",
+    "save": "Simpan",
+    "saved": "Tersimpan",
+    "contributor": "Kontributor",
+    "editor": "Editor",
+    "editorial": "Redaksi Bedain",
+    "readAlso": "BACA JUGA",
+    "tags": "TAG",
+    "related": "Terkait",
+    "popular": "Terpopuler",
+    "comments": "Komentar",
+    "translate": "Menerjemahkan ke bahasa lokal..."
+  },
+  "home": {
+    "latest": "Terbaru",
+    "popular": "Sedang Hangat",
+    "seeMore": "Lihat Selengkapnya",
+    "editorialDesk": "Meja Redaksi",
+    "editorialChoice": "Pilihan Artikel Terbaik dari Redaksi Kami"
+  }
+}
