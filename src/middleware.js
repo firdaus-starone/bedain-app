@@ -39,8 +39,13 @@ export function middleware(request) {
       return NextResponse.redirect(url);
     }
   } else {
-    // If no locale in URL, we assume defaultLocale ('id')
-    locale = defaultLocale;
+    // If no locale in URL, we check the cookie, otherwise defaultLocale ('id')
+    const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
+    if (cookieLocale && locales.includes(cookieLocale)) {
+      locale = cookieLocale;
+    } else {
+      locale = defaultLocale;
+    }
   }
 
   const response = pathnameHasLocale 
