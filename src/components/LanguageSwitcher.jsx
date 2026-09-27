@@ -28,16 +28,22 @@ export default function LanguageSwitcher() {
 
   return (
     <div className="language-switcher-container" ref={dropdownRef} style={{ position: 'relative', zIndex: 50 }}>
-      <button className="language-btn" title="Ganti Bahasa">
+      <button className="language-btn" title="Ganti Bahasa" onClick={() => setIsOpen(!isOpen)}>
         <Globe className="lang-icon" size={16} />
         <span>{lang.toUpperCase()}</span>
       </button>
 
-      <div className="language-dropdown">
+      <div 
+        className="language-dropdown"
+        style={isOpen ? { opacity: 1, visibility: 'visible', transform: 'translateY(0)' } : {}}
+      >
         {languages.map((l) => (
           <div
             key={l.code}
-            onClick={() => changeLanguage(l.code)}
+            onClick={() => {
+              changeLanguage(l.code);
+              setIsOpen(false);
+            }}
             className={`lang-option ${lang === l.code ? 'active' : ''}`}
           >
             <span className="lang-flag">

@@ -48,12 +48,20 @@ export function middleware(request) {
     }
   }
 
-  const response = pathnameHasLocale 
-    ? NextResponse.rewrite(new URL(newPathname, request.url))
-    : NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-next-locale', locale);
 
-  // Set the locale in header so server components can read it
-  response.headers.set('x-next-locale', locale);
+  const response = pathnameHasLocale 
+    ? NextResponse.rewrite(new URL(newPathname, request.url), {
+        request: {
+          headers: requestHeaders,
+        },
+      })
+    : NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
   
   // Set the locale in a cookie for client components (if needed as fallback)
   response.cookies.set('NEXT_LOCALE', locale, { path: '/', maxAge: 31536000 });
