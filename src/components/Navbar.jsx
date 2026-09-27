@@ -19,7 +19,6 @@ import './FootballLogoAnimation.css';
 import BreakingNews from './BreakingNews';
 import BottomNav from './BottomNav';
 import { getArticleCardImage } from '../lib/videoHelpers';
-import { getArticleCardImage } from '../lib/videoHelpers';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useI18n } from '../hooks/useI18n';
 
