@@ -22,10 +22,12 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Capacitor } from '@capacitor/core';
 // TextToSpeech di-load secara dinamis untuk menghindari SSR error
 import { shareArticleWithImage, getPublicArticleUrl, isMobileDevice } from '../lib/shareHelper';
+import { useI18n } from '@/hooks/useI18n';
 
 
 
 const ArticleDetail = () => {
+  const { lang, t } = useI18n();
   const { slug } = useParams();
   const router = useRouter();
   const [article, setArticle] = useState(null);
@@ -990,7 +992,7 @@ const ArticleDetail = () => {
                   </div>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-accent)' }}>
-                    <Clock size={14} /> Estimasi {readingTimeMinutes} menit baca
+                    <Clock size={14} /> {readingTimeMinutes} {t('article.readTime')}
                   </div>
                 </div>
 
@@ -1038,7 +1040,7 @@ const ArticleDetail = () => {
                  </span>
                  <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.2rem)', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.25, margin: '12px 0', fontFamily: 'var(--font-heading)' }}>
                    {displayArticle.title}
-                   {translating && <span style={{display: 'inline-block', marginLeft: '10px', fontSize: '0.9rem', color: 'var(--color-accent)'}} className="spinner-small" title="Menerjemahkan ke bahasa lokal..."></span>}
+                   {translating && <span style={{display: 'inline-block', marginLeft: '10px', fontSize: '0.9rem', color: 'var(--color-accent)'}} className="spinner-small" title={t('article.translate')}></span>}
                  </h1>
                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
                     <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi'}</span>
@@ -1048,7 +1050,7 @@ const ArticleDetail = () => {
                     <span suppressHydrationWarning>{formatDate(article.publishedAt || article.createdAt)}</span>
                     <span>•</span>
                     <span style={{ color: 'var(--color-accent)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      <Clock size={14} /> {readingTimeMinutes} menit baca
+                      <Clock size={14} /> {readingTimeMinutes} {t('article.readTime')}
                     </span>
                  </div>
               </>
