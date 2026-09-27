@@ -30,21 +30,7 @@ export default function LanguageSwitcher() {
     <div className="language-switcher-container" ref={dropdownRef} style={{ position: 'relative', zIndex: 50 }}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="language-btn"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: 'var(--color-bg-secondary)',
-          border: '1px solid var(--color-border)',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          cursor: 'pointer',
-          color: 'var(--color-text-primary)',
-          fontSize: '14px',
-          fontWeight: 600,
-          transition: 'all 0.2s ease'
-        }}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-200 border-gray-300 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
         title="Ganti Bahasa"
       >
         <Globe size={16} />
@@ -53,22 +39,7 @@ export default function LanguageSwitcher() {
 
       {isOpen && (
         <div 
-          className="language-dropdown"
-          style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
-            marginTop: '8px',
-            background: 'var(--color-bg-primary)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-            padding: '8px',
-            minWidth: '150px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px'
-          }}
+          className="absolute top-full right-0 mt-2 p-2 min-w-[150px] flex flex-col gap-1 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1C1C1F] shadow-xl"
         >
           {languages.map((l) => (
             <button
@@ -77,24 +48,11 @@ export default function LanguageSwitcher() {
                 changeLanguage(l.code);
                 setIsOpen(false);
               }}
-              style={{
-                background: lang === l.code ? 'var(--color-accent-light, rgba(37, 99, 235, 0.1))' : 'transparent',
-                color: lang === l.code ? 'var(--color-accent)' : 'var(--color-text-primary)',
-                border: 'none',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                textAlign: 'left',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: lang === l.code ? 700 : 500,
-                transition: 'background 0.2s ease'
-              }}
-              onMouseOver={(e) => {
-                if (lang !== l.code) e.currentTarget.style.background = 'var(--color-bg-secondary)';
-              }}
-              onMouseOut={(e) => {
-                if (lang !== l.code) e.currentTarget.style.background = 'transparent';
-              }}
+              className={`text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                lang === l.code 
+                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold' 
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium'
+              }`}
             >
               {l.label}
             </button>
