@@ -2,9 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import id from '@/dictionaries/id.json';
-import en from '@/dictionaries/en.json';
-import zh from '@/dictionaries/zh.json';
+import id from '../dictionaries/id.json';
+import en from '../dictionaries/en.json';
+import zh from '../dictionaries/zh.json';
 
 const dictionaries = { id, en, zh };
 
