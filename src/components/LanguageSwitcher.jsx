@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useI18n } from '../hooks/useI18n';
-import { Globe } from 'lucide-react';
 
 export default function LanguageSwitcher() {
   const { lang, changeLanguage } = useI18n();
@@ -29,7 +28,6 @@ export default function LanguageSwitcher() {
   return (
     <div className="language-switcher-container" ref={dropdownRef} style={{ position: 'relative', zIndex: 50 }}>
       <button className="language-btn" title="Ganti Bahasa" onClick={() => setIsOpen(!isOpen)}>
-        <Globe className="lang-icon" size={16} />
         <span>{lang.toUpperCase()}</span>
       </button>
 
