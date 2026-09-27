@@ -1087,51 +1087,7 @@ const ArticleDetail = () => {
             {/* Monetisasi: In-Article Ad Atas */}
             <AdUnit format="in-article" style={{ marginBottom: '32px' }} />
             
-            {/* Ringkasan AI Bedain (TL;DR) */}
-            {displayArticle.excerpt && (
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
-                border: '1px solid rgba(168, 85, 247, 0.2)',
-                borderRadius: '16px',
-                padding: '20px 24px',
-                marginBottom: '24px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '4px',
-                  height: '100%',
-                  background: 'linear-gradient(to bottom, #a855f7, #3b82f6)'
-                }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <Sparkles size={18} color="#a855f7" />
-                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--color-text)', letterSpacing: '0.5px' }}>
-                    Ringkasan AI Bedain
-                  </h3>
-                  <span style={{
-                    fontSize: '10px',
-                    background: 'rgba(168, 85, 247, 0.1)',
-                    color: '#a855f7',
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    fontWeight: 700,
-                    textTransform: 'uppercase'
-                  }}>BETA</span>
-                </div>
-                <p style={{
-                  margin: 0,
-                  fontSize: '15px',
-                  lineHeight: 1.6,
-                  color: 'var(--color-text-secondary)',
-                  fontWeight: 500
-                }}>
-                  {displayArticle.excerpt}
-                </p>
-              </div>
-            )}
+
             
 
             {/* AI Text-to-Speech Podcast Audio Player */}
