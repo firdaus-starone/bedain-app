@@ -43,8 +43,8 @@ export const I18nProvider = ({ children, initialLang = 'id' }) => {
     
     // Update cookie so the server remembers the preference
     document.cookie = `NEXT_LOCALE=${newLang}; path=/; max-age=31536000`;
-    
-    router.push(newPath);
+    // Force hard reload to ensure server-side rewrites and headers apply correctly
+    window.location.href = newPath;
   };
 
   const t = (key) => {
