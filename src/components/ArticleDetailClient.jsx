@@ -1096,7 +1096,7 @@ const ArticleDetail = () => {
               </button>
               <button className="share-icon-btn" onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
                 <MessageSquare size={18} />
-                <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{comments.length || 0}</span>
+                <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{article?.commentCount || 0}</span>
               </button>
               <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
                 <Share2 size={18} />
@@ -1354,9 +1354,19 @@ const ArticleDetail = () => {
                 const isAdInsertPos1 = index === 2;
                 const isAdInsertPos2 = index === 5;
                 
+                // Helper untuk mereplace huruf "B" berdiri sendiri menjadi logo tanpa merusak HTML tags
+                const replaceBWithLogo = (htmlStr) => {
+                  if (!htmlStr) return htmlStr;
+                  return htmlStr.replace(/(<[^>]+>)|(\bB\b)/g, (match, tag, letterB) => {
+                    if (tag) return tag;
+                    if (letterB) return '<img src="/icon-192x192.png" alt="B" style="height: 1.1em; width: auto; display: inline-block; vertical-align: baseline; margin: 0 2px; transform: translateY(0.15em);" />';
+                    return match;
+                  });
+                };
+                
                 return (
                   <React.Fragment key={index}>
-                    <div className="article-block" dangerouslySetInnerHTML={{ __html: block }} />
+                    <div className="article-block" dangerouslySetInnerHTML={{ __html: replaceBWithLogo(block) }} />
                     
                     {/* Inject Baca Juga (Interactive Card) */}
                     {isRelatedInsertPos && relatedArticles.length > 0 && (
