@@ -38,8 +38,8 @@ export const viewport = {
   themeColor: '#121214',
 };
 
-export default function RootLayout({ children }) {
-  const headersList = headers();
+export default async function RootLayout({ children }) {
+  const headersList = await headers();
   const locale = headersList.get('x-next-locale') || 'id';
 
   return (
