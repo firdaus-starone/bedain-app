@@ -434,7 +434,7 @@ const ArticleEditor = () => {
     return null;
   };
 
-  const callGeminiAPI = async (prompt, systemInstruction = '') => {
+  const callGeminiAPI = async (prompt, systemInstruction = '', forceJson = false) => {
     const apiKey = getGeminiKey();
     if (!apiKey) throw new Error('API_KEY_MISSING');
     
@@ -442,6 +442,10 @@ const ArticleEditor = () => {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.7 }
     };
+
+    if (forceJson) {
+      body.generationConfig.responseMimeType = "application/json";
+    }
     
     if (systemInstruction) {
       body.systemInstruction = { parts: [{ text: systemInstruction }] };
@@ -633,7 +637,7 @@ const ArticleEditor = () => {
     } catch (e) {
       plainText += formData.content.replace(/<[^>]+>/g, ' ');
     }
-    plainText = plainText.substring(0, 15000);
+    plainText = plainText.substring(0, 2500);
 
     setNotifModal({ isOpen: true, type: 'success', title: '⏳ Memproses AI...', message: 'Bedain AI sedang meracik SEO dan Metadata terbaik untuk artikel ini...', articleSlug: '', status: '' });
 
@@ -650,12 +654,17 @@ Kembalikan WAJIB HANYA dalam format JSON valid (tanpa blok markdown) dengan stru
   "slug": "url-slug-seo-friendly-tanpa-spasi"
 }`;
 
-      const aiResponse = await callGeminiAPI(prompt, "Kamu adalah ahli SEO Jurnalistik spesialis pembuat metadata.");
+      const aiResponse = await callGeminiAPI(prompt, "Kamu adalah ahli SEO Jurnalistik spesialis pembuat metadata. WAJIB mengembalikan HANYA format JSON valid tanpa embel-embel teks.", true);
+      
       let cleanedJson = aiResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
       const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         cleanedJson = jsonMatch[0];
+      } else {
+        // Fallback if no curly braces found, maybe API returned plain text
+        throw new Error("AI tidak mengembalikan format JSON yang valid. Respons AI: " + aiResponse.substring(0, 50) + "...");
       }
+      
       const result = JSON.parse(cleanedJson);
 
       let finalContent = boldTagsInContent(result.tags || formData.tags, formData.content);
@@ -815,7 +824,7 @@ Kembalikan WAJIB HANYA dalam format JSON valid (tanpa blok markdown) dengan stru
       strippedContent = formData.content.replace(/<[^>]+>/g, ' ');
     }
     
-    const textToAnalyze = `${formData.title}\n\n${strippedContent}`.substring(0, 10000);
+    const textToAnalyze = `${formData.title}\n\n${strippedContent}`.substring(0, 2500);
     const categoryNames = categories.map(c => c.name);
 
     setNotifModal({ isOpen: true, type: 'success', title: '⏳ Memproses AI...', message: 'Bedain AI sedang menganalisa kategori yang paling cocok...', articleSlug: '', status: '' });
@@ -930,7 +939,6 @@ ${textToAnalyze}`;
           updatedAt: Timestamp.now(),
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
           publishedAt: finalStatus === 'published' ? Timestamp.now() : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
-          'author.name': authorName,
         });
       } else {
         const articleData = {
@@ -1108,17 +1116,7 @@ ${textToAnalyze}`;
                   />
                 </div>
                 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px 0 16px', gap: '8px', flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => setIsAIModalOpen(true)} style={{ background: 'linear-gradient(135deg, var(--color-accent), #ff8a65)', color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(230, 57, 70, 0.3)' }}>
-                    <Sparkles size={14} /> ✨ Bedain AI Assistant
-                  </button>
-                  <button type="button" onClick={handleAutoFormat} style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
-                    <Sparkles size={14} /> Rapikan Paragraf (30-50 kata)
-                  </button>
-                  <button type="button" onClick={handleSuggestInternalLinks} style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
-                    <Link2 size={14} /> 🔗 Sisipkan "Baca Juga" (AI Internal Link)
-                  </button>
-                </div>
+
 
                 <div className="modern-quill-container" style={{ padding: '16px' }}>
                   <ReactQuill 
@@ -1139,11 +1137,10 @@ ${textToAnalyze}`;
                   <h3 style={{ fontSize: '14px', color: 'var(--admin-text-primary)', margin: 0 }}>SEO & Metadata</h3>
                   <button 
                     type="button" 
-                    onClick={generateSEO}
-                    className="editor-mobile-action-btn"
-                    style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', minHeight: '44px', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                    onClick={generateSEO} 
+                    style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: 500 }}
                   >
-                    <Sparkles size={14} /> ✨ Auto-Generate SEO & Meta
+                    <Sparkles size={14} /> Auto-Generate AI
                   </button>
                 </div>
                 
@@ -1252,22 +1249,10 @@ ${textToAnalyze}`;
                   <p style={{ fontSize: '11px', color: 'var(--admin-text-tertiary)', marginTop: '6px', lineHeight: '1.4' }}>Teks ini akan muncul tepat di bawah gambar utama artikel.</p>
                 </div>
                 
-                <button
-                  type="button"
-                  onClick={() => setIsAIGenOpen(true)}
-                  style={{
-                    width: '100%', padding: '12px', marginTop: '12px', borderRadius: '12px',
-                    background: 'linear-gradient(135deg, var(--color-accent), #ff8a65)', color: 'white',
-                    border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    boxShadow: '0 4px 12px rgba(230,57,70,0.2)'
-                  }}
-                >
-                  <Sparkles size={16} /> Buat Gambar dengan AI
-                </button>
+
                 
                 <div style={{ marginTop: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>URL Video YouTube (Opsional)</label>
+                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>URL Video (YouTube, Facebook, TikTok) - Opsional</label>
                   <input 
                     type="url"
                     value={formData.videoUrl}
@@ -1294,14 +1279,6 @@ ${textToAnalyze}`;
                         style={{ flex: 1, background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', transition: 'all 0.2s', minHeight: '44px', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                       >
                         <Plus size={13} /> + Baru
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={autoSelectCategory}
-                        className="editor-mobile-action-btn"
-                        style={{ flex: 2, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', transition: 'all 0.2s', minHeight: '44px', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                      >
-                        <Sparkles size={13} /> ✨ Auto Kategori
                       </button>
                     </div>
                   </div>
@@ -1834,26 +1811,48 @@ ${textToAnalyze}`;
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => {
-                  setNotifModal({ ...notifModal, isOpen: false });
-                  setIsAIModalOpen(true);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '13px 20px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, var(--color-accent) 0%, #ff8a65 100%)',
-                  border: 'none',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(230, 57, 70, 0.4)'
-                }}
-              >
-                🔑 Mengerti & Perbaiki (Buka Pengaturan API Key AI)
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                {notifModal.message.includes('AI') || notifModal.message.includes('API Key') ? (
+                  <button
+                    onClick={() => {
+                      setNotifModal({ ...notifModal, isOpen: false });
+                      setIsAIModalOpen(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '13px 20px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, var(--color-accent) 0%, #ff8a65 100%)',
+                      border: 'none',
+                      color: '#fff',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 16px rgba(230, 57, 70, 0.4)'
+                    }}
+                  >
+                    🔑 Pengaturan API Key AI
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => {
+                    setNotifModal({ ...notifModal, isOpen: false });
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '13px 20px',
+                    borderRadius: '12px',
+                    background: 'transparent',
+                    border: '1px solid var(--admin-border)',
+                    color: 'var(--admin-text-secondary)',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✖️ Tutup
+                </button>
+              </div>
             )}
           </div>
         </div>

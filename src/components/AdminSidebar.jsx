@@ -110,13 +110,13 @@ const AdminSidebar = () => {
 
       <aside className={`admin-sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
         <div>
-          <Link onClick={handleNavClick} href="/admin/dashboard" className="admin-logo" onClick={handleNavClick} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', textDecoration: 'none', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+          <Link onClick={handleNavClick} href="/admin/dashboard" className="admin-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '20px 16px', borderBottom: '1px solid var(--admin-border)', textDecoration: 'none', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
             {settings?.logoUrl ? (
             <img src={settings.logoUrl} alt={settings.siteName || 'Logo'} style={{ height: '28px', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
           ) : (
             <img src="/logo.png" alt="Bedain Logo" style={{ height: '28px', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
           )}
-          <span className="logo-font" style={{ fontWeight: 800, fontSize: '0.92rem', letterSpacing: '0.5px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span className="logo-font" style={{ fontWeight: 800, fontSize: '0.92rem', letterSpacing: '0.5px', color: 'var(--admin-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {renderLogoText()}
           </span>
           <span style={{ fontSize: '9px', background: 'rgba(230, 57, 70, 0.2)', color: 'var(--color-accent)', padding: '2px 5px', borderRadius: '4px', fontWeight: 700, flexShrink: 0 }}>PRO</span>
@@ -188,6 +188,10 @@ const AdminSidebar = () => {
                 )}
               </Link>
               
+              <Link onClick={handleNavClick} href="/admin/newsletter" className={`admin-nav-item ${isActive('/admin/newsletter') ? 'active' : ''}`}>
+                <Users size={18} className="admin-nav-icon" /> Data Newsletter
+              </Link>
+              
               <Link onClick={handleNavClick} href="/admin/banners" className={`admin-nav-item ${isActive('/admin/banners') ? 'active' : ''}`}>
                 <DollarSign size={18} className="admin-nav-icon" /> Iklan & Sponsor
               </Link>
@@ -230,7 +234,7 @@ const AdminSidebar = () => {
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
               )}
             </button>
-            <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#aaa', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }} title="Logout">
+            <button onClick={handleLogout} style={{ background: 'var(--admin-hover-bg)', border: 'none', color: 'var(--admin-text-secondary)', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }} title="Logout">
               <LogOut size={16} />
             </button>
           </div>

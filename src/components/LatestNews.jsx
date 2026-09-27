@@ -1,6 +1,7 @@
 "use client";
-import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+
 const LatestNews = ({ articles, loading }) => {
   // Fallback data yang persis seperti Gambar 1
   const fallbackMain = {
@@ -45,7 +46,16 @@ const LatestNews = ({ articles, loading }) => {
     return (
       <section className="recap-section">
         <div className="recap-main">
-          <div className="recap-image skeleton-pulse" style={{ height: '380px', borderRadius: 'var(--radius-lg)', pointerEvents: 'none' }} />
+          <div className="recap-image skeleton-pulse" style={{ height: '380px', borderRadius: 'var(--radius-lg)', pointerEvents: 'none', position: 'relative', overflow: 'hidden' }}>
+            <Image 
+              src={fallbackMain.coverImage} 
+              alt="Loading" 
+              fill
+              style={{ objectFit: 'cover', opacity: 0.05 }}
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 800px"
+            />
+          </div>
           <div className="recap-related" style={{ pointerEvents: 'none' }}>
             <div className="related-header">
               <h3>Berita Terkait</h3>
@@ -65,8 +75,15 @@ const LatestNews = ({ articles, loading }) => {
     <section className="recap-section">
       <div className="recap-main">
         <Link href={`/article/${getSlug(mainArticle)}`} style={{ display: 'block', textDecoration: 'none' }}>
-          <div className="recap-image">
-            <img src={mainArticle.coverImage || fallbackMain.coverImage} alt={mainArticle.title} fetchPriority="high" decoding="async" />
+          <div className="recap-image" style={{ position: 'relative', overflow: 'hidden' }}>
+            <Image 
+              src={mainArticle.coverImage || fallbackMain.coverImage} 
+              alt={mainArticle.title} 
+              fill
+              style={{ objectFit: 'cover' }}
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 800px"
+            />
             <div className="recap-overlay">
               <h2 className="recap-title">{mainArticle.title}</h2>
               <div className="recap-meta">{getMetaText(mainArticle)}</div>

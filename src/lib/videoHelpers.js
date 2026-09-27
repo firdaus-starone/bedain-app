@@ -5,6 +5,30 @@ export const getYouTubeId = (input) => {
   return match ? match[1] : null;
 };
 
+export const getAnyVideoData = (input) => {
+  if (!input || typeof input !== 'string') return null;
+  
+  const ytId = getYouTubeId(input);
+  if (ytId) return { type: 'youtube', id: ytId, url: input };
+  
+  const lowerInput = input.toLowerCase();
+  if (lowerInput.includes('facebook.com') || lowerInput.includes('fb.watch')) {
+    return { type: 'facebook', url: input };
+  }
+  
+  if (lowerInput.includes('tiktok.com')) {
+    const tkMatch = input.match(/\/video\/(\d+)/);
+    return { type: 'tiktok', id: tkMatch ? tkMatch[1] : null, url: input };
+  }
+  
+  return null;
+};
+
+export const getArticleVideoData = (article) => {
+  if (!article) return null;
+  return getAnyVideoData(article.videoUrl) || getAnyVideoData(article.youtubeUrl) || getAnyVideoData(article.video) || getAnyVideoData(article.content);
+};
+
 export const getArticleVideoId = (article) => {
   if (!article) return null;
   return getYouTubeId(article.videoUrl) || getYouTubeId(article.youtubeUrl) || getYouTubeId(article.video) || getYouTubeId(article.content);

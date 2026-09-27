@@ -4,6 +4,7 @@ import Link from 'next/link';
 import LazyImage from './LazyImage';
 import AdUnit from './AdUnit';
 import AdBanner from './AdBanner';
+import RedaksiWidget from './RedaksiWidget';
 import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -74,19 +75,41 @@ const Sidebar = () => {
 
     const promise = (async () => {
       try {
+        // Fetch more articles sorted by date to ensure we get the latest ones (bypassing composite index issue)
         const q = query(
           collection(db, 'articles'),
-          where('status', '==', 'published'),
-          limit(8)
+          orderBy('publishedAt', 'desc'),
+          limit(100)
         );
         const snap = await getDocs(q);
         const now = new Date();
         const articles = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-          .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
+          .filter(a => { 
+              if (a.status !== 'published') return false;
+              const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); 
+              return p <= now; 
+          });
 
-        const opinion = articles.find(a => 
+        // Sort by publishedAt to find the most recent opinion
+        const sortedByDate = [...articles].sort((a, b) => {
+            const dateA = a.publishedAt?.toDate ? a.publishedAt.toDate().getTime() : new Date(a.publishedAt||Date.now()).getTime();
+            const dateB = b.publishedAt?.toDate ? b.publishedAt.toDate().getTime() : new Date(b.publishedAt||Date.now()).getTime();
+            return dateB - dateA;
+        });
+
+        let opinion = sortedByDate.find(a => 
           a.category && a.category.toLowerCase().includes('opini')
         );
+        
+        // Use a fallback if no opinion is found in the latest 50 articles
+        if (!opinion) {
+            opinion = {
+                title: 'Transformasi Digital: Mengapa Harus Sekarang?',
+                slug: '#',
+                author: { name: 'Pakar IT' },
+                img: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80'
+            };
+        }
 
         const sortedByViews = [...articles]
           .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -100,7 +123,7 @@ const Sidebar = () => {
           publishedAt: a.publishedAt || Date.now()
         })) : [];
 
-        const resultData = { trending: trendingResult, opinion: opinion || null };
+        const resultData = { trending: trendingResult, opinion: opinion };
         cachedSidebarMemory = resultData;
         return resultData;
       } catch (err) {
@@ -158,6 +181,7 @@ const Sidebar = () => {
           {/* Monetisasi: Sponsor Sidebar & Rectangle Ad */}
           <AdBanner slot="sidebar" />
           <AdUnit format="rectangle" />
+          <RedaksiWidget />
 
       <div className="sidebar-widget">
         <h3 className="widget-title">Terpopuler</h3>
@@ -212,7 +236,7 @@ const Sidebar = () => {
                   </div>
                 </article>
               ) : (
-                <Link href={`/article/${opinion.slug || getSlug(opinion.title, opinion.slug)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                <Link href={opinion.slug === '#' ? '/cari?q=Opini' : `/article/${opinion.slug || getSlug(opinion.title, opinion.slug)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                   <article className="opinion-card-modern" style={{ cursor: 'pointer' }}>
                     <div className="opinion-quote-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--color-accent)" opacity="0.2"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/></svg>
@@ -271,21 +295,23 @@ const Sidebar = () => {
         <div style={{ position: 'sticky', top: '188px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="sidebar-widget tags-widget">
         <h3 className="widget-title">Topik Hangat</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget'].map((tag, i) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+          {['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget', 'StartUp', 'Kripto', 'Otomotif'].map((tag, i) => (
             <Link key={i} href={`/cari?q=${encodeURIComponent(tag.replace('#', ''))}`} style={{
-              display: 'inline-block',
-              padding: '6px 12px',
-              background: 'var(--color-bg-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '8px 10px',
+              background: 'transparent',
               border: '1px solid var(--color-border)',
-              borderRadius: '20px',
+              borderRadius: '6px',
               fontSize: '0.8rem',
               fontWeight: 600,
-              color: 'var(--color-text-secondary)',
+              color: 'var(--color-text-primary)',
               textDecoration: 'none',
               transition: 'all 0.2s ease'
-            }} onMouseOver={(e) => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)'; }} onMouseOut={(e) => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}>
-              {tag}
+            }} onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }} onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}>
+              <span style={{ color: 'var(--color-accent)' }}>#</span> {tag}
             </Link>
           ))}
         </div>

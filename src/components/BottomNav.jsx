@@ -9,8 +9,13 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
   const pathname = usePathname();
   const router = useRouter();
   const currentPath = pathname;
+  const [isMounted, setIsMounted] = React.useState(false);
 
-  if (isHidden) return null;
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (isHidden || !isMounted) return null;
 
   const isActive = (path) => {
     if (path === '/' && currentPath === '/') return true;
@@ -49,7 +54,7 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
     router.push('/cari?trending=true');
   };
 
-  return typeof document !== 'undefined' ? createPortal(
+  return createPortal(
     <nav className="mobile-bottom-nav">
       <div className="bottom-nav-container">
         {/* 1. Cari */}
@@ -81,7 +86,7 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
             aria-label="Beranda"
           >
             <div className="fab-circle">
-              <Home size={22} className="fab-icon" />
+              <img src="/logo-bundar.png" alt="Beranda" className="fab-icon" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
             </div>
             <span className="bottom-nav-label fab-label">Beranda</span>
           </a>
@@ -105,13 +110,17 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
           className="bottom-nav-item bottom-nav-menu-btn"
           aria-label="Buka Menu Kategori"
         >
-          <LayoutGrid size={22} className="bottom-nav-icon" />
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" className="bottom-nav-icon">
+            <line x1="4" y1="7" x2="20" y2="7"></line>
+            <line x1="10" y1="12" x2="20" y2="12"></line>
+            <line x1="4" y1="17" x2="20" y2="17"></line>
+          </svg>
           <span className="bottom-nav-label">Menu</span>
         </button>
       </div>
     </nav>,
     document.body
-  ) : null;
+  );
 };
 
 export default BottomNav;

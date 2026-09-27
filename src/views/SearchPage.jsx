@@ -178,8 +178,8 @@ const SearchPage = () => {
         <div className="search-page-header" style={{
           backgroundColor: 'var(--color-bg-secondary)',
           borderRadius: '20px',
-          padding: '34px',
-          marginBottom: '32px',
+          padding: 'clamp(20px, 4vw, 34px)',
+          marginBottom: '24px',
           border: '1px solid var(--color-border)',
           boxShadow: '0 8px 30px rgba(0,0,0,0.18)'
         }}>
@@ -202,9 +202,9 @@ const SearchPage = () => {
           </div>
 
           <h1 style={{
-            fontSize: '2rem',
+            fontSize: 'clamp(1.4rem, 4vw, 2rem)',
             fontFamily: 'var(--font-heading)',
-            marginBottom: '20px',
+            marginBottom: '16px',
             color: 'var(--color-text-primary)',
             lineHeight: 1.25
           }}>
@@ -368,101 +368,47 @@ const SearchPage = () => {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
-              gap: '24px'
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '16px'
             }}>
               {searchResults.slice(0, displayCount).map((article, idx) => (
                 <Link key={article.id || idx}
                   href={`/article/${getSlug(article)}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    backgroundColor: 'var(--color-bg-secondary)',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    border: '1px solid var(--color-border)',
-                    textDecoration: 'none',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 6px 18px rgba(0,0,0,0.12)'
-                  }}
-                  className="search-result-card"
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
                 >
-                  <div style={{ position: 'relative', height: '200px', overflow: 'hidden', background: 'var(--color-bg-tertiary)' }}>
-                    <LazyImage
-                      src={getArticleCardImage(article)}
-                      alt={article.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.4s ease'
-                      }}
-                    />
-                    <VideoBadge article={article} />
-                    {article.category && (
-                      <span style={{
-                        position: 'absolute',
-                        top: '12px',
-                        left: '12px',
-                        backgroundColor: 'var(--color-accent)',
-                        color: '#fff',
-                        padding: '4px 12px',
-                        borderRadius: '999px',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}>
-                        {article.category}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <h3 style={{
-                      fontSize: '1.14rem',
-                      fontFamily: 'var(--font-heading)',
-                      fontWeight: 700,
-                      color: 'var(--color-text-primary)',
-                      lineHeight: 1.4,
-                      marginBottom: '10px'
-                    }}>
-                      {article.title}
-                    </h3>
-                    {(article.seoDescription || article.excerpt) && (
-                      <p style={{
-                        fontSize: '0.85rem',
-                        color: 'var(--color-text-secondary)',
-                        lineHeight: 1.5,
-                        marginBottom: '18px',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-                        {article.seoDescription || article.excerpt}
-                      </p>
-                    )}
-                    <div style={{
-                      marginTop: 'auto',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '0.8rem',
-                      color: 'var(--color-text-secondary)',
-                      borderTop: '1px solid var(--color-border)',
-                      paddingTop: '14px'
-                    }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-                        <Calendar size={14} />
-                        {formatDate(article.publishedAt || article.createdAt)}
-                      </span>
-                      {article.views !== undefined && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Eye size={14} /> {article.views}
-                        </span>
-                      )}
+                  <article className="detik-list-item" style={{
+                    backgroundColor: 'var(--color-bg-secondary)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    alignItems: 'flex-start'
+                  }}>
+                    <div className="detik-list-img" style={{ position: 'relative', width: '110px', height: '85px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden' }}>
+                      <LazyImage
+                        src={getArticleCardImage(article)}
+                        alt={article.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <VideoBadge article={article} />
                     </div>
-                  </div>
+                    <div className="detik-list-content" style={{ flex: 1, paddingLeft: '2px' }}>
+                      <h3 className="detik-list-title" style={{ fontSize: '0.98rem', marginBottom: '8px', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {article.title}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={12} />
+                          {formatDate(article.publishedAt || article.createdAt)}
+                        </span>
+                        {article.views !== undefined && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Eye size={12} /> {article.views}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
                 </Link>
               ))}
             </div>

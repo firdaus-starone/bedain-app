@@ -1,14 +1,15 @@
 "use client";
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
-import { TrendingUp, Users, MapPin, Award, Eye, Flame, Newspaper } from 'lucide-react';
+import { TrendingUp, Users, MapPin, Award, Eye, Flame, Newspaper, X } from 'lucide-react';
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 const SmartAnalytics = ({ articles = [] }) => {
+  const [showAllCities, setShowAllCities] = useState(false);
   // 1. Author Rankings (Penulis Terpopuler berdasarkan akumulasi views)
   const authorStats = useMemo(() => {
     const map = {};
@@ -25,7 +26,7 @@ const SmartAnalytics = ({ articles = [] }) => {
   }, [articles]);
 
   // 2. City Demographics (Demografi Kota Pengunjung)
-  const cityStats = useMemo(() => {
+  const { cityStatsFull, cityStats } = useMemo(() => {
     const map = {};
     let defaultSampleCities = {
       'Jakarta': 420,
@@ -50,14 +51,15 @@ const SmartAnalytics = ({ articles = [] }) => {
     const sourceMap = hasRealCityData ? map : defaultSampleCities;
     const totalCityViews = Object.values(sourceMap).reduce((acc, val) => acc + val, 0) || 1;
 
-    return Object.entries(sourceMap)
+    const full = Object.entries(sourceMap)
       .map(([city, count]) => ({
         name: city,
         views: count,
         percentage: Math.round((count / totalCityViews) * 100)
       }))
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 6);
+      .sort((a, b) => b.views - a.views);
+      
+    return { cityStatsFull: full, cityStats: full.slice(0, 6) };
   }, [articles]);
 
   // 3. Category Views (Kategori Paling Diminati)
@@ -188,19 +190,35 @@ const SmartAnalytics = ({ articles = [] }) => {
         </div>
 
         {/* Demografi Kota Pengunjung */}
-        <div style={{
+        <div 
+          onClick={() => setShowAllCities(true)}
+          style={{
           background: 'var(--admin-card-bg)',
           border: '1px solid var(--admin-card-border)',
           borderRadius: '16px',
           padding: '20px',
           display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <MapPin size={20} color="#3b82f6" />
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--admin-text-primary)' }}>
-              Demografi Pengunjung (Kota)
-            </h4>
+          flexDirection: 'column',
+          cursor: 'pointer',
+          transition: 'transform 0.2s, box-shadow 0.2s'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <MapPin size={20} color="#3b82f6" />
+              <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--admin-text-primary)' }}>
+                Demografi Pengunjung (Kota)
+              </h4>
+            </div>
+            <div style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 600 }}>Lihat Semua &rarr;</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {cityStats.map((item, index) => (
@@ -303,6 +321,95 @@ const SmartAnalytics = ({ articles = [] }) => {
         </div>
 
       </div>
+
+      {/* Modal Demografi Lengkap */}
+      {showAllCities && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '20px'
+        }} onClick={() => setShowAllCities(false)}>
+          <div style={{
+            background: 'var(--admin-card-bg)',
+            border: '1px solid var(--admin-card-border)',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '500px',
+            maxHeight: '80vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+            overflow: 'hidden'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ 
+              padding: '20px 24px', 
+              borderBottom: '1px solid var(--admin-card-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <MapPin size={22} color="#3b82f6" />
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--admin-text-primary)' }}>
+                  Semua Kota Pengunjung
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowAllCities(false)}
+                style={{
+                  background: 'var(--admin-hover-bg)',
+                  border: 'none',
+                  color: 'var(--admin-text-secondary)',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div style={{ 
+              padding: '24px', 
+              overflowY: 'auto', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '16px' 
+            }}>
+              {cityStatsFull.map((item, index) => (
+                <div key={item.name} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--admin-text-primary)' }}>
+                      {index + 1}. {item.name}
+                    </span>
+                    <span style={{ color: 'var(--admin-text-secondary)', fontWeight: 600 }}>
+                      {item.views.toLocaleString('id-ID')} <span style={{ opacity: 0.6 }}>({item.percentage}%)</span>
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${item.percentage}%`,
+                      height: '100%',
+                      background: COLORS[index % COLORS.length] || '#3b82f6',
+                      borderRadius: '4px'
+                    }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

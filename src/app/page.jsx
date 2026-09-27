@@ -5,16 +5,16 @@ import BreakingNews from '../components/BreakingNews';
 import HeadlineGrid from '../components/HeadlineGrid';
 import LatestNews from '../components/LatestNews';
 import Footer from '../components/Footer';
+import dynamic from 'next/dynamic';
 
-import Sidebar from '../components/Sidebar';
-import AdUnit from '../components/AdUnit';
-import AdBanner from '../components/AdBanner';
+const Sidebar = dynamic(() => import('../components/Sidebar'), { ssr: false });
+const AdUnit = dynamic(() => import('../components/AdUnit'), { ssr: false });
+const AdBanner = dynamic(() => import('../components/AdBanner'), { ssr: false });
+const MoreNewsGrid = dynamic(() => import('../components/MoreNewsGrid'), { ssr: false });
+const CategorySections = dynamic(() => import('../components/CategorySections'), { ssr: false });
+const VideoSection = dynamic(() => import('../components/VideoSection'), { ssr: false });
 
 import { useArticles } from '../hooks/useArticles';
-
-import MoreNewsGrid from '../components/MoreNewsGrid';
-import CategorySections from '../components/CategorySections';
-import VideoSection from '../components/VideoSection';
 
 const HomePage = () => {
   const { articles, loading, newArticlesCount, refreshArticles } = useArticles({ limit: 16 });
@@ -63,8 +63,8 @@ const HomePage = () => {
           <LatestNews articles={latestArticles} loading={loading} />
           
           {/* Monetisasi: Leaderboard AdSense diselipkan secara natural di antara berita */}
-          <Suspense fallback={<div style={{ height: '90px', margin: '24px 0' }} />}>
-            <div style={{ margin: '24px 0' }}>
+          <Suspense fallback={<div style={{ height: '90px' }} />}>
+            <div>
               <AdUnit format="leaderboard" />
             </div>
           </Suspense>
@@ -73,7 +73,7 @@ const HomePage = () => {
             <MoreNewsGrid articles={moreNewsArticles} loading={loading} />
             <CategorySections endIndex={2} />
             
-            <div className="video-section-wrapper full-width-mobile" style={{ margin: '20px 0' }}>
+            <div className="video-section-wrapper full-width-mobile" style={{ margin: '12px 0' }}>
               <VideoSection />
             </div>
 

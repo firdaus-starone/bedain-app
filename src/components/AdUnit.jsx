@@ -54,8 +54,8 @@ const AdUnit = ({ format = 'rectangle', client, slot, style = {}, className = ''
     <div
       className={`ad-conversion-box ${className}`}
       style={{
-        margin: '32px 0',
-        padding: '22px 24px',
+        margin: '12px 0',
+        padding: '16px 20px',
         borderRadius: '16px',
         background: variant === 'community' 
           ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)'

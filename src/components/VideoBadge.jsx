@@ -1,10 +1,10 @@
 "use client";
 import React from 'react';
-import { getArticleVideoId } from '../lib/videoHelpers';
+import { getArticleVideoData } from '../lib/videoHelpers';
 
 export const VideoBadge = ({ article }) => {
-  const videoId = getArticleVideoId(article);
-  if (!videoId) return null;
+  const videoData = getArticleVideoData(article);
+  if (!videoData) return null;
 
   return (
     <>

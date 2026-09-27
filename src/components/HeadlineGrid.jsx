@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import LazyImage from './LazyImage';
 import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from './VideoBadge';
@@ -115,11 +116,13 @@ const HeadlineGrid = ({ articles, loading }) => {
             <Link key={item.id || index} href={`/article/${itemSlug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
               <article className="article-card small-card">
                 <div className="img-wrapper" style={{ position: 'relative' }}>
-                  <LazyImage 
+                  <Image 
                     src={itemImg} 
                     alt={item.title} 
-                    loading={index < 3 ? "eager" : "lazy"}
-                    fetchPriority={index === 0 ? "high" : "auto"}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    priority={index === 0}
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 300px"
                   />
                   <VideoBadge article={item} />
                 </div>
@@ -146,12 +149,14 @@ const HeadlineGrid = ({ articles, loading }) => {
                 className="story-card-link"
               >
                 <article className="story-card-item" style={{ position: 'relative' }}>
-                  <LazyImage 
+                  <Image 
                     src={itemImg} 
                     alt={item.title} 
                     className="story-card-img"
-                    loading={index < 3 ? "eager" : "lazy"}
-                    fetchPriority={index === 0 ? "high" : "auto"}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    priority={index < 2}
+                    sizes="(max-width: 768px) 50vw, 30vw"
                   />
                   <div className="story-card-gradient" />
                   <VideoBadge article={item} />
@@ -161,16 +166,11 @@ const HeadlineGrid = ({ articles, loading }) => {
                     {badgeText}
                   </div>
 
-                  {/* Top Right Play Circle */}
-                  <div className="story-play-circle">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#111827">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                  </div>
-
                   {/* Bottom White Title Box with Left Red Accent Bar */}
                   <div className="story-title-box">
-                    <h3 className="story-title-text">{item.title}</h3>
+                    <h3 className="story-title-text" title={item.title}>
+                      {item.title.length > 45 ? item.title.substring(0, 45) + '...' : item.title}
+                    </h3>
                   </div>
 
                   {/* Date below title box */}

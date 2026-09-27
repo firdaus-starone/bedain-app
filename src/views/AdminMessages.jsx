@@ -85,23 +85,23 @@ export default function AdminMessages() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#fff', margin: '0 0 0.3rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: '0 0 0.3rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <MessageSquare color="#E62020" size={30} />
               <span>Kotak Masuk Pesan & Kemitraan</span>
               {unreadCount > 0 && (
-                <span style={{ backgroundColor: '#E62020', color: '#fff', fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: 800 }}>
+                <span style={{ backgroundColor: '#E62020', color: 'var(--admin-text-primary)', fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: 800 }}>
                   {unreadCount} Baru
                 </span>
               )}
             </h1>
-            <p style={{ color: '#a1a1aa', margin: 0, fontSize: '0.95rem' }}>
+            <p style={{ color: 'var(--admin-text-secondary)', margin: 0, fontSize: '0.95rem' }}>
               Daftar pesan masuk, penawaran iklan banner, siaran pers, dan pengaduan dari halaman Kontak (`/kontak`)
             </p>
           </div>
 
           {/* Search Box */}
           <div style={{ position: 'relative', minWidth: '280px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
+            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--admin-text-secondary)' }} />
             <input
               type="text"
               placeholder="Cari nama, email, atau subjek..."
@@ -110,10 +110,10 @@ export default function AdminMessages() {
               style={{
                 width: '100%',
                 padding: '0.65rem 1rem 0.65rem 2.8rem',
-                backgroundColor: '#18181b',
-                border: '1px solid rgba(255,255,255,0.12)',
+                backgroundColor: 'var(--admin-card-bg)',
+                border: '1px solid var(--admin-border)',
                 borderRadius: '10px',
-                color: '#fff',
+                color: 'var(--admin-text-primary)',
                 fontSize: '0.9rem',
                 outline: 'none',
                 boxSizing: 'border-box'
@@ -123,15 +123,15 @@ export default function AdminMessages() {
         </div>
 
         {/* Filter Tabs */}
-        <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '2rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: '1rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveDept('all')}
             style={{
               padding: '0.55rem 1.1rem',
               borderRadius: '10px',
-              border: activeDept === 'all' ? '1px solid #E62020' : '1px solid rgba(255,255,255,0.08)',
-              backgroundColor: activeDept === 'all' ? 'rgba(230, 32, 32, 0.15)' : '#18181b',
-              color: activeDept === 'all' ? '#ff4d4d' : '#a1a1aa',
+              border: activeDept === 'all' ? '1px solid #E62020' : '1px solid var(--admin-border)',
+              backgroundColor: activeDept === 'all' ? 'rgba(230, 32, 32, 0.15)' : 'var(--admin-card-bg)',
+              color: activeDept === 'all' ? '#ff4d4d' : 'var(--admin-text-secondary)',
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s'
@@ -149,9 +149,9 @@ export default function AdminMessages() {
                 style={{
                   padding: '0.55rem 1.1rem',
                   borderRadius: '10px',
-                  border: activeDept === key ? `1px solid ${info.color}` : '1px solid rgba(255,255,255,0.08)',
-                  backgroundColor: activeDept === key ? info.bg : '#18181b',
-                  color: activeDept === key ? info.color : '#a1a1aa',
+                  border: activeDept === key ? `1px solid ${info.color}` : '1px solid var(--admin-border)',
+                  backgroundColor: activeDept === key ? info.bg : 'var(--admin-card-bg)',
+                  color: activeDept === key ? info.color : 'var(--admin-text-secondary)',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s'
@@ -165,21 +165,21 @@ export default function AdminMessages() {
 
         {/* Messages Table/Grid */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: '#71717a' }}>
+          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--admin-text-secondary)' }}>
             <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
             <p>Memuat kotak masuk pesan kontak...</p>
           </div>
         ) : filteredMessages.length === 0 ? (
           <div style={{
-            backgroundColor: '#18181b',
-            border: '1px dashed rgba(255,255,255,0.12)',
+            backgroundColor: 'var(--admin-card-bg)',
+            border: '1px dashed var(--admin-border)',
             borderRadius: '16px',
             padding: '4rem 2rem',
             textAlign: 'center',
-            color: '#71717a'
+            color: 'var(--admin-text-secondary)'
           }}>
             <Mail size={48} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
-            <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Belum Ada Pesan Masuk</h3>
+            <h3 style={{ color: 'var(--admin-text-primary)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Belum Ada Pesan Masuk</h3>
             <p style={{ maxWidth: '400px', margin: '0 auto' }}>
               Saat pengunjung mengirimkan pesan melalui form di halaman Kontak (`/kontak`), seluruh pesannya akan masuk dan tersimpan di sini.
             </p>
@@ -187,7 +187,7 @@ export default function AdminMessages() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {filteredMessages.map(msg => {
-              const deptInfo = deptMap[msg.department] || { label: 'Umum', color: '#a1a1aa', bg: 'rgba(255,255,255,0.08)' };
+              const deptInfo = deptMap[msg.department] || { label: 'Umum', color: 'var(--admin-text-secondary)', bg: 'var(--admin-border)' };
               const isUnread = msg.status === 'unread';
 
               return (
@@ -195,8 +195,8 @@ export default function AdminMessages() {
                   key={msg.id}
                   onClick={() => handleOpenDetail(msg)}
                   style={{
-                    backgroundColor: isUnread ? '#1e1e24' : '#18181b',
-                    border: isUnread ? '1.5px solid #E62020' : '1px solid rgba(255,255,255,0.08)',
+                    backgroundColor: isUnread ? 'var(--admin-hover-bg)' : 'var(--admin-card-bg)',
+                    border: isUnread ? '1.5px solid #E62020' : '1px solid var(--admin-border)',
                     borderRadius: '14px',
                     padding: '1.25rem 1.5rem',
                     display: 'flex',
@@ -226,11 +226,11 @@ export default function AdminMessages() {
 
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                        <span style={{ color: '#fff', fontWeight: isUnread ? 800 : 600, fontSize: '1.05rem' }}>
+                        <span style={{ color: 'var(--admin-text-primary)', fontWeight: isUnread ? 800 : 600, fontSize: '1.05rem' }}>
                           {msg.name}
                         </span>
                         {isUnread && (
-                          <span style={{ backgroundColor: '#E62020', color: '#fff', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
+                          <span style={{ backgroundColor: '#E62020', color: 'var(--admin-text-primary)', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
                             BARU
                           </span>
                         )}
@@ -239,18 +239,18 @@ export default function AdminMessages() {
                         </span>
                       </div>
 
-                      <div style={{ color: '#e4e4e7', fontWeight: isUnread ? 700 : 500, fontSize: '0.95rem', marginBottom: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ color: 'var(--admin-text-primary)', fontWeight: isUnread ? 700 : 500, fontSize: '0.95rem', marginBottom: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {msg.subject || 'Tanpa Subjek'}
                       </div>
 
-                      <div style={{ color: '#71717a', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ color: 'var(--admin-text-secondary)', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {msg.message}
                       </div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
-                    <div style={{ textAlign: 'right', color: '#71717a', fontSize: '0.8rem' }}>
+                    <div style={{ textAlign: 'right', color: 'var(--admin-text-secondary)', fontSize: '0.8rem' }}>
                       <div>{msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Baru saja'}</div>
                       <div>{msg.emailOrPhone}</div>
                     </div>
@@ -280,15 +280,15 @@ export default function AdminMessages() {
         {selectedMessage && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.85)',
+            backgroundColor: 'var(--admin-bg)',
             backdropFilter: 'blur(8px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 9999,
             padding: '1.5rem'
           }}>
             <div style={{
-              backgroundColor: '#18181b',
-              border: '1px solid rgba(255,255,255,0.15)',
+              backgroundColor: 'var(--admin-card-bg)',
+              border: '1px solid var(--admin-border)',
               borderRadius: '20px',
               width: '100%',
               maxWidth: '700px',
@@ -298,19 +298,19 @@ export default function AdminMessages() {
               overflow: 'hidden'
             }}>
               {/* Modal Header */}
-              <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#121214' }}>
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--admin-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--admin-card-bg)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <button onClick={() => setSelectedMessage(null)} style={{ backgroundColor: 'transparent', border: 'none', color: '#a1a1aa', cursor: 'pointer', padding: '0.2rem' }}>
+                  <button onClick={() => setSelectedMessage(null)} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', padding: '0.2rem' }}>
                     <ArrowLeft size={20} />
                   </button>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--admin-text-primary)', margin: 0 }}>
                     Detail Pesan Masuk
                   </h3>
                 </div>
 
                 <div style={{
-                  backgroundColor: (deptMap[selectedMessage.department] || {}).bg || 'rgba(255,255,255,0.1)',
-                  color: (deptMap[selectedMessage.department] || {}).color || '#fff',
+                  backgroundColor: (deptMap[selectedMessage.department] || {}).bg || 'var(--admin-border)',
+                  color: (deptMap[selectedMessage.department] || {}).color || 'var(--admin-text-primary)',
                   padding: '0.35rem 0.85rem',
                   borderRadius: '8px',
                   fontWeight: 700,
@@ -324,15 +324,15 @@ export default function AdminMessages() {
               <div style={{ padding: '1.75rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 
                 {/* Sender Banner */}
-                <div style={{ backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                   <div>
-                    <h4 style={{ color: '#fff', fontSize: '1.15rem', fontWeight: 800, margin: '0 0 0.3rem' }}>{selectedMessage.name}</h4>
-                    <div style={{ color: '#a1a1aa', fontSize: '0.9rem' }}>Email / Kontak: <strong style={{ color: '#fff' }}>{selectedMessage.emailOrPhone}</strong></div>
+                    <h4 style={{ color: 'var(--admin-text-primary)', fontSize: '1.15rem', fontWeight: 800, margin: '0 0 0.3rem' }}>{selectedMessage.name}</h4>
+                    <div style={{ color: 'var(--admin-text-secondary)', fontSize: '0.9rem' }}>Email / Kontak: <strong style={{ color: 'var(--admin-text-primary)' }}>{selectedMessage.emailOrPhone}</strong></div>
                   </div>
                   
-                  <div style={{ textAlign: 'right', color: '#71717a', fontSize: '0.82rem' }}>
+                  <div style={{ textAlign: 'right', color: 'var(--admin-text-secondary)', fontSize: '0.82rem' }}>
                     <div>Waktu Pengiriman:</div>
-                    <div style={{ color: '#fff', fontWeight: 600 }}>
+                    <div style={{ color: 'var(--admin-text-primary)', fontWeight: 600 }}>
                       {selectedMessage.createdAt?.toDate ? selectedMessage.createdAt.toDate().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' }) : 'Baru saja'}
                     </div>
                   </div>
@@ -340,13 +340,13 @@ export default function AdminMessages() {
 
                 {/* Subject & Message Content */}
                 <div>
-                  <div style={{ color: '#71717a', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Subjek Pesan:</div>
-                  <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', margin: '0 0 1rem' }}>
+                  <div style={{ color: 'var(--admin-text-secondary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Subjek Pesan:</div>
+                  <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: '0 0 1rem' }}>
                     {selectedMessage.subject || 'Tanpa Subjek'}
                   </h3>
 
-                  <div style={{ color: '#71717a', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Isi Pesan:</div>
-                  <div style={{ color: '#e4e4e7', lineHeight: 1.8, fontSize: '1.05rem', whiteSpace: 'pre-wrap', backgroundColor: '#0f0f12', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ color: 'var(--admin-text-secondary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Isi Pesan:</div>
+                  <div style={{ color: 'var(--admin-text-primary)', lineHeight: 1.8, fontSize: '1.05rem', whiteSpace: 'pre-wrap', backgroundColor: 'var(--admin-bg)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
                     {selectedMessage.message}
                   </div>
                 </div>
@@ -354,7 +354,7 @@ export default function AdminMessages() {
               </div>
 
               {/* Modal Footer (Reply Buttons) */}
-              <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#121214', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-card-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <button
                   onClick={() => handleDelete(selectedMessage.id)}
                   style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'none', padding: '0.7rem 1.25rem', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
@@ -367,7 +367,7 @@ export default function AdminMessages() {
                   {selectedMessage.emailOrPhone?.includes('@') ? (
                     <a
                       href={`mailto:${selectedMessage.emailOrPhone}?subject=Balasan dari BEDAIN NEWS: ${encodeURIComponent(selectedMessage.subject || 'Pesan Anda')}`}
-                      style={{ backgroundColor: '#3b82f6', color: '#fff', textDecoration: 'none', padding: '0.7rem 1.5rem', borderRadius: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                      style={{ backgroundColor: '#3b82f6', color: 'var(--admin-text-primary)', textDecoration: 'none', padding: '0.7rem 1.5rem', borderRadius: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
                       <Mail size={16} />
                       <span>Balas via Email</span>
@@ -378,7 +378,7 @@ export default function AdminMessages() {
                     href={`https://wa.me/${selectedMessage.emailOrPhone.replace(/[^0-9]/g, '').replace(/^0/, '62')}?text=${encodeURIComponent(`Halo ${selectedMessage.name}, kami dari tim Redaksi/Bisnis BEDAIN NEWS membalas pesan Anda terkait "${selectedMessage.subject || 'Pesan Kontak'}"...`)}`}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ backgroundColor: '#10b981', color: '#fff', textDecoration: 'none', padding: '0.7rem 1.5rem', borderRadius: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    style={{ backgroundColor: '#10b981', color: 'var(--admin-text-primary)', textDecoration: 'none', padding: '0.7rem 1.5rem', borderRadius: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                   >
                     <Phone size={16} />
                     <span>Balas via WhatsApp</span>

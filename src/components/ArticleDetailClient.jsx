@@ -39,6 +39,7 @@ const ArticleDetail = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showCommentModal, setShowCommentModal] = useState(false);
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [recommendedArticles, setRecommendedArticles] = useState([]);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
@@ -1083,27 +1084,24 @@ const ArticleDetail = () => {
             )}
             
             {/* Horizontal Social Share */}
-            <div className="sticky-share-bar">
-              <span className="share-label" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text-secondary)', marginRight: '8px' }}>Bagikan & Simpan:</span>
-              <button onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${reaction === 'like' ? 'var(--color-accent)' : 'var(--color-border)'}`, color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '8px 16px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', fontWeight: 600 }}>
-                <ThumbsUp size={16} fill={reaction === 'like' ? 'currentColor' : 'none'} />
-                <span>{reactionCounts.like || 0}</span>
+            <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+              <button onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${reaction === 'like' ? 'var(--color-accent)' : 'var(--color-border)'}`, color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
               </button>
-              <button onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${isBookmarked ? 'var(--color-accent)' : 'var(--color-border)'}`, color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '8px 16px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', fontWeight: 600 }}>
-                <Bookmark size={16} fill={isBookmarked ? 'currentColor' : 'none'} />
-                <span className="share-btn-text">{isBookmarked ? 'Tersimpan' : 'Simpan'}</span>
+              <button onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${isBookmarked ? 'var(--color-accent)' : 'var(--color-border)'}`, color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
               </button>
-              <button onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '8px 16px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', fontWeight: 600, opacity: isSharing ? 0.6 : 1 }}>
-                <Share2 size={16} />
-                <span className="share-btn-text">{isSharing ? 'Menyiapkan...' : 'Share'}</span>
+              <button onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                <MessageSquare size={18} />
               </button>
-              <button onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '8px 16px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', fontWeight: 600 }}>
-                {copied ? <Check size={16} /> : <Link2 size={16} />}
-                <span className="share-btn-text">Copy</span>
+              <button onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+                <Share2 size={18} />
               </button>
-              <button onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '8px 16px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', fontWeight: 600, marginLeft: 'auto' }}>
-                <Type size={16} />
-                <span>Aa</span>
+              <button onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                {copied ? <Check size={18} /> : <Link2 size={18} />}
+              </button>
+              <button onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
+                <Type size={18} />
               </button>
             </div>
 
@@ -1372,7 +1370,7 @@ const ArticleDetail = () => {
                                 <LazyImage src={getArticleCardImage(rel)} alt={rel.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 <VideoBadge article={rel} />
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
                                 <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.4, textDecoration: 'none' }}>{rel.title}</h4>
                                 <span suppressHydrationWarning style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}><Clock size={12}/> {timeAgo(rel.publishedAt || rel.createdAt)}</span>
                               </div>
@@ -1395,8 +1393,8 @@ const ArticleDetail = () => {
             </div>
 
             {/* Google Reader Revenue Manager (Inline CTA) */}
-            <div style={{ margin: '40px 0', width: '100%', display: 'flex', justifyContent: 'center' }} className="rrm-inline-cta-container">
-              <div rrm-inline-cta="283941b3-47c7-4436-9b36-25f35b10f598"></div>
+            <div style={{ margin: '40px 0', width: '100%', maxWidth: '100%', overflow: 'hidden', display: 'flex', justifyContent: 'center' }} className="rrm-inline-cta-container">
+              <div rrm-inline-cta="283941b3-47c7-4436-9b36-25f35b10f598" style={{ maxWidth: '100%' }}></div>
             </div>
 
             {/* Tags Section */}
@@ -2048,6 +2046,50 @@ const ArticleDetail = () => {
                  </button>
                  <button onClick={() => setShowShareModal(false)} style={{ background: 'transparent', color: 'var(--color-text-secondary)', padding: '10px', marginTop: '4px', fontSize: '13px', border: 'none', cursor: 'pointer' }}>Batal</button>
              </div>
+          </div>
+        </div>
+      )}
+
+      {showCommentModal && (
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', 
+          zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' 
+        }} onClick={() => setShowCommentModal(false)}>
+          <div style={{ 
+            background: 'var(--color-bg-secondary)', 
+            padding: '24px 16px', 
+            borderRadius: '24px', 
+            width: '90%', 
+            maxWidth: '860px', 
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            position: 'relative',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+          }} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setShowCommentModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                color: '#fff',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10
+              }}
+            >
+              ✕
+            </button>
+            <CommentSection articleSlug={slug} articleTitle={article?.title} />
           </div>
         </div>
       )}

@@ -120,42 +120,7 @@ const AdminCategories = () => {
     await Promise.all(updated.map((cat, i) => updateDoc(doc(db, 'categories', cat.id), { order: i })));
   };
 
-  const handleImportPionir = async () => {
-    if (!window.confirm("Import kategori dari Pionir House?")) return;
-    setSaving(true);
-    try {
-      const res = await fetch("https://firestore.googleapis.com/v1/projects/pionerhouse-app/databases/(default)/documents/categories");
-      const data = await res.json();
-      if (data.documents) {
-        let imported = 0;
-        for (const d of data.documents) {
-          const fields = d.fields;
-          const slug = fields.slug?.stringValue;
-          if (!slug) continue;
-          
-          const catData = {
-            name: fields.name?.stringValue || slug,
-            slug: slug,
-            color: fields.color?.stringValue || '#3b82f6',
-            order: fields.order?.integerValue ? parseInt(fields.order.integerValue) : 99,
-            active: fields.active?.booleanValue !== false,
-            homeLayout: fields.homeLayout?.stringValue || 'none'
-          };
-          
-          const origId = d.name.split('/').pop();
-          const docRef = doc(db, 'categories', origId);
-          await setDoc(docRef, catData, { merge: true });
-          imported++;
-        }
-        showToast(`Berhasil mengimpor ${imported} kategori dari Pionir!`);
-        fetchCategories();
-      }
-    } catch(e) {
-      console.error(e);
-      showToast('Gagal import: ' + e.message, 'error');
-    }
-    setSaving(false);
-  };
+
 
   if (authLoading) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--admin-bg)', color:'var(--admin-text-primary)' }}><div className="spinner"/></div>;
   if (!['superadmin', 'admin'].includes(userRole)) return <Navigate to="/admin/dashboard" replace />;
@@ -195,21 +160,7 @@ const AdminCategories = () => {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              onClick={handleImportPionir}
-              style={{
-                background:'var(--admin-surface-2)',
-                color:'var(--admin-text-secondary)', border:'1px dashed var(--admin-border)', padding:'12px 22px',
-                borderRadius:'12px', cursor:'pointer', fontWeight:600, fontSize:'14px',
-                display:'flex', alignItems:'center', gap:'8px',
-                transition:'background 0.2s, color 0.2s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background='var(--admin-hover-bg)'; e.currentTarget.style.color='var(--admin-text-primary)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background='var(--admin-surface-2)'; e.currentTarget.style.color='var(--admin-text-secondary)'; }}
-              title="Salin kategori dari Pionir House"
-            >
-              📥 Import dari Pionir
-            </button>
+
             <button
               onClick={openAdd}
               style={{

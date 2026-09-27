@@ -210,18 +210,18 @@ export default function AdminSubmissions() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#fff', margin: '0 0 0.3rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: '0 0 0.3rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <Inbox color="#E62020" size={30} />
               <span>Moderasi Kiriman Warga</span>
             </h1>
-            <p style={{ color: '#a1a1aa', margin: 0, fontSize: '0.95rem' }}>
+            <p style={{ color: 'var(--admin-text-secondary)', margin: 0, fontSize: '0.95rem' }}>
               Tinjau, sunting, dan terbitkan opini serta reportase jurnalistik dari masyarakat luas
             </p>
           </div>
 
           {/* Search Box */}
           <div style={{ position: 'relative', minWidth: '280px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
+            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--admin-text-secondary)' }} />
             <input
               type="text"
               placeholder="Cari judul atau nama pengirim..."
@@ -230,10 +230,10 @@ export default function AdminSubmissions() {
               style={{
                 width: '100%',
                 padding: '0.65rem 1rem 0.65rem 2.8rem',
-                backgroundColor: '#18181b',
-                border: '1px solid rgba(255,255,255,0.12)',
+                backgroundColor: 'var(--admin-card-bg)',
+                border: '1px solid var(--admin-border)',
                 borderRadius: '10px',
-                color: '#fff',
+                color: 'var(--admin-text-primary)',
                 fontSize: '0.9rem',
                 outline: 'none',
                 boxSizing: 'border-box'
@@ -243,15 +243,15 @@ export default function AdminSubmissions() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: '1rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveTab('pending')}
             style={{
               padding: '0.6rem 1.25rem',
               borderRadius: '10px',
-              border: activeTab === 'pending' ? '1px solid #E62020' : '1px solid rgba(255,255,255,0.08)',
-              backgroundColor: activeTab === 'pending' ? 'rgba(230, 32, 32, 0.15)' : '#18181b',
-              color: activeTab === 'pending' ? '#ff4d4d' : '#a1a1aa',
+              border: activeTab === 'pending' ? '1px solid #E62020' : '1px solid var(--admin-border)',
+              backgroundColor: activeTab === 'pending' ? 'rgba(230, 32, 32, 0.15)' : 'var(--admin-card-bg)',
+              color: activeTab === 'pending' ? '#ff4d4d' : 'var(--admin-text-secondary)',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -267,9 +267,9 @@ export default function AdminSubmissions() {
             style={{
               padding: '0.6rem 1.25rem',
               borderRadius: '10px',
-              border: activeTab === 'published' ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.08)',
-              backgroundColor: activeTab === 'published' ? 'rgba(34, 197, 94, 0.15)' : '#18181b',
-              color: activeTab === 'published' ? '#22c55e' : '#a1a1aa',
+              border: activeTab === 'published' ? '1px solid #22c55e' : '1px solid var(--admin-border)',
+              backgroundColor: activeTab === 'published' ? 'rgba(34, 197, 94, 0.15)' : 'var(--admin-card-bg)',
+              color: activeTab === 'published' ? '#22c55e' : 'var(--admin-text-secondary)',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -285,9 +285,9 @@ export default function AdminSubmissions() {
             style={{
               padding: '0.6rem 1.25rem',
               borderRadius: '10px',
-              border: activeTab === 'rejected' ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.08)',
-              backgroundColor: activeTab === 'rejected' ? 'rgba(239, 68, 68, 0.15)' : '#18181b',
-              color: activeTab === 'rejected' ? '#ef4444' : '#a1a1aa',
+              border: activeTab === 'rejected' ? '1px solid #ef4444' : '1px solid var(--admin-border)',
+              backgroundColor: activeTab === 'rejected' ? 'rgba(239, 68, 68, 0.15)' : 'var(--admin-card-bg)',
+              color: activeTab === 'rejected' ? '#ef4444' : 'var(--admin-text-secondary)',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -301,21 +301,21 @@ export default function AdminSubmissions() {
 
         {/* List of Submissions */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '4rem', color: '#71717a' }}>
+          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--admin-text-secondary)' }}>
             <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
             <p>Memuat daftar kiriman tulisan...</p>
           </div>
         ) : filteredSubmissions.length === 0 ? (
           <div style={{
-            backgroundColor: '#18181b',
-            border: '1px dashed rgba(255,255,255,0.12)',
+            backgroundColor: 'var(--admin-card-bg)',
+            border: '1px dashed var(--admin-border)',
             borderRadius: '16px',
             padding: '4rem 2rem',
             textAlign: 'center',
-            color: '#71717a'
+            color: 'var(--admin-text-secondary)'
           }}>
             <Inbox size={48} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
-            <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Belum Ada Kiriman {activeTab === 'pending' ? 'Baru' : activeTab === 'published' ? 'Diterbitkan' : 'Ditolak'}</h3>
+            <h3 style={{ color: 'var(--admin-text-primary)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Belum Ada Kiriman {activeTab === 'pending' ? 'Baru' : activeTab === 'published' ? 'Diterbitkan' : 'Ditolak'}</h3>
             <p style={{ maxWidth: '400px', margin: '0 auto' }}>
               Saat masyarakat atau kontributor mengirimkan opini/reportase melalui form publik, daftar akan muncul di antrean ini.
             </p>
@@ -326,8 +326,8 @@ export default function AdminSubmissions() {
               <div
                 key={sub.id}
                 style={{
-                  backgroundColor: '#18181b',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  backgroundColor: 'var(--admin-card-bg)',
+                  border: '1px solid var(--admin-border)',
                   borderRadius: '16px',
                   overflow: 'hidden',
                   display: 'flex',
@@ -337,13 +337,13 @@ export default function AdminSubmissions() {
                 }}
               >
                 {/* Image & Category Badge */}
-                <div style={{ position: 'relative', height: '180px', backgroundColor: '#0f0f12' }}>
+                <div style={{ position: 'relative', height: '180px', backgroundColor: 'var(--admin-bg)' }}>
                   <img src={sub.imageUrl} alt={sub.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', top: '1rem', left: '1rem', backgroundColor: '#E62020', color: '#fff', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700 }}>
+                  <div style={{ position: 'absolute', top: '1rem', left: '1rem', backgroundColor: '#E62020', color: 'var(--admin-text-primary)', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700 }}>
                     {sub.category}
                   </div>
                   {sub.status === 'published' && (
-                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.9)', color: '#fff', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.9)', color: 'var(--admin-text-primary)', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <CheckCircle2 size={13} />
                       <span>Tayang</span>
                     </div>
@@ -352,31 +352,31 @@ export default function AdminSubmissions() {
 
                 {/* Content Summary */}
                 <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fff', margin: '0 0 0.6rem', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--admin-text-primary)', margin: '0 0 0.6rem', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {sub.title}
                   </h3>
                   
-                  <p style={{ color: '#a1a1aa', fontSize: '0.88rem', margin: '0 0 1rem', lineHeight: 1.6, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <p style={{ color: 'var(--admin-text-secondary)', fontSize: '0.88rem', margin: '0 0 1rem', lineHeight: 1.6, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {sub.excerpt || sub.content?.substring(0, 120) + '...'}
                   </p>
 
                   {/* Author Info Pill */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#0f0f12', padding: '0.6rem 0.85rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: 'var(--admin-bg)', padding: '0.6rem 0.85rem', borderRadius: '10px', marginBottom: '1.25rem' }}>
                     <img src={sub.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.authorName)}&background=E62020&color=fff`} alt={sub.authorName} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
                     <div style={{ overflow: 'hidden' }}>
-                      <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.86rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.authorName}</div>
-                      <div style={{ color: '#71717a', fontSize: '0.76rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.authorBio || sub.authorEmail}</div>
+                      <div style={{ color: 'var(--admin-text-primary)', fontWeight: 600, fontSize: '0.86rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.authorName}</div>
+                      <div style={{ color: 'var(--admin-text-secondary)', fontSize: '0.76rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.authorBio || sub.authorEmail}</div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--admin-border)', paddingTop: '1rem' }}>
                     <button
                       onClick={() => handleOpenDetail(sub)}
                       style={{
                         flex: 1,
-                        backgroundColor: 'rgba(255,255,255,0.08)',
-                        color: '#fff',
+                        backgroundColor: 'var(--admin-border)',
+                        color: 'var(--admin-text-primary)',
                         border: 'none',
                         padding: '0.6rem',
                         borderRadius: '8px',
@@ -397,7 +397,7 @@ export default function AdminSubmissions() {
                         disabled={isProcessing}
                         style={{
                           backgroundColor: '#22c55e',
-                          color: '#fff',
+                          color: 'var(--admin-text-primary)',
                           border: 'none',
                           padding: '0.6rem 1rem',
                           borderRadius: '8px',
@@ -440,15 +440,15 @@ export default function AdminSubmissions() {
         {selectedSubmission && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.85)',
+            backgroundColor: 'var(--admin-bg)',
             backdropFilter: 'blur(8px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 9999,
             padding: '1.5rem'
           }}>
             <div style={{
-              backgroundColor: '#18181b',
-              border: '1px solid rgba(255,255,255,0.12)',
+              backgroundColor: 'var(--admin-card-bg)',
+              border: '1px solid var(--admin-border)',
               borderRadius: '20px',
               width: '100%',
               maxWidth: '850px',
@@ -458,12 +458,12 @@ export default function AdminSubmissions() {
               overflow: 'hidden'
             }}>
               {/* Modal Header */}
-              <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#121214' }}>
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--admin-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--admin-card-bg)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <button onClick={() => setSelectedSubmission(null)} style={{ backgroundColor: 'transparent', border: 'none', color: '#a1a1aa', cursor: 'pointer', padding: '0.2rem' }}>
+                  <button onClick={() => setSelectedSubmission(null)} style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', padding: '0.2rem' }}>
                     <ArrowLeft size={20} />
                   </button>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--admin-text-primary)', margin: 0 }}>
                     {isEditing ? 'Sunting Kiriman Warga' : 'Tinjauan Detail Kiriman'}
                   </h3>
                 </div>
@@ -472,8 +472,8 @@ export default function AdminSubmissions() {
                   <button
                     onClick={() => setIsEditing(!isEditing)}
                     style={{
-                      backgroundColor: isEditing ? '#E62020' : 'rgba(255,255,255,0.08)',
-                      color: '#fff',
+                      backgroundColor: isEditing ? '#E62020' : 'var(--admin-border)',
+                      color: 'var(--admin-text-primary)',
                       border: 'none',
                       padding: '0.45rem 1rem',
                       borderRadius: '8px',
@@ -493,12 +493,12 @@ export default function AdminSubmissions() {
               <div style={{ padding: '1.75rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 
                 {/* Author Info Banner */}
-                <div style={{ backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                     <img src={selectedSubmission.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedSubmission.authorName)}&background=E62020&color=fff`} alt={selectedSubmission.authorName} style={{ width: '46px', height: '46px', borderRadius: '50%' }} />
                     <div>
-                      <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, margin: '0 0 0.2rem' }}>{selectedSubmission.authorName}</h4>
-                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.82rem', color: '#a1a1aa', flexWrap: 'wrap' }}>
+                      <h4 style={{ color: 'var(--admin-text-primary)', fontSize: '1rem', fontWeight: 700, margin: '0 0 0.2rem' }}>{selectedSubmission.authorName}</h4>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.82rem', color: 'var(--admin-text-secondary)', flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Mail size={14} color="#E62020" /> {selectedSubmission.authorEmail}</span>
                         {selectedSubmission.authorPhone && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Phone size={14} color="#22c55e" /> {selectedSubmission.authorPhone}</span>
@@ -508,8 +508,8 @@ export default function AdminSubmissions() {
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.78rem', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Profesi / Bio</div>
-                    <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem' }}>{selectedSubmission.authorBio || 'Kontributor Bedain News'}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Profesi / Bio</div>
+                    <div style={{ color: 'var(--admin-text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>{selectedSubmission.authorBio || 'Kontributor Bedain News'}</div>
                   </div>
                 </div>
 
@@ -518,53 +518,53 @@ export default function AdminSubmissions() {
                   /* Edit Form Inside Modal */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#a1a1aa', marginBottom: '0.4rem' }}>Judul Artikel</label>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Judul Artikel</label>
                       <input
                         type="text"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff', fontSize: '1rem', fontWeight: 600, boxSizing: 'border-box' }}
+                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '1rem', fontWeight: 600, boxSizing: 'border-box' }}
                       />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#a1a1aa', marginBottom: '0.4rem' }}>Kategori</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Kategori</label>
                         <input
                           type="text"
                           value={editCategory}
                           onChange={(e) => setEditCategory(e.target.value)}
-                          style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                          style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }}
                         />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#a1a1aa', marginBottom: '0.4rem' }}>Profesi / Bio Penulis</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Profesi / Bio Penulis</label>
                         <input
                           type="text"
                           value={editBio}
                           onChange={(e) => setEditBio(e.target.value)}
-                          style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                          style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#a1a1aa', marginBottom: '0.4rem' }}>Excerpt / Ringkasan</label>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Excerpt / Ringkasan</label>
                       <input
                         type="text"
                         value={editExcerpt}
                         onChange={(e) => setEditExcerpt(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#a1a1aa', marginBottom: '0.4rem' }}>Isi Tulisan Lengkap</label>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Isi Tulisan Lengkap</label>
                       <textarea
                         rows="12"
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
-                        style={{ width: '100%', padding: '0.85rem', backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff', fontSize: '0.95rem', lineHeight: 1.7, boxSizing: 'border-box', fontFamily: 'inherit' }}
+                        style={{ width: '100%', padding: '0.85rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.95rem', lineHeight: 1.7, boxSizing: 'border-box', fontFamily: 'inherit' }}
                       />
                     </div>
 
@@ -572,7 +572,7 @@ export default function AdminSubmissions() {
                       <button
                         onClick={handleSaveEdit}
                         disabled={isProcessing}
-                        style={{ backgroundColor: '#E62020', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                        style={{ backgroundColor: '#E62020', color: 'var(--admin-text-primary)', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
                       >
                         Simpan Perubahan
                       </button>
@@ -585,15 +585,15 @@ export default function AdminSubmissions() {
                       <img src={selectedSubmission.imageUrl} alt={selectedSubmission.title} style={{ width: '100%', height: 'auto', display: 'block' }} />
                     </div>
 
-                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', margin: '0 0 0.5rem', lineHeight: 1.3 }}>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: '0 0 0.5rem', lineHeight: 1.3 }}>
                       {selectedSubmission.title}
                     </h2>
                     
-                    <div style={{ display: 'inline-block', backgroundColor: '#E62020', color: '#fff', padding: '0.3rem 0.85rem', borderRadius: '50px', fontSize: '0.82rem', fontWeight: 700, marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'inline-block', backgroundColor: '#E62020', color: 'var(--admin-text-primary)', padding: '0.3rem 0.85rem', borderRadius: '50px', fontSize: '0.82rem', fontWeight: 700, marginBottom: '1.5rem' }}>
                       Kategori: {selectedSubmission.category}
                     </div>
 
-                    <div style={{ color: '#e4e4e7', lineHeight: 1.8, fontSize: '1.05rem', whiteSpace: 'pre-wrap', backgroundColor: '#0f0f12', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ color: 'var(--admin-text-primary)', lineHeight: 1.8, fontSize: '1.05rem', whiteSpace: 'pre-wrap', backgroundColor: 'var(--admin-bg)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
                       {selectedSubmission.content}
                     </div>
                   </div>
@@ -602,8 +602,8 @@ export default function AdminSubmissions() {
               </div>
 
               {/* Modal Footer Actions */}
-              <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#121214', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ color: '#71717a', fontSize: '0.85rem' }}>
+              <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-card-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ color: 'var(--admin-text-secondary)', fontSize: '0.85rem' }}>
                   Status saat ini: <strong style={{ color: selectedSubmission.status === 'published' ? '#22c55e' : selectedSubmission.status === 'rejected' ? '#ef4444' : '#fbbf24', textTransform: 'uppercase' }}>{selectedSubmission.status}</strong>
                 </div>
 
@@ -623,7 +623,7 @@ export default function AdminSubmissions() {
                     <button
                       onClick={() => handlePublish(selectedSubmission)}
                       disabled={isProcessing}
-                      style={{ backgroundColor: '#22c55e', color: '#fff', border: 'none', padding: '0.75rem 1.75rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)' }}
+                      style={{ backgroundColor: '#22c55e', color: 'var(--admin-text-primary)', border: 'none', padding: '0.75rem 1.75rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)' }}
                     >
                       <Send size={18} />
                       <span>Terbitkan ke Beranda Sekarang</span>

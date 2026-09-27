@@ -44,6 +44,31 @@ const BreakingNews = () => {
   const [topics, setTopics] = useState(() => cachedTopicsMemory || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fade, setFade] = useState('fade-in');
+  const [currentTime, setCurrentTime] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const updateTime = () => {
+      const now = new Date();
+      const offsetMinutes = -now.getTimezoneOffset();
+      let timezone = 'WIB';
+      if (offsetMinutes === 480) timezone = 'WITA';
+      else if (offsetMinutes === 540) timezone = 'WIT';
+
+      const dateStr = now.toLocaleDateString('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+      const timeStr = now.toLocaleTimeString('id-ID', {
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).replace('.', ':');
+      
+      setCurrentTime(`${dateStr} | ${timeStr} ${timezone}`);
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,7 +165,7 @@ const BreakingNews = () => {
         <div className="breaking-left">
           <div className="breaking-time">
             <Clock size={14} className="time-icon" />
-            <span>Today | {todayFormatted}</span>
+            <span>{mounted && currentTime ? currentTime : `Today | ${todayFormatted}`}</span>
           </div>
           <div className="breaking-ticker" style={{ display: 'flex', alignItems: 'center', gap: '16px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <span className="breaking-label" style={{ backgroundColor: alertColor, position: 'sticky', left: 0, zIndex: 2 }}>TOPIK HANGAT</span>

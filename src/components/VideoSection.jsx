@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { getYouTubeId, getArticleCardImage } from '../lib/videoHelpers';
+import { getYouTubeId, getArticleCardImage, getArticleVideoData } from '../lib/videoHelpers';
 
 // Global memory cache for VideoSection
 let cachedVideosMemory = null;
@@ -43,7 +43,7 @@ const VideoSection = () => {
         const articles = snap.docs.map(d => ({ id: d.id, ...d.data() }))
           .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
         const videos = articles
-          .filter(a => a.status === 'published' && getYouTubeId(a.videoUrl || a.youtubeUrl || a.video || a.content))
+          .filter(a => a.status === 'published' && getArticleVideoData(a))
           .slice(0, 4);
         
         cachedVideosMemory = videos;

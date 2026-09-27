@@ -60,7 +60,7 @@ export default function AdminLayout({ children }) {
     return (
         <div className="admin-layout">
             <AdminSidebar />
-            <div style={{ flex: 1, overflowX: 'hidden', width: '100%', position: 'relative' }}>
+            <div style={{ flex: 1, overflowX: 'clip', width: '100%', position: 'relative' }}>
                 {children}
             </div>
         </div>

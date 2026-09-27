@@ -1,17 +1,18 @@
 {
-  "short_name": "Pionir House",
-  "name": "Pionir House - Portal Berita Terpercaya",
+  "short_name": "Bedain News",
+  "name": "Bedain News - Portal Berita Cerdas",
   "description": "Menyajikan berita terkini, teknologi, finansial, dan kebudayaan dengan standar jurnalisme modern.",
   "icons": [
     {
-      "src": "/favicon-64.png",
+      "src": "/icon-192x192.png",
       "type": "image/png",
-      "sizes": "64x64"
+      "sizes": "192x192"
     },
     {
-      "src": "/favicon-128.png",
+      "src": "/icon-512x512.png",
       "type": "image/png",
-      "sizes": "128x128"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     },
     {
       "src": "/apple-touch-icon.png",
@@ -21,7 +22,7 @@
   ],
   "start_url": "/",
   "background_color": "#0a0a0f",
-  "theme_color": "#e63946",
+  "theme_color": "#121214",
   "display": "standalone",
   "orientation": "portrait-primary"
 }

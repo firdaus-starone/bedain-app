@@ -12,6 +12,68 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+const TimeZoneCards = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (offset) => {
+    const utc = time.getTime() + (time.getTimezoneOffset() * 60000);
+    const nd = new Date(utc + (3600000 * offset));
+    return nd.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  const formatDate = (offset) => {
+    const utc = time.getTime() + (time.getTimezoneOffset() * 60000);
+    const nd = new Date(utc + (3600000 * offset));
+    return nd.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  return (
+    <div style={{ marginBottom: '36px' }}>
+      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Clock size={18} style={{ color: 'var(--color-accent)' }} /> Waktu Redaksi
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(230, 57, 70, 0.1)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--admin-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>WIB (Barat)</div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--admin-text-primary)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{formatTime(7)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>{formatDate(7)}</div>
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--admin-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>WITA (Tengah)</div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--admin-text-primary)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{formatTime(8)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>{formatDate(8)}</div>
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--admin-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>WIT (Timur)</div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--admin-text-primary)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{formatTime(9)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--admin-text-secondary)', marginTop: '4px' }}>{formatDate(9)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const { currentUser, userRole, loading: authLoading } = useAuth();
@@ -323,6 +385,9 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Time Zone Cards */}
+        <TimeZoneCards />
 
         {/* Editorial Shortcuts Panel ("Aksi Cepat Redaksi") */}
         <div style={{ marginBottom: '36px' }}>

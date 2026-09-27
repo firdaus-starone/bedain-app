@@ -63,12 +63,17 @@ const Navbar = () => {
     }
     return '';
   });
+  const [isMounted, setIsMounted] = useState(false);
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarksModal, setShowBookmarksModal] = useState(false);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [newsletterContact, setNewsletterContact] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [pushStatus, setPushStatus] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'granted' : 'default');
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const loadBookmarks = () => {
@@ -321,10 +326,10 @@ const Navbar = () => {
           <div className="nav-brand-group">
             {/* Mobile Menu Button - Sebelah kiri sebelum logo khusus HP */}
             <button className="menu-button mobile-only-menu-btn" aria-label="Menu" onClick={() => setIsMenuOpen(true)}>
-              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="7" x2="20" y2="7"></line>
+                <line x1="10" y1="12" x2="20" y2="12"></line>
+                <line x1="4" y1="17" x2="20" y2="17"></line>
               </svg>
             </button>
 
@@ -482,10 +487,10 @@ const Navbar = () => {
               )}
             </button>
             <button className="menu-button desktop-only-menu-btn" aria-label="Menu" onClick={() => setIsMenuOpen(true)}>
-              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
+              <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="7" x2="20" y2="7"></line>
+                <line x1="10" y1="12" x2="20" y2="12"></line>
+                <line x1="4" y1="17" x2="20" y2="17"></line>
               </svg>
             </button>
           </div>
@@ -622,7 +627,7 @@ const Navbar = () => {
                     gap: '4px'
                   }}
                 >
-                  ✍️ Kirim Tulisan
+                  Kirim Tulisan
                 </Link>
               </li>
             </ul>
@@ -636,7 +641,7 @@ const Navbar = () => {
       </div>
 
       {/* Side Menu Portal to document.body */}
-      {typeof document !== 'undefined' ? createPortal(
+      {isMounted ? createPortal(
         <>
           {/* Side Menu Overlay */}
           <div className={`menu-overlay ${isMenuOpen ? 'open' : ''}`} onClick={() => setIsMenuOpen(false)}></div>
@@ -773,7 +778,7 @@ const Navbar = () => {
                 <li>
                   <Link href="/kirim-tulisan" onClick={() => setIsMenuOpen(false)} style={{ color: 'var(--color-accent)', fontWeight: 700 }}>
                     <span className="cat-icon-wrapper" style={{ color: 'var(--color-accent)' }}><PenTool size={18} /></span>
-                    <span className="cat-text">✍️ Kirim Opini / Berita Warga</span>
+                    <span className="cat-text">Kirim Opini / Berita Warga</span>
                   </Link>
                 </li>
               </ul>
@@ -805,7 +810,7 @@ const Navbar = () => {
                     style={{ border: '1px solid var(--color-accent)', backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
                   >
                     <span className="cat-icon-wrapper" style={{ color: 'var(--color-accent)' }}><PenTool size={18} /></span>
-                    <span className="cat-text" style={{ color: 'var(--color-accent)', fontWeight: 700 }}>✍️ Kirim Tulisan</span>
+                    <span className="cat-text" style={{ color: 'var(--color-accent)', fontWeight: 700 }}>Kirim Tulisan</span>
                   </Link>
                   <Link href="/kontak"
                     onClick={() => {
@@ -816,7 +821,7 @@ const Navbar = () => {
                     style={{ border: '1px solid #3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
                   >
                     <span className="cat-icon-wrapper" style={{ color: '#3b82f6' }}><Info size={18} /></span>
-                    <span className="cat-text" style={{ color: '#3b82f6', fontWeight: 700 }}>🤝 Hubungi & Kerja Sama</span>
+                    <span className="cat-text" style={{ color: '#3b82f6', fontWeight: 700 }}>Hubungi & Kerja Sama</span>
                   </Link>
                 </div>
               </div>
@@ -831,7 +836,7 @@ const Navbar = () => {
       ) : null}
 
       {/* Glassmorphic Bookmarks Modal Drawer */}
-      {showBookmarksModal && typeof document !== 'undefined' ? createPortal(
+      {showBookmarksModal && isMounted ? createPortal(
         <>
           <div
             onClick={() => setShowBookmarksModal(false)}
@@ -1080,7 +1085,7 @@ const Navbar = () => {
       ) : null}
 
       {/* Push & Newsletter Subscription Center Modal */}
-      {showSubscribeModal && typeof document !== 'undefined' ? createPortal(
+      {showSubscribeModal && isMounted ? createPortal(
         <>
           <div
             className="modal-backdrop"

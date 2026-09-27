@@ -71,17 +71,14 @@ const MoreNewsGrid = ({ articles, loading }) => {
               <LazyImage src={item.img} alt={item.title} className="story-img" />
               <VideoBadge article={item.original} />
               <div className="story-overlay" style={{ background: 'transparent' }}>
-                <h3 className="story-title" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.9)' }}>{item.title}</h3>
+                <h3 className="story-title" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.9)' }} title={item.title}>
+                  {item.title.length > 45 ? item.title.substring(0, 45) + '...' : item.title}
+                </h3>
               </div>
             </article>
           </Link>
         ))}
       </div>
-      <button className="story-scroll-btn" onClick={scrollRight} aria-label="Scroll right">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-          <path d="M9.59 16.59L14.17 12 9.59 7.41 11 6l6 6-6 6z" />
-        </svg>
-      </button>
     </div>
   );
 };

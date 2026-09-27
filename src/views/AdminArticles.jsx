@@ -9,9 +9,7 @@ import {
 } from 'lucide-react';
 import { functions } from '../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
-
-import { getYouTubeId } from '../lib/videoHelpers';
-
+import { getYouTubeId, getArticleVideoData } from '../lib/videoHelpers';
 const AdminArticles = () => {
   const { currentUser, userRole, loading: authLoading } = useAuth();
   const [articles, setArticles] = useState([]);
@@ -23,53 +21,7 @@ const AdminArticles = () => {
   const [showPushModal, setShowPushModal] = useState(false);
   const [pushData, setPushData] = useState({ title: '', body: '', click_action: '' });
   const [pushing, setPushing] = useState(false);
-  const [importing, setImporting] = useState(false);
 
-  const handleImportPionirArticles = async () => {
-    if (!window.confirm("Import artikel dari Pionir House? Peringatan: Proses ini akan mengimpor maksimal 100 artikel terbaru.")) return;
-    setImporting(true);
-    try {
-      const parseFirestoreValue = (v) => {
-        if (!v) return null;
-        if (v.stringValue !== undefined) return v.stringValue;
-        if (v.integerValue !== undefined) return parseInt(v.integerValue, 10);
-        if (v.booleanValue !== undefined) return v.booleanValue;
-        if (v.timestampValue !== undefined) return Timestamp.fromDate(new Date(v.timestampValue));
-        if (v.arrayValue !== undefined) return (v.arrayValue.values || []).map(parseFirestoreValue);
-        if (v.mapValue !== undefined) {
-          const obj = {};
-          for (const [key, val] of Object.entries(v.mapValue.fields || {})) {
-            obj[key] = parseFirestoreValue(val);
-          }
-          return obj;
-        }
-        return null;
-      };
-
-      const res = await fetch("https://firestore.googleapis.com/v1/projects/pionerhouse-app/databases/(default)/documents/articles?pageSize=100");
-      const data = await res.json();
-      if (data.documents) {
-        let importedCount = 0;
-        for (const d of data.documents) {
-          const origId = d.name.split('/').pop();
-          const parsedData = {};
-          for (const [key, val] of Object.entries(d.fields || {})) {
-            parsedData[key] = parseFirestoreValue(val);
-          }
-          const docRef = doc(db, 'articles', origId);
-          await setDoc(docRef, parsedData, { merge: true });
-          importedCount++;
-        }
-        alert(`Berhasil mengimpor ${importedCount} artikel dari Pionir!`);
-        fetchArticles();
-      }
-    } catch(e) {
-      console.error(e);
-      alert('Gagal import: ' + e.message);
-    } finally {
-      setImporting(false);
-    }
-  };
 
   useEffect(() => {
     if (currentUser && userRole) {
@@ -263,29 +215,7 @@ const AdminArticles = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {(userRole === 'superadmin' || userRole === 'admin') && (
-              <button 
-                onClick={handleImportPionirArticles}
-                disabled={importing}
-                style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  color: '#fff',
-                  padding: '10px 20px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  cursor: importing ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 16px rgba(59, 130, 246, 0.3)',
-                  opacity: importing ? 0.7 : 1
-                }}
-              >
-                📥 {importing ? 'Mengimpor...' : 'Import dari Pionir'}
-              </button>
-            )}
+
 
             {(userRole === 'superadmin' || userRole === 'admin' || userRole === 'editor') && (
               <button 
@@ -422,6 +352,9 @@ const AdminArticles = () => {
                 <tbody>
                   {filteredArticles.slice(0, visibleCount).map(article => {
                     const ytId = getYouTubeId(article.videoUrl) || getYouTubeId(article.youtubeUrl) || getYouTubeId(article.video) || getYouTubeId(article.content);
+                    const videoData = getArticleVideoData(article);
+                    const hasVideo = !!videoData;
+                    
                     const thumb = ytId
                       ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
                       : (article.coverImage || article.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=200&q=80');
@@ -432,7 +365,7 @@ const AdminArticles = () => {
                         <td style={{ padding: '16px 24px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                               <div style={{ width: '64px', height: '44px', borderRadius: '8px', overflow: 'hidden', background: 'var(--admin-border)', flexShrink: 0, position: 'relative' }}>
-                              {ytId && (
+                              {hasVideo && (
                                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '18px', height: '18px', background: 'rgba(230,32,32,0.85)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
                                   <svg viewBox="0 0 24 24" fill="white" width="10" height="10"><path d="M8 5v14l11-7z"/></svg>
                                 </div>
@@ -529,10 +462,12 @@ const AdminArticles = () => {
                                   const text = `🚨 *BREAKING NEWS - BEDAIN NEWS* 🚨\n\n*${article.title}*\n\n🔗 Baca selengkapnya:\n${url}\n\n#Bedain News #BeritaTerkini`;
                                   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
                                 }}
-                                style={{ background: 'rgba(37, 211, 102, 0.15)', color: '#25D366', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, transition: 'all 0.2s' }}
+                                style={{ background: 'rgba(37, 211, 102, 0.15)', color: '#25D366', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}
                                 title="Blast / Broadcast Berita ini ke WhatsApp Group"
                               >
-                                💬 WA
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                  <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+                                </svg>
                               </button>
 
                               <button
@@ -540,10 +475,12 @@ const AdminArticles = () => {
                                   const url = `https://bedainnews.com/article/${articleSlug}`;
                                   window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
                                 }}
-                                style={{ background: 'rgba(24, 119, 242, 0.15)', color: '#1877F2', border: '1px solid rgba(24, 119, 242, 0.3)', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, transition: 'all 0.2s' }}
+                                style={{ background: 'rgba(24, 119, 242, 0.15)', color: '#1877F2', border: '1px solid rgba(24, 119, 242, 0.3)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}
                                 title="Bagikan ke Facebook"
                               >
-                                📘 FB
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                  <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"/>
+                                </svg>
                               </button>
 
                               <button
@@ -552,19 +489,21 @@ const AdminArticles = () => {
                                   const text = `🚨 *BREAKING NEWS* 🚨\n${article.title}\n\n`;
                                   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
                                 }}
-                                style={{ background: 'rgba(20, 23, 26, 0.15)', color: '#14171A', border: '1px solid rgba(20, 23, 26, 0.3)', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, transition: 'all 0.2s' }}
+                                style={{ background: 'rgba(20, 23, 26, 0.15)', color: '#14171A', border: '1px solid rgba(20, 23, 26, 0.3)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}
                                 title="Bagikan ke X (Twitter)"
                               >
-                                𝕏 X
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                  <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633Z"/>
+                                </svg>
                               </button>
 
                             {article.status !== 'published' && userRole !== 'reporter' && (
                               <button
                                 onClick={() => handlePublishNow(article)}
-                                style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', border: '1px solid rgba(74, 222, 128, 0.3)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, transition: 'all 0.2s' }}
+                                style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', border: '1px solid rgba(74, 222, 128, 0.3)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '14px', fontWeight: 700, transition: 'all 0.2s' }}
                                 title="Langsung Tayangkan ke Publik Sekarang"
                               >
-                                ⚡ Tayang
+                                ⚡
                               </button>
                             )}
 
@@ -581,10 +520,10 @@ const AdminArticles = () => {
                             {/* Grup Edit & Hapus agar selalu berdampingan */}
                             <div style={{ display: 'flex', gap: '8px' }}>
                               <Link href={`/admin/editor?id=${article.id}`}
-                                style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '8px 12px', borderRadius: '8px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, transition: 'all 0.2s' }}
+                                style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '8px', borderRadius: '8px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s' }}
                                 title="Edit Artikel Ini"
                               >
-                                <Edit size={15} /> Edit
+                                <Edit size={16} />
                               </Link>
 
                               {userRole !== 'reporter' && (

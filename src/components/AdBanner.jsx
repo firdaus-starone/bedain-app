@@ -128,9 +128,9 @@ const AdBanner = ({ slot = 'article' }) => {
           borderRadius: '14px',
           overflow: 'hidden',
           position: 'relative',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          background: '#15151f'
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          border: '1px solid var(--color-border)',
+          background: 'var(--color-bg-secondary)'
         }}
       >
         <a
@@ -138,7 +138,7 @@ const AdBanner = ({ slot = 'article' }) => {
           target="_blank"
           rel="noopener noreferrer"
           className="sponsor-banner-link"
-          style={{ display: 'block', textDecoration: 'none', position: 'relative', color: '#ffffff' }}
+          style={{ display: 'block', textDecoration: 'none', position: 'relative', color: 'var(--color-text-primary)' }}
         >
           {banner.imageUrl ? (
             <>
@@ -148,28 +148,28 @@ const AdBanner = ({ slot = 'article' }) => {
                 style={{ width: '100%', maxHeight: slot === 'sidebar' ? '200px' : '180px', objectFit: 'cover', display: 'block' }}
               />
               {/* Nama & keterangan di bawah gambar */}
-              <div style={{ padding: slot === 'sidebar' ? '10px 14px' : '10px 16px', background: '#15151f' }}>
-                <div className="sponsor-banner-text-title" style={{ fontWeight: 700, fontSize: slot === 'sidebar' ? '13px' : '14px', color: '#ffffff', lineHeight: 1.3 }}>
+              <div style={{ padding: slot === 'sidebar' ? '12px 14px' : '12px 16px', background: 'var(--color-bg-secondary)' }}>
+                <div className="sponsor-banner-text-title" style={{ fontWeight: 700, fontSize: slot === 'sidebar' ? '13px' : '14px', color: 'var(--color-text-primary)', lineHeight: 1.3 }}>
                   {banner.title}
                 </div>
                 {banner.subtitle && (
-                  <div className="sponsor-banner-text-subtitle" style={{ fontSize: '11px', color: '#aaaaaa', marginTop: '3px' }}>
+                  <div className="sponsor-banner-text-subtitle" style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                     {banner.subtitle}
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <div style={{ padding: '28px 20px', background: 'linear-gradient(135deg, #1f1f2e 0%, #15151f 100%)', color: '#fff', textAlign: 'center' }}>
+            <div style={{ padding: '28px 20px', background: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', textAlign: 'center' }}>
               <h4 className="sponsor-banner-text-title" style={{ margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: 800 }}>{banner.title || 'Sponsor Bedain News'}</h4>
-              {banner.subtitle && <p className="sponsor-banner-text-subtitle" style={{ margin: 0, fontSize: '0.85rem', color: '#aaa' }}>{banner.subtitle}</p>}
+              {banner.subtitle && <p className="sponsor-banner-text-subtitle" style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{banner.subtitle}</p>}
             </div>
           )}
           <div style={{
-            position: 'absolute', top: '8px', right: '8px',
-            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+            position: 'absolute', top: '10px', right: '10px',
+            background: 'var(--color-accent)', backdropFilter: 'blur(6px)',
             color: '#fff', fontSize: '10px', fontWeight: 700,
-            padding: '3px 8px', borderRadius: '6px', letterSpacing: '0.5px',
+            padding: '4px 8px', borderRadius: '6px', letterSpacing: '0.5px',
             display: 'flex', alignItems: 'center', gap: '4px'
           }}>
             SPONSOR <ExternalLink size={10} />

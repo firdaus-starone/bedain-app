@@ -218,7 +218,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                           <h3 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '12px', lineHeight: 1.3, color: 'var(--color-text)' }} className="hover-text-accent">
                             {category.articles[3].title}
                           </h3>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{timeAgo(category.articles[3].publishedAt)}</span>
+                          <span suppressHydrationWarning style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{timeAgo(category.articles[3].publishedAt)}</span>
                         </div>
                       </article>
                     </Link>
@@ -255,7 +255,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                       <article className="detik-feature-card">
                         <div className="detik-feature-content">
                           <h3 className="detik-feature-title">{featureArticle.title}</h3>
-                          <span className="detik-meta">{timeAgo(featureArticle.publishedAt)}</span>
+                          <span suppressHydrationWarning className="detik-meta">{timeAgo(featureArticle.publishedAt)}</span>
                         </div>
                         <div className="detik-feature-img" style={{ position: 'relative' }}>
                           <LazyImage src={featureArticle.img} alt={featureArticle.title} />
@@ -275,7 +275,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                           </div>
                           <div className="detik-list-content">
                             <h4 className="detik-list-title">{article.title}</h4>
-                            <span className="detik-meta">{timeAgo(article.publishedAt)}</span>
+                            <span suppressHydrationWarning className="detik-meta">{timeAgo(article.publishedAt)}</span>
                           </div>
                         </article>
                       </Link>
@@ -293,7 +293,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                     <article className="zigzag-feature">
                       <div className="zigzag-content">
                         <h3 className="zigzag-title">{featureArticle.title}</h3>
-                        <span className="zigzag-meta">{timeAgo(featureArticle.publishedAt)}</span>
+                        <span suppressHydrationWarning className="zigzag-meta">{timeAgo(featureArticle.publishedAt)}</span>
                       </div>
                       <div className="img-wrapper zigzag-img-large" style={{ position: 'relative' }}>
                         <LazyImage src={featureArticle.img} alt={featureArticle.title} />
@@ -321,7 +321,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                           </div>
                           <div className="zigzag-content-small">
                             <h4>{article.title}</h4>
-                            <span className="zigzag-meta text-secondary">{timeAgo(article.publishedAt)}</span>
+                            <span suppressHydrationWarning className="zigzag-meta text-secondary">{timeAgo(article.publishedAt)}</span>
                           </div>
                         </article>
                       </Link>
@@ -336,7 +336,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                     <article className="detik-feature-card">
                       <div className="detik-feature-content">
                         <h3 className="detik-feature-title">{featureArticle.title}</h3>
-                        <span className="detik-meta">{timeAgo(featureArticle.publishedAt)}</span>
+                        <span suppressHydrationWarning className="detik-meta">{timeAgo(featureArticle.publishedAt)}</span>
                       </div>
                       <div className="detik-feature-img" style={{ position: 'relative' }}>
                         <LazyImage src={featureArticle.img} alt={featureArticle.title} />
@@ -364,7 +364,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                           </div>
                           <div className="detik-list-content">
                             <h4 className="detik-list-title">{article.title}</h4>
-                            <span className="detik-meta">{timeAgo(article.publishedAt)}</span>
+                            <span suppressHydrationWarning className="detik-meta">{timeAgo(article.publishedAt)}</span>
                           </div>
                         </article>
                       </Link>
