@@ -3838,13 +3838,32 @@ body {
 }
 @media (max-width: 768px) {
   .admin-main {
-    padding: 24px 12px !important;
+    padding: 16px 8px !important;
   }
   .admin-layout {
     flex-direction: column;
   }
   .admin-header-title {
-    font-size: 1.5rem !important;
+    font-size: 1.35rem !important;
+  }
+  .admin-filter-scroll {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-filter-scroll::-webkit-scrollbar {
+    height: 4px;
+  }
+  .admin-filter-scroll::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
+  .ql-toolbar.ql-snow {
+    padding: 4px 0 !important;
+  }
+  .ql-formats {
+    margin-right: 4px !important;
   }
   .admin-sidebar {
     z-index: 10000;
@@ -3858,6 +3877,10 @@ body {
   }
   .admin-sidebar.mobile-open {
     transform: translate(0);
+  }
+  .editor-title-input {
+    font-size: 1.35rem !important;
+    min-height: 32px !important;
   }
   .admin-sidebar-mobile-header {
     background: var(--admin-sidebar-bg);

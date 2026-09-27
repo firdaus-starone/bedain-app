@@ -1086,7 +1086,7 @@ ${textToAnalyze}`;
               {/* Removed AI Writing Assistant Banner */}
 
               <div style={{ background: 'var(--admin-card-bg)', borderRadius: '16px', border: '1px solid var(--admin-card-border)', overflow: 'hidden' }}>
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--admin-card-border)' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--admin-card-border)' }}>
                   <textarea 
                     name="title" 
                     value={formData.title} 
@@ -1097,6 +1097,7 @@ ${textToAnalyze}`;
                     }}
                     placeholder="Judul Berita Utama..."
                     rows={1}
+                    className="editor-title-input"
                     style={{ 
                       width: '100%', 
                       background: 'transparent', 
@@ -1118,7 +1119,7 @@ ${textToAnalyze}`;
                 
 
 
-                <div className="modern-quill-container" style={{ padding: '16px' }}>
+                <div className="modern-quill-container" style={{ padding: '8px 16px' }}>
                   <ReactQuill 
                     ref={quillRef}
                     theme="snow" 

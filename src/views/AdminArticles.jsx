@@ -206,7 +206,7 @@ const AdminArticles = () => {
                 <Newspaper size={14} /> PUSAT PENGELOLAAN BERITA
               </span>
             </div>
-            <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: 0 }}>
+            <h1 className="admin-header-title" style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: 0 }}>
               Daftar Semua Berita
             </h1>
             <p style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', margin: '4px 0 0 0' }}>
@@ -263,7 +263,7 @@ const AdminArticles = () => {
         {/* Enhanced Articles Management Table Section */}
         <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
           {/* Table Control Header */}
-          <div style={{ padding: '24px', borderBottom: '1px solid var(--admin-card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid var(--admin-card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: 0 }}>
                 {userRole === 'reporter' ? 'Berita Tulisan Saya' : 'Semua Publikasi Berita'}
@@ -295,7 +295,7 @@ const AdminArticles = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', background: 'var(--admin-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--admin-card-border)' }}>
+              <div className="admin-filter-scroll" style={{ display: 'flex', background: 'var(--admin-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--admin-card-border)', width: '100%' }}>
                 <button
                   onClick={() => setActiveTab('all')}
                   style={{ background: activeTab === 'all' ? 'var(--color-accent)' : 'transparent', color: activeTab === 'all' ? '#fff' : 'var(--admin-text-primary)', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
