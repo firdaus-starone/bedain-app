@@ -37,7 +37,7 @@ const TimeZoneCards = () => {
       <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <Clock size={18} style={{ color: 'var(--color-accent)' }} /> Waktu Redaksi
       </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
         <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(230, 57, 70, 0.1)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Clock size={24} />
@@ -237,11 +237,11 @@ const AdminDashboard = () => {
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--color-accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--color-accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Sparkles size={14} /> NEWSROOM EXECUTIVE DASHBOARD
               </span>
             </div>
-            <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: 0 }}>
+            <h1 className="admin-header-title" style={{ fontWeight: 800, color: 'var(--admin-text-primary)', margin: 0 }}>
               Selamat Datang, {currentUser?.displayName || 'Redaksi'} 👋
             </h1>
             <p style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', margin: '4px 0 0 0' }}>
@@ -394,10 +394,10 @@ const AdminDashboard = () => {
           <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             ⚡ Aksi Cepat Redaksi
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-            <Link href="/admin/editor" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '18px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s' }} className="shortcut-card">
-              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(230, 57, 70, 0.1)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <PenTool size={20} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+            <Link href="/admin/editor" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }} className="shortcut-card">
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(230, 57, 70, 0.1)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <PenTool size={18} />
               </div>
               <div>
                 <div style={{ fontWeight: 700, color: 'var(--admin-text-primary)', fontSize: '14px' }}>Tulis Breaking News</div>
@@ -405,9 +405,9 @@ const AdminDashboard = () => {
               </div>
             </Link>
 
-            <Link href="/admin/articles" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '18px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s' }} className="shortcut-card">
-              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Newspaper size={20} />
+            <Link href="/admin/articles" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }} className="shortcut-card">
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Newspaper size={18} />
               </div>
               <div>
                 <div style={{ fontWeight: 700, color: 'var(--admin-text-primary)', fontSize: '14px' }}>Daftar Semua Berita</div>
@@ -415,9 +415,9 @@ const AdminDashboard = () => {
               </div>
             </Link>
 
-            <Link href="/admin/media" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '18px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s' }} className="shortcut-card">
-              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ImageIcon size={20} />
+            <Link href="/admin/media" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }} className="shortcut-card">
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <ImageIcon size={18} />
               </div>
               <div>
                 <div style={{ fontWeight: 700, color: 'var(--admin-text-primary)', fontSize: '14px' }}>Galeri & Foto</div>
@@ -425,9 +425,9 @@ const AdminDashboard = () => {
               </div>
             </Link>
 
-            <Link href="/admin/categories" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '18px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s' }} className="shortcut-card">
-              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Tag size={20} />
+            <Link href="/admin/categories" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }} className="shortcut-card">
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Tag size={18} />
               </div>
               <div>
                 <div style={{ fontWeight: 700, color: 'var(--admin-text-primary)', fontSize: '14px' }}>Kategori Portal</div>
