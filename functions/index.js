@@ -381,7 +381,7 @@ exports.autoTranslateArticle = onDocumentWritten({
   try {
     await event.data.after.ref.update({ isTranslating: true });
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
 
     const promptEN = `
       Translate the following Indonesian news article to English.
