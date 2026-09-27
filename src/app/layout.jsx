@@ -5,7 +5,7 @@ import StickySideAds from '../components/StickySideAds';
 import PushNotificationPrompt from '../components/PushNotificationPrompt';
 import CustomAlert from '../components/CustomAlert';
 import { headers } from 'next/headers';
-import { I18nProvider } from '@/hooks/useI18n';
+import { I18nProvider } from '../hooks/useI18n';
 
 const poppins = Poppins({
   weight: ['400', '500', '600', '700', '800'],

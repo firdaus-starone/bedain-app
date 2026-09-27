@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useI18n } from '@/hooks/useI18n';
+import { useI18n } from '../hooks/useI18n';
 import { Globe } from 'lucide-react';
 
 export default function LanguageSwitcher() {

@@ -22,7 +22,7 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Capacitor } from '@capacitor/core';
 // TextToSpeech di-load secara dinamis untuk menghindari SSR error
 import { shareArticleWithImage, getPublicArticleUrl, isMobileDevice } from '../lib/shareHelper';
-import { useI18n } from '@/hooks/useI18n';
+import { useI18n } from '../hooks/useI18n';
 
 
 
