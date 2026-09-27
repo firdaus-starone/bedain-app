@@ -916,9 +916,9 @@ const ArticleDetail = () => {
                 
                 {/* Meta Author & Date & Reading Time */}
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                  <span>{article.author?.name || 'Redaksi Bedain'}</span>
+                  <span>Kontributor: {article.author?.name || 'Redaksi Bedain'}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
-                  <span>Admin Redaksi</span>
+                  <span>Editor: Admin Redaksi</span>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} suppressHydrationWarning>
                     <Calendar size={14} /> {formatDate(article.publishedAt || article.createdAt)}
@@ -981,9 +981,9 @@ const ArticleDetail = () => {
                 
                 {/* Meta Author & Date & Reading Time */}
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                  <span>{article.author?.name || 'Redaksi Bedain'}</span>
+                  <span>Kontributor: {article.author?.name || 'Redaksi Bedain'}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
-                  <span>Admin Redaksi</span>
+                  <span>Editor: Admin Redaksi</span>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} suppressHydrationWarning>
                     <Calendar size={14} /> {formatDate(article.publishedAt || article.createdAt)}
@@ -1017,7 +1017,9 @@ const ArticleDetail = () => {
                    {translating && <span style={{display: 'inline-block', marginLeft: '10px', fontSize: '0.9rem', color: 'var(--color-accent)'}} className="spinner-small" title="Menerjemahkan ke bahasa lokal..."></span>}
                  </h1>
                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                    <span>{article.author?.name || 'Redaksi'}</span>
+                    <span>Kontributor: {article.author?.name || 'Redaksi'}</span>
+                    <span>•</span>
+                    <span>Editor: Admin Redaksi</span>
                     <span>•</span>
                     <span suppressHydrationWarning>{formatDate(article.publishedAt || article.createdAt)}</span>
                     <span>•</span>
@@ -1085,22 +1087,24 @@ const ArticleDetail = () => {
             
             {/* Horizontal Social Share */}
             <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-              <button onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${reaction === 'like' ? 'var(--color-accent)' : 'var(--color-border)'}`, color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+              <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${reaction === 'like' ? 'var(--color-accent)' : 'var(--color-border)'}`, color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
                 <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
+                <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
               </button>
-              <button onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${isBookmarked ? 'var(--color-accent)' : 'var(--color-border)'}`, color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+              <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${isBookmarked ? 'var(--color-accent)' : 'var(--color-border)'}`, color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                 <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
               </button>
-              <button onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+              <button className="share-icon-btn" onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
                 <MessageSquare size={18} />
+                <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{comments.length || 0}</span>
               </button>
-              <button onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+              <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
                 <Share2 size={18} />
               </button>
-              <button onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+              <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                 {copied ? <Check size={18} /> : <Link2 size={18} />}
               </button>
-              <button onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
+              <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
                 <Type size={18} />
               </button>
             </div>
@@ -1395,6 +1399,13 @@ const ArticleDetail = () => {
             {/* Google Reader Revenue Manager (Inline CTA) */}
             <div style={{ margin: '40px 0', width: '100%', maxWidth: '100%', overflow: 'hidden', display: 'flex', justifyContent: 'center' }} className="rrm-inline-cta-container">
               <div rrm-inline-cta="283941b3-47c7-4436-9b36-25f35b10f598" style={{ maxWidth: '100%' }}></div>
+            </div>
+
+            {/* Author / Editor Info at bottom */}
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '14px', color: 'var(--color-text-primary)', borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
+              <span><span style={{ color: 'var(--color-text-secondary)' }}>Kontributor:</span> <strong>{article.author?.name || 'Redaksi'}</strong></span>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <span><span style={{ color: 'var(--color-text-secondary)' }}>Editor:</span> <strong>Admin Redaksi</strong></span>
             </div>
 
             {/* Tags Section */}

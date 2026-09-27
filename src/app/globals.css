@@ -4170,17 +4170,20 @@ body {
   }
   .sticky-share-bar {
     background: var(--color-bg-primary) !important;
-    border: 1px solid var(--color-border) !important;
+    border-top: 1px solid var(--color-border) !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    border-left: none !important;
+    border-right: none !important;
     z-index: 999 !important;
-    border-radius: 16px !important;
+    border-radius: 0 !important;
     justify-content: space-between !important;
     gap: 8px !important;
-    width: 100% !important;
-    margin: 16px 0 24px !important;
+    width: calc(100% + 16px) !important;
+    margin: 16px -8px 24px -8px !important;
     padding: 10px 12px !important;
     position: sticky !important;
     top: 52px !important;
-    box-shadow: 0 4px 16px #00000026 !important;
+    box-shadow: 0 4px 16px #00000010 !important;
   }
   .sticky-share-bar > span.share-label,
   .sticky-share-bar .share-btn-text,
@@ -4192,6 +4195,10 @@ body {
     justify-content: center;
     margin-left: 0 !important;
     padding: 10px 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
   .modern-article-layout {
     padding-bottom: 90px !important;
