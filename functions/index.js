@@ -347,3 +347,83 @@ exports.renderArticleOG = onRequest({ cors: true, maxInstances: 10 }, async (req
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 
 
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || "YOUR_API_KEY_HERE";
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+exports.autoTranslateArticle = onDocumentWritten({
+  document: "articles/{articleId}",
+  timeoutSeconds: 300
+}, async (event) => {
+  const snapshot = event.data;
+  
+  if (!snapshot.after.exists) {
+    return;
+  }
+
+  const data = snapshot.after.data();
+  const previousData = snapshot.before.exists ? snapshot.before.data() : {};
+
+  const isNewOrChanged = !snapshot.before.exists || 
+    data.title !== previousData.title || 
+    data.content !== previousData.content;
+
+  if (!isNewOrChanged) {
+    return;
+  }
+
+  if (data.isTranslating) {
+    return;
+  }
+
+  try {
+    await event.data.after.ref.update({ isTranslating: true });
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const promptEN = `
+      Translate the following Indonesian news article to English.
+      Return ONLY a JSON object with strictly two keys: "title" and "content".
+      The "content" must retain the HTML tags exactly as they are.
+      
+      Indonesian Title: ${data.title}
+      Indonesian Content: ${data.content}
+    `;
+    
+    const promptZH = `
+      Translate the following Indonesian news article to Mandarin (Simplified Chinese).
+      Return ONLY a JSON object with strictly two keys: "title" and "content".
+      The "content" must retain the HTML tags exactly as they are.
+      
+      Indonesian Title: ${data.title}
+      Indonesian Content: ${data.content}
+    `;
+
+    console.log(`Menerjemahkan artikel ${event.params.articleId}...`);
+    
+    const resultEN = await model.generateContent(promptEN);
+    const textEN = resultEN.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+    const jsonEN = JSON.parse(textEN);
+    
+    const resultZH = await model.generateContent(promptZH);
+    const textZH = resultZH.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+    const jsonZH = JSON.parse(textZH);
+
+    console.log(`Selesai menerjemahkan artikel ${event.params.articleId}`);
+
+    await event.data.after.ref.update({
+      title_en: jsonEN.title,
+      content_en: jsonEN.content,
+      title_zh: jsonZH.title,
+      content_zh: jsonZH.content,
+      isTranslating: false,
+      lastTranslatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+  } catch (error) {
+    console.error("Gagal menerjemahkan artikel:", error);
+    await event.data.after.ref.update({ isTranslating: false });
+  }
+});

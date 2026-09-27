@@ -55,7 +55,29 @@ const ArticleDetail = () => {
   const [parallaxOffset, setParallaxOffset] = useState(0);
   const { settings } = useSiteSettings();
   
-  const displayArticle = article;
+  const displayArticle = React.useMemo(() => {
+    if (!article) return null;
+    
+    // Choose title and content based on language
+    let title = article.title;
+    let content = article.content;
+    let excerpt = article.excerpt || article.seoDescription || '';
+    
+    if (lang === 'en' && article.title_en && article.content_en) {
+      title = article.title_en;
+      content = article.content_en;
+    } else if (lang === 'zh' && article.title_zh && article.content_zh) {
+      title = article.title_zh;
+      content = article.content_zh;
+    }
+
+    return {
+      ...article,
+      title,
+      content,
+      excerpt
+    };
+  }, [article, lang]);
 
   useEffect(() => {
     setIsClient(true);
