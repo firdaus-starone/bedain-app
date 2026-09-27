@@ -908,7 +908,7 @@ const ArticleDetail = () => {
 
             {/* Hero Image Section & Meta */}
             {videoData ? (
-              <div style={{ display: 'contents' }}>
+              <>
                 {/* Title */}
                 <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.2rem)', fontWeight: 800, lineHeight: 1.25, margin: '0 0 12px 0', letterSpacing: '-0.5px', color: 'var(--color-text-primary)' }}>
                   {displayArticle.title}
@@ -964,9 +964,9 @@ const ArticleDetail = () => {
                     )}
                   </div>
                 )}
-              </div>
+              </>
             ) : article.coverImage || article.imageUrl ? (
-              <div style={{ display: 'contents' }}>
+              <>
                 {/* Breadcrumb / Category */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
                   <span style={{ color: 'var(--color-accent)', fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -1029,9 +1029,9 @@ const ArticleDetail = () => {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 900px"
                   />
                 </div>
-              </div>
+              </>
             ) : (
-              <div style={{ display: 'contents' }}>
+              <>
                 {/* Fallback for no image */}
                  <span style={{ background: 'var(--color-accent)', color: '#fff', padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
                    {article.category || 'Berita'}
@@ -1051,7 +1051,7 @@ const ArticleDetail = () => {
                       <Clock size={14} /> {readingTimeMinutes} menit baca
                     </span>
                  </div>
-              </div>
+              </>
             )}
             
             {article.imageCaption && !videoData && (
