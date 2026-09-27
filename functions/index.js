@@ -347,7 +347,7 @@ exports.renderArticleOG = onRequest({ cors: true, maxInstances: 10 }, async (req
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 
 
-const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || "YOUR_API_KEY_HERE";
