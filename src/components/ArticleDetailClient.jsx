@@ -908,7 +908,7 @@ const ArticleDetail = () => {
 
             {/* Hero Image Section & Meta */}
             {videoData ? (
-              <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'contents' }}>
                 {/* Title */}
                 <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.2rem)', fontWeight: 800, lineHeight: 1.25, margin: '0 0 12px 0', letterSpacing: '-0.5px', color: 'var(--color-text-primary)' }}>
                   {displayArticle.title}
@@ -931,7 +931,7 @@ const ArticleDetail = () => {
 
                 {/* Video Wrapper */}
                 {videoData?.type === 'youtube' && (
-                  <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '24px', background: 'var(--color-bg-secondary)', position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px' }}>
+                  <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '32px', background: 'var(--color-bg-secondary)', position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px' }}>
                     <iframe 
                       src={`https://www.youtube.com/embed/${videoData.id}?autoplay=1&mute=0`} 
                       frameBorder="0" 
@@ -943,13 +943,13 @@ const ArticleDetail = () => {
                   </div>
                 )}
                 {videoData?.type === 'facebook' && (
-                  <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden', padding: '16px 0' }}>
+                  <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden', padding: '16px 0' }}>
                     <div className="fb-video" data-href={videoData.url} data-width="auto" data-show-text="false"></div>
                     <Script src="https://connect.facebook.net/id_ID/sdk.js#xfbml=1&version=v18.0" strategy="lazyOnload" crossOrigin="anonymous" />
                   </div>
                 )}
                 {videoData?.type === 'tiktok' && (
-                  <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
+                  <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
                     {videoData.id ? (
                       <>
                         <blockquote className="tiktok-embed" cite={videoData.url} data-video-id={videoData.id} style={{ maxWidth: '605px', minWidth: '325px', margin: 0 }}>
@@ -966,7 +966,7 @@ const ArticleDetail = () => {
                 )}
               </div>
             ) : article.coverImage || article.imageUrl ? (
-              <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'contents' }}>
                 {/* Breadcrumb / Category */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
                   <span style={{ color: 'var(--color-accent)', fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -1019,7 +1019,7 @@ const ArticleDetail = () => {
                 </div>
 
                 {/* Hero Image */}
-                <div className="article-main-image-wrapper hero-media-mobile-full" style={{ width: '100%', height: 'auto', aspectRatio: '16/9', overflow: 'hidden', borderRadius: '12px', marginBottom: '16px', background: 'var(--color-bg-secondary)', position: 'relative' }}>
+                <div className="article-main-image-wrapper hero-media-mobile-full" style={{ width: '100%', height: 'auto', aspectRatio: '16/9', overflow: 'hidden', borderRadius: '12px', marginBottom: '32px', background: 'var(--color-bg-secondary)', position: 'relative' }}>
                   <Image 
                     src={article.coverImage || article.imageUrl} 
                     alt={article.title} 
@@ -1031,7 +1031,7 @@ const ArticleDetail = () => {
                 </div>
               </div>
             ) : (
-              <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'contents' }}>
                 {/* Fallback for no image */}
                  <span style={{ background: 'var(--color-accent)', color: '#fff', padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
                    {article.category || 'Berita'}
@@ -1040,7 +1040,7 @@ const ArticleDetail = () => {
                    {displayArticle.title}
                    {translating && <span style={{display: 'inline-block', marginLeft: '10px', fontSize: '0.9rem', color: 'var(--color-accent)'}} className="spinner-small" title="Menerjemahkan ke bahasa lokal..."></span>}
                  </h1>
-                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
                     <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi'}</span>
                     <span>•</span>
                     <span>Editor: Admin Redaksi</span>

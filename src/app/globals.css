@@ -4208,6 +4208,8 @@ body {
     background-color: transparent;
     margin-top: 0;
     padding-top: 10px;
+    position: sticky;
+    top: 120px;
   }
 }
 @media (max-width: 768px) {
@@ -4244,6 +4246,8 @@ body {
     width: calc(100% + 16px) !important;
     margin: 16px -8px 24px -8px !important;
     padding: 10px 12px !important;
+    position: sticky !important;
+    top: 52px !important;
   }
   .sticky-share-bar > span.share-label,
   .sticky-share-bar .share-btn-text,
