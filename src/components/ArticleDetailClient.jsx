@@ -916,7 +916,7 @@ const ArticleDetail = () => {
                 
                 {/* Meta Author & Date & Reading Time */}
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                  <span>Kontributor: {article.author?.name || 'Redaksi Bedain'}</span>
+                  <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi Bedain'}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <span>Editor: Admin Redaksi</span>
                   <span style={{ opacity: 0.5 }}>|</span>
@@ -981,7 +981,7 @@ const ArticleDetail = () => {
                 
                 {/* Meta Author & Date & Reading Time */}
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                  <span>Kontributor: {article.author?.name || 'Redaksi Bedain'}</span>
+                  <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi Bedain'}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <span>Editor: Admin Redaksi</span>
                   <span style={{ opacity: 0.5 }}>|</span>
@@ -1017,7 +1017,7 @@ const ArticleDetail = () => {
                    {translating && <span style={{display: 'inline-block', marginLeft: '10px', fontSize: '0.9rem', color: 'var(--color-accent)'}} className="spinner-small" title="Menerjemahkan ke bahasa lokal..."></span>}
                  </h1>
                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                    <span>Kontributor: {article.author?.name || 'Redaksi'}</span>
+                    <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi'}</span>
                     <span>•</span>
                     <span>Editor: Admin Redaksi</span>
                     <span>•</span>
@@ -1413,7 +1413,7 @@ const ArticleDetail = () => {
 
             {/* Author / Editor Info at bottom */}
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '14px', color: 'var(--color-text-primary)', borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
-              <span><span style={{ color: 'var(--color-text-secondary)' }}>Kontributor:</span> <strong>{article.author?.name || 'Redaksi'}</strong></span>
+              <span><span style={{ color: 'var(--color-text-secondary)' }}>Kontributor:</span> <strong>{article.contributorName || article.author?.name || 'Redaksi'}</strong></span>
               <span style={{ opacity: 0.5 }}>|</span>
               <span><span style={{ color: 'var(--color-text-secondary)' }}>Editor:</span> <strong>Admin Redaksi</strong></span>
             </div>

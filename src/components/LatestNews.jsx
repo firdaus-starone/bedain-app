@@ -32,7 +32,7 @@ const LatestNews = ({ articles, loading }) => {
 
   const getMetaText = (article) => {
     if (article.meta) return article.meta;
-    const author = article.author?.name || 'detikNews';
+    const author = article.contributorName || article.author?.name || 'detikNews';
     const time = article.publishedAt?.toDate ? article.publishedAt.toDate().toLocaleDateString('id-ID') : 'Baru saja';
     return `${author} | ${time}`;
   };

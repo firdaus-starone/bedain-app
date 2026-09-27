@@ -55,7 +55,8 @@ const ArticleEditor = () => {
     tags: '',
     slug: '',
     videoUrl: '',
-    location: ''
+    location: '',
+    contributorName: ''
   });
 
   useEffect(() => {
@@ -102,7 +103,8 @@ const ArticleEditor = () => {
               seoDescription: data.seoDescription || '',
               tags: Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags || ''),
               slug: data.slug || '',
-              location: data.location || ''
+              location: data.location || '',
+              contributorName: data.contributorName || ''
             });
           } else {
             alert('Berita tidak ditemukan.');
@@ -937,6 +939,7 @@ ${textToAnalyze}`;
           tags: tagsArray,
           location: formData.location || '',
           updatedAt: Timestamp.now(),
+          contributorName: formData.contributorName || '',
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
           publishedAt: finalStatus === 'published' ? Timestamp.now() : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
         });
@@ -952,6 +955,7 @@ ${textToAnalyze}`;
           createdAt: Timestamp.now(),
           publishedAt: finalStatus === 'published' ? Timestamp.now() : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
           authorId: currentUser.uid,
+          contributorName: formData.contributorName || '',
           author: {
             email: currentUser.email,
             name: authorName
@@ -1269,6 +1273,19 @@ ${textToAnalyze}`;
               <div style={{ background: 'var(--admin-card-bg)', borderRadius: '16px', border: '1px solid var(--admin-card-border)', padding: '24px' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--admin-text-primary)', marginBottom: '20px', borderBottom: '1px solid var(--admin-card-border)', paddingBottom: '12px' }}>Pengaturan Publikasi</h3>
                 
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Nama Kontributor (Opsional)</label>
+                  <input 
+                    type="text" 
+                    name="contributorName" 
+                    value={formData.contributorName} 
+                    onChange={handleChange} 
+                    placeholder="Kosongkan jika Anda penulisnya"
+                    style={{ width: '100%', padding: '12px', background: 'var(--admin-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', outline: 'none', fontSize: '13px' }}
+                  />
+                  <p style={{ fontSize: '11px', color: 'var(--admin-text-tertiary)', marginTop: '6px' }}>Jika kosong, nama penulis akan menggunakan nama akun Anda.</p>
+                </div>
+
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ marginBottom: '8px' }}>
                     <label style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', display: 'block', marginBottom: '8px' }}>Kategori</label>
