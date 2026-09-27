@@ -994,6 +994,30 @@ const ArticleDetail = () => {
                   </div>
                 </div>
 
+                {/* Horizontal Social Share */}
+                <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                  <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${reaction === 'like' ? 'var(--color-accent)' : 'var(--color-border)'}`, color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                    <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
+                    <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
+                  </button>
+                  <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${isBookmarked ? 'var(--color-accent)' : 'var(--color-border)'}`, color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                    <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+                  </button>
+                  <button className="share-icon-btn" onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                    <MessageSquare size={18} />
+                    <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{article?.commentCount || 0}</span>
+                  </button>
+                  <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+                    <Share2 size={18} />
+                  </button>
+                  <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                    {copied ? <Check size={18} /> : <Link2 size={18} />}
+                  </button>
+                  <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
+                    <Type size={18} />
+                  </button>
+                </div>
+
                 {/* Hero Image */}
                 <div className="article-main-image-wrapper hero-media-mobile-full" style={{ width: '100%', height: 'auto', aspectRatio: '16/9', overflow: 'hidden', borderRadius: '12px', marginBottom: '16px', background: 'var(--color-bg-secondary)', position: 'relative' }}>
                   <Image 
@@ -1085,29 +1109,6 @@ const ArticleDetail = () => {
               </div>
             )}
             
-            {/* Horizontal Social Share */}
-            <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-              <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${reaction === 'like' ? 'var(--color-accent)' : 'var(--color-border)'}`, color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
-                <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
-                <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
-              </button>
-              <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'var(--color-bg-secondary)', border: `1px solid ${isBookmarked ? 'var(--color-accent)' : 'var(--color-border)'}`, color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-                <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
-              </button>
-              <button className="share-icon-btn" onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
-                <MessageSquare size={18} />
-                <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{article?.commentCount || 0}</span>
-              </button>
-              <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
-                <Share2 size={18} />
-              </button>
-              <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-                {copied ? <Check size={18} /> : <Link2 size={18} />}
-              </button>
-              <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
-                <Type size={18} />
-              </button>
-            </div>
 
             {/* AI Text-to-Speech Podcast Audio Player */}
             <div style={{
