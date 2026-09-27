@@ -620,14 +620,14 @@ const ArticleDetail = () => {
       try {
         const d = new Date(val.seconds * 1000);
         if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('id-ID', {
+          return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : lang === 'en' ? 'en-US' : 'id-ID', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-          }) + ' WIB';
+          }) + (lang === 'id' ? ' WIB' : '');
         }
       } catch (e) {}
     }
@@ -716,7 +716,7 @@ const ArticleDetail = () => {
               {error || 'Maaf, artikel yang Anda cari tidak tersedia atau sedang diperbarui.'}
             </p>
             <Link href="/" className="btn" style={{ background: 'linear-gradient(135deg, var(--color-accent), #ff5252)', color: 'var(--color-text-primary)', padding: '14px 32px', borderRadius: '30px', textDecoration: 'none', fontWeight: 600, display: 'inline-block', boxShadow: '0 8px 16px rgba(230,57,70,0.3)' }}>
-              Kembali ke Beranda
+              {lang === 'zh' ? '返回主页' : lang === 'en' ? 'Back to Home' : 'Kembali ke Beranda'}
             </Link>
           </div>
         </div>
@@ -885,7 +885,7 @@ const ArticleDetail = () => {
                     onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
                   >
                     <Home size={14} style={{ opacity: 0.8 }} />
-                    <span>Beranda</span>
+                    <span>{t('navigation.home')}</span>
                   </Link>
                 </li>
                 
@@ -940,16 +940,16 @@ const ArticleDetail = () => {
                 
                 {/* Meta Author & Date & Reading Time */}
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                  <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi Bedain'}</span>
+                  <span>{t('article.contributor')}: {article.contributorName || article.author?.name || t('article.editorial')}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
-                  <span>Editor: Admin Redaksi</span>
+                  <span>{t('article.editor')}: {t('article.editorial')}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} suppressHydrationWarning>
                     <Calendar size={14} /> {formatDate(article.publishedAt || article.createdAt)}
                   </div>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-accent)' }}>
-                    <Clock size={14} /> Estimasi {readingTimeMinutes} menit baca
+                    <Clock size={14} /> {lang === 'zh' ? '预计' : lang === 'en' ? 'Est.' : 'Estimasi'} {readingTimeMinutes} {t('article.readTime')}
                   </div>
                 </div>
 
@@ -1005,9 +1005,9 @@ const ArticleDetail = () => {
                 
                 {/* Meta Author & Date & Reading Time */}
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-                  <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi Bedain'}</span>
+                  <span>{t('article.contributor')}: {article.contributorName || article.author?.name || t('article.editorial')}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
-                  <span>Editor: Admin Redaksi</span>
+                  <span>{t('article.editor')}: {t('article.editorial')}</span>
                   <span style={{ opacity: 0.5 }}>|</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} suppressHydrationWarning>
                     <Calendar size={14} /> {formatDate(article.publishedAt || article.createdAt)}

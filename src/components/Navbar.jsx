@@ -19,7 +19,9 @@ import './FootballLogoAnimation.css';
 import BreakingNews from './BreakingNews';
 import BottomNav from './BottomNav';
 import { getArticleCardImage } from '../lib/videoHelpers';
+import { getArticleCardImage } from '../lib/videoHelpers';
 import LanguageSwitcher from './LanguageSwitcher';
+import { useI18n } from '../hooks/useI18n';
 
 const getCategoryIcon = (cat) => {
   const text = (cat.name + ' ' + (cat.slug || '')).toLowerCase();
@@ -46,6 +48,7 @@ const getCategoryIcon = (cat) => {
 
 const Navbar = () => {
   const router = useRouter();
+  const { t, lang } = useI18n();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState(typeof window !== 'undefined' ? localStorage.getItem('theme') || 'dark' : 'dark');
   const { settings, loading } = useSiteSettings();
@@ -356,7 +359,7 @@ const Navbar = () => {
                   setShowDropdown(true);
                 }}
                 onFocus={() => setShowDropdown(true)}
-                placeholder="Cari berita..."
+                placeholder={t('navigation.search')}
                 className="search-input"
               />
               <button type="submit" className="search-button" aria-label="Cari">

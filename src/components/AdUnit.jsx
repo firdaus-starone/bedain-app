@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { Sparkles, MessageCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useI18n } from '../hooks/useI18n';
 
 /**
  * Komponen AdUnit & Sponsorship/Community Conversion Box
@@ -10,6 +11,7 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
  */
 const AdUnit = ({ format = 'rectangle', client, slot, style = {}, className = '', variant = 'auto' }) => {
   const { settings } = useSiteSettings();
+  const { t, lang } = useI18n();
   const adClient = client || settings?.adsenseClientId;
   const adSlot = slot || settings?.adsenseSlotId;
 
@@ -95,7 +97,9 @@ const AdUnit = ({ format = 'rectangle', client, slot, style = {}, className = ''
             display: 'block',
             marginBottom: '4px'
           }}>
-            {variant === 'community' ? '📲 KOMUNITAS RESMI BEDAIN NEWS' : '🚀 SLOT MITRA & SPONSOR'}
+            {variant === 'community' 
+              ? (lang === 'zh' ? '📲 BEDAIN NEWS 官方社区' : lang === 'en' ? '📲 BEDAIN NEWS OFFICIAL COMMUNITY' : '📲 KOMUNITAS RESMI BEDAIN NEWS') 
+              : (lang === 'zh' ? '🚀 赞助和合作伙伴' : lang === 'en' ? '🚀 SPONSOR & PARTNER SLOT' : '🚀 SLOT MITRA & SPONSOR')}
           </span>
           <h4 style={{
             margin: '0 0 4px 0',
@@ -106,13 +110,13 @@ const AdUnit = ({ format = 'rectangle', client, slot, style = {}, className = ''
             lineHeight: 1.3
           }}>
             {variant === 'community'
-              ? 'Dapatkan Peringatan Berita Terkini Langsung di WhatsApp Anda!'
-              : 'Perluas Jangkauan Bisnis & Brand Anda Bersama Kami'}
+              ? (lang === 'zh' ? '直接在WhatsApp上获取最新新闻提醒！' : lang === 'en' ? 'Get Breaking News Alerts Directly on Your WhatsApp!' : 'Dapatkan Peringatan Berita Terkini Langsung di WhatsApp Anda!')
+              : (lang === 'zh' ? '与我们一起扩大您的业务和品牌影响力' : lang === 'en' ? 'Expand Your Business & Brand Reach With Us' : 'Perluas Jangkauan Bisnis & Brand Anda Bersama Kami')}
           </h4>
           <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
             {variant === 'community'
-              ? 'Bergabung bersama ribuan pembaca lainnya untuk mendapatkan update berita pilihan.'
-              : 'Tempatkan iklan usaha, banner, atau advertorial Anda di hadapan pembaca setia Bedain News.'}
+              ? (lang === 'zh' ? '加入成千上万读者的行列，获取精选新闻更新。' : lang === 'en' ? 'Join thousands of other readers to get curated news updates.' : 'Bergabung bersama ribuan pembaca lainnya untuk mendapatkan update berita pilihan.')
+              : (lang === 'zh' ? '在 Bedain News 忠实读者面前投放您的商业广告、横幅或软文。' : lang === 'en' ? 'Place your business ads, banners, or advertorials in front of loyal Bedain News readers.' : 'Tempatkan iklan usaha, banner, atau advertorial Anda di hadapan pembaca setia Bedain News.')}
           </p>
         </div>
       </div>
@@ -140,7 +144,7 @@ const AdUnit = ({ format = 'rectangle', client, slot, style = {}, className = ''
           whiteSpace: 'nowrap'
         }}
       >
-        <span>{variant === 'community' ? 'Gabung WhatsApp' : 'Hubungi Redaksi'}</span>
+        <span>{variant === 'community' ? (lang === 'zh' ? '加入WhatsApp' : lang === 'en' ? 'Join WhatsApp' : 'Gabung WhatsApp') : (lang === 'zh' ? '联系编辑' : lang === 'en' ? 'Contact Editorial' : 'Hubungi Redaksi')}</span>
         <ArrowRight size={16} />
       </a>
     </div>

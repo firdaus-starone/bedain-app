@@ -5,6 +5,7 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Clock, TrendingUp } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useI18n } from '../hooks/useI18n';
 
 const FbIcon = () => (
   <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -39,6 +40,7 @@ let fetchTopicsPromise = null;
 
 const BreakingNews = () => {
   const { settings } = useSiteSettings();
+  const { t, lang } = useI18n();
   const alertColor = 'var(--color-accent)';
   
   const [topics, setTopics] = useState(() => cachedTopicsMemory || []);
@@ -168,7 +170,7 @@ const BreakingNews = () => {
             <span>{mounted && currentTime ? currentTime : `Today | ${todayFormatted}`}</span>
           </div>
           <div className="breaking-ticker" style={{ display: 'flex', alignItems: 'center', gap: '16px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <span className="breaking-label" style={{ backgroundColor: alertColor, position: 'sticky', left: 0, zIndex: 2 }}>TOPIK HANGAT</span>
+            <span className="breaking-label" style={{ backgroundColor: alertColor, position: 'sticky', left: 0, zIndex: 2 }}>{t('navigation.trending').toUpperCase()}</span>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', whiteSpace: 'nowrap' }}>
               {allTickerItems.length > 0 ? allTickerItems.map((item, index) => (
                 <span key={index} className="breaking-text">
@@ -182,7 +184,7 @@ const BreakingNews = () => {
                   ) : null}
                 </span>
               )) : (
-                <span className="breaking-text">Memuat topik hangat...</span>
+                <span className="breaking-text">{lang === 'zh' ? '加载热门话题...' : lang === 'en' ? 'Loading trending topics...' : 'Memuat topik hangat...'}</span>
               )}
             </div>
           </div>
