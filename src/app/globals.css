@@ -4075,6 +4075,16 @@ body {
   max-width: 100% !important;
   height: auto !important;
 }
+.article-block img.inline-b-logo {
+  min-height: 0 !important;
+  margin: 0 2px !important;
+  display: inline-block !important;
+  width: auto !important;
+  height: 1.1em !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  transform: translateY(0.15em);
+}
 .ql-editor a,
 .ql-editor * a,
 .article-content a,

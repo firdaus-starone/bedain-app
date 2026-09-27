@@ -1359,7 +1359,7 @@ const ArticleDetail = () => {
                   if (!htmlStr) return htmlStr;
                   return htmlStr.replace(/(<[^>]+>)|(\bB\b)/g, (match, tag, letterB) => {
                     if (tag) return tag;
-                    if (letterB) return '<img src="/icon-192x192.png" alt="B" style="height: 1.1em; width: auto; display: inline-block; vertical-align: baseline; margin: 0 2px; transform: translateY(0.15em);" />';
+                    if (letterB) return '<img src="/icon-192x192.png" alt="B" class="inline-b-logo" />';
                     return match;
                   });
                 };
