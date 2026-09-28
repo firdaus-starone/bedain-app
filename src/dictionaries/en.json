@@ -26,6 +26,11 @@
     "popular": "Trending Now",
     "seeMore": "See More",
     "editorialDesk": "Editorial Desk",
-    "editorialChoice": "Best Articles Chosen by Our Editors"
+    "editorialChoice": "Best Articles Chosen by Our Editors",
+    "new_articles_available": "New Articles Available",
+    "click_to_load": "Click to Load",
+    "hot_topics": "Hot Topics",
+    "opinion": "Opinion",
+    "latest_news": "Latest News"
   }
 }

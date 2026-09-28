@@ -7,12 +7,14 @@ import AdBanner from './AdBanner';
 import RedaksiWidget from './RedaksiWidget';
 import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useI18n } from '../hooks/useI18n';
 
 // Global memory cache across mounts for Sidebar
 let cachedSidebarMemory = null;
 let fetchSidebarPromise = null;
 
 const Sidebar = () => {
+  const { t } = useI18n();
   const fallbackTrending = [
     { id: 1, title: 'IHSG Anjlok, Saham Perbankan Jadi Sorotan Investor', slug: 'ihsg-anjlok-saham-perbankan-sorotan', category: 'Bisnis', publishedAt: new Date(Date.now() - 2*3600*1000) },
     { id: 2, title: 'Review Gadget Terbaru: Flagship Killer yang Bikin Penasaran', slug: 'review-gadget-terbaru-flagship-killer', category: 'AI & Tech', publishedAt: new Date(Date.now() - 5*3600*1000) },
@@ -184,7 +186,7 @@ const Sidebar = () => {
           <RedaksiWidget />
 
       <div className="sidebar-widget">
-        <h3 className="widget-title">Terpopuler</h3>
+        <h3 className="widget-title">{t('home.popular') || 'Terpopuler'}</h3>
         <div className="trending-list">
           {loading ? (
             [...Array(5)].map((_, i) => (
@@ -223,7 +225,7 @@ const Sidebar = () => {
         <div style={{ position: 'sticky', top: '188px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {(!loading && !opinion) ? null : (
             <div className="sidebar-widget">
-              <h3 className="widget-title">Opini Pilihan</h3>
+              <h3 className="widget-title">{t('home.opinion') || 'Opini Pilihan'}</h3>
               {loading ? (
                 <article className="opinion-card-modern" style={{ pointerEvents: 'none' }}>
                   <div className="opinion-content-modern">
@@ -294,7 +296,7 @@ const Sidebar = () => {
       <div style={{ flex: 1, minHeight: 'max-content' }}>
         <div style={{ position: 'sticky', top: '188px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="sidebar-widget tags-widget">
-        <h3 className="widget-title">Topik Hangat</h3>
+        <h3 className="widget-title">{t('home.hot_topics') || 'Topik Hangat'}</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
           {['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget', 'StartUp', 'Kripto', 'Otomotif'].map((tag, i) => (
             <Link key={i} href={`/cari?q=${encodeURIComponent(tag.replace('#', ''))}`} style={{

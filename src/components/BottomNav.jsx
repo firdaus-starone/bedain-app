@@ -4,8 +4,10 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Search, PenTool, TrendingUp, LayoutGrid } from 'lucide-react';
+import { useI18n } from '../hooks/useI18n';
 
 const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
+  const { t } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
   const currentPath = pathname;
@@ -65,7 +67,7 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
           aria-label="Cari Berita"
         >
           <Search size={22} className="bottom-nav-icon" />
-          <span className="bottom-nav-label">Cari</span>
+          <span className="bottom-nav-label">{t('navigation.search_btn') || 'Cari'}</span>
         </a>
 
         {/* 2. Kirim Tulisan (Di Samping Kiri Home) */}
@@ -74,7 +76,7 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
           aria-label="Kirim Tulisan Warga"
         >
           <PenTool size={22} className="bottom-nav-icon" />
-          <span className="bottom-nav-label">Kirim</span>
+          <span className="bottom-nav-label">{t('navigation.send') || 'Kirim'}</span>
         </Link>
 
         {/* 3. Beranda (Home di Tengah - Center Prominent Hub) */}
@@ -88,7 +90,7 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
             <div className="fab-circle">
               <img src="/logo-bundar.png" alt="Beranda" className="fab-icon" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
             </div>
-            <span className="bottom-nav-label fab-label">Beranda</span>
+            <span className="bottom-nav-label fab-label">{t('navigation.home') || 'Beranda'}</span>
           </a>
         </div>
 
@@ -100,7 +102,7 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
           aria-label="Trending & Populer"
         >
           <TrendingUp size={22} className="bottom-nav-icon" />
-          <span className="bottom-nav-label">Trending</span>
+          <span className="bottom-nav-label">{t('navigation.trending') || 'Trending'}</span>
         </a>
 
         {/* 5. Menu / Kategori (Versi Icon Baru: LayoutGrid) */}
@@ -115,7 +117,7 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
             <line x1="10" y1="12" x2="20" y2="12"></line>
             <line x1="4" y1="17" x2="20" y2="17"></line>
           </svg>
-          <span className="bottom-nav-label">Menu</span>
+          <span className="bottom-nav-label">{t('navigation.menu') || 'Menu'}</span>
         </button>
       </div>
     </nav>,

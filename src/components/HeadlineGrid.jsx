@@ -5,8 +5,10 @@ import Image from 'next/image';
 import LazyImage from './LazyImage';
 import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from './VideoBadge';
+import { useI18n } from '../hooks/useI18n';
 
 const HeadlineGrid = ({ articles, loading }) => {
+  const { t } = useI18n();
   const fallbackHeadlines = [
     {
       id: 'fallback-1',
@@ -139,7 +141,12 @@ const HeadlineGrid = ({ articles, loading }) => {
           {headlineItems.map((item, index) => {
             const itemSlug = getSlug(item);
             const itemImg = getArticleCardImage(item);
-            const badgeText = index === 0 ? 'TOPIK\nHANGAT' : 'TERKINI';
+            
+            let hotTopicsText = (t('home.hot_topics') || 'TOPIK HANGAT').toUpperCase();
+            if (hotTopicsText === 'TOPIK HANGAT') {
+               hotTopicsText = 'TOPIK\nHANGAT'; // Keep the break for ID
+            }
+            const badgeText = index === 0 ? hotTopicsText : (t('home.latest_news') || 'TERKINI').toUpperCase();
             const dateText = item.date || '8 Juli 2026';
 
             return (

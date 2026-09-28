@@ -15,9 +15,11 @@ const CategorySections = dynamic(() => import('../components/CategorySections'),
 const VideoSection = dynamic(() => import('../components/VideoSection'), { ssr: false });
 
 import { useArticles } from '../hooks/useArticles';
+import { useI18n } from '../hooks/useI18n';
 
 const HomePage = () => {
   const { articles, loading, newArticlesCount, refreshArticles } = useArticles({ limit: 16 });
+  const { t } = useI18n();
 
   // Slice articles to prevent duplication across blocks
   const headlineArticles = articles?.slice(0, 5) || [];
@@ -39,7 +41,7 @@ const HomePage = () => {
           >
             <span className="new-articles-toast-badge">✨</span>
             <span>
-              {newArticlesCount} Berita Baru Tersedia — Klik untuk Memuat
+              {newArticlesCount} {t('home.new_articles_available')} — {t('home.click_to_load')}
             </span>
           </button>
         </div>

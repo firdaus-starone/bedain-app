@@ -26,6 +26,11 @@
     "popular": "当下热门",
     "seeMore": "查看更多",
     "editorialDesk": "编辑部",
-    "editorialChoice": "编辑精选文章"
+    "editorialChoice": "编辑精选文章",
+    "new_articles_available": "有新文章",
+    "click_to_load": "点击加载",
+    "hot_topics": "热门话题",
+    "opinion": "精选观点",
+    "latest_news": "最新新闻"
   }
 }

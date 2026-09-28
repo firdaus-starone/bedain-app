@@ -44,9 +44,6 @@ export default function LanguageSwitcher() {
             }}
             className={`lang-option ${lang === l.code ? 'active' : ''}`}
           >
-            <span className="lang-flag">
-              {l.code === 'id' ? '🇮🇩' : l.code === 'en' ? '🇬🇧' : '🇨🇳'}
-            </span>
             {l.label}
           </div>
         ))}

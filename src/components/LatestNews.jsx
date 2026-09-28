@@ -1,8 +1,10 @@
 "use client";
 import Image from 'next/image';
 import Link from 'next/link';
+import { useI18n } from '../hooks/useI18n';
 
 const LatestNews = ({ articles, loading }) => {
+  const { t } = useI18n();
   // Fallback data yang persis seperti Gambar 1
   const fallbackMain = {
     id: 'spotlight-main',
@@ -58,7 +60,7 @@ const LatestNews = ({ articles, loading }) => {
           </div>
           <div className="recap-related" style={{ pointerEvents: 'none' }}>
             <div className="related-header">
-              <h3>Berita Terkait</h3>
+              <h3>{t('article.related') || 'Berita Terkait'}</h3>
               <div className="related-line"></div>
             </div>
             <div className="related-grid">
@@ -93,7 +95,7 @@ const LatestNews = ({ articles, loading }) => {
         
         <div className="recap-related">
           <div className="related-header">
-            <h3>Berita Terkait</h3>
+            <h3>{t('article.related') || 'Berita Terkait'}</h3>
             <div className="related-line"></div>
           </div>
           <div className="related-grid">
