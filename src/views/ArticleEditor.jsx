@@ -501,8 +501,13 @@ const ArticleEditor = () => {
           }
         );
         data = await response.json();
+        
         if (response.ok && !data.error && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
           success = true;
+          break;
+        } else if (response.status === 400 || response.status === 401 || response.status === 403) {
+          // Fail fast on fatal errors (invalid key, bad request) to avoid 1-minute retry loops
+          console.warn(`Fatal error ${response.status} from ${modelName}:`, data.error);
           break;
         }
       } catch (e) {
@@ -510,8 +515,8 @@ const ArticleEditor = () => {
       }
     }
 
-    // 2. Jika semua model standar gagal (misal karena API key baru / list model khusus), lakukan auto-discovery model loop
-    if (!success) {
+    // 2. Jika semua model standar gagal (misal karena list model khusus) DAN bukan fatal error, lakukan auto-discovery model loop
+    if (!success && (!response || response.status === 404 || response.status === 429 || response.status >= 500)) {
       console.log('Model standar gagal/tidak tersedia, mencoba auto-discovery model dari akun API...');
       try {
         const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
