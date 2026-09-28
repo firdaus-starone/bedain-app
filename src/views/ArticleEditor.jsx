@@ -1262,7 +1262,6 @@ Konten Asli: ${formData.content}`;
                       style={{ minHeight: '500px', fontSize: '1rem' }}
                     />
                   </div>
-                  </div>
                 </div>
               </div>
 
