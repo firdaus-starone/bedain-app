@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useI18n } from '../hooks/useI18n';
 
 const Footer = () => {
+  const { t, lang } = useI18n();
   const [pages, setPages] = useState([]);
   const [footerMenus, setFooterMenus] = useState([]);
   const { settings } = useSiteSettings();
@@ -111,7 +113,7 @@ const Footer = () => {
             <div className="footer-part-of">
               <span>part of</span>
               <div style={{fontSize: '0.8rem', color: 'var(--color-text-tertiary)', letterSpacing: '1px', textTransform: 'uppercase'}}>
-                Bagian dari <span className="text-accent" style={{fontWeight: 'bold'}}>bedain</span>network
+                {t('footer.part_of') || 'Bagian dari'} <span className="text-accent" style={{fontWeight: 'bold'}}>bedain</span>network
               </div>
             </div>
             
@@ -171,20 +173,20 @@ const Footer = () => {
               const isCategoryCol = col.title.toLowerCase() === 'kategori';
               return (
               <div className={`footer-col ${isCategoryCol ? 'footer-col-kategori' : ''}`} key={col.id}>
-                <h3 className="footer-heading">{col.title}</h3>
+                <h3 className="footer-heading">{t(`footer.cols.${col.title.toLowerCase()}`) || col.title}</h3>
                 {isCategoryCol ? (
                   <div className="footer-links-grid">
                     <ul className="footer-links">
                       {categories.slice(0, Math.ceil(categories.length / 2)).map(cat => (
                         <li key={cat.id}>
-                          <a href={`/#kategori-${cat.slug}`}>{cat.name}</a>
+                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.id}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
                         </li>
                       ))}
                     </ul>
                     <ul className="footer-links">
                       {categories.slice(Math.ceil(categories.length / 2)).map(cat => (
                         <li key={cat.id}>
-                          <a href={`/#kategori-${cat.slug}`}>{cat.name}</a>
+                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.id}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
                         </li>
                       ))}
                     </ul>
@@ -239,7 +241,7 @@ const Footer = () => {
 
           {pages.length > 0 && !footerMenus.some(col => col.title.toLowerCase() === 'informasi') && (
             <div className="footer-col" key="auto-informasi-col">
-              <h3 className="footer-heading">Informasi</h3>
+              <h3 className="footer-heading">{t('footer.cols.informasi') || 'Informasi'}</h3>
               <ul className="footer-links">
                 {pages.map(page => (
                   <li key={page.id}>

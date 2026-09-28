@@ -165,12 +165,12 @@ const Sidebar = () => {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
     
-    if (diffMins < 1) return 'Baru saja';
-    if (diffMins < 60) return `${diffMins} menit lalu`;
-    if (diffHours < 24) return `${diffHours} jam lalu`;
-    if (diffDays < 7) return `${diffDays} hari lalu`;
+    if (diffMins < 1) return t('time.just_now') || 'Baru saja';
+    if (diffMins < 60) return `${diffMins} ${t('time.minutes_ago') || 'menit lalu'}`;
+    if (diffHours < 24) return `${diffHours} ${t('time.hours_ago') || 'jam lalu'}`;
+    if (diffDays < 7) return `${diffDays} ${t('time.days_ago') || 'hari lalu'}`;
     
-    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString(lang === 'id' ? 'id-ID' : (lang === 'zh' ? 'zh-CN' : 'en-US'), { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   const opinion = featuredOpinion;

@@ -50,5 +50,21 @@
     "promo_desc": "Promosikan brand & produk Anda di portal berita terdepan.",
     "advertise_now": "Pasang Sekarang",
     "ads_label": "BEDAIN NEWS ADS"
+  },
+  "footer": {
+    "part_of": "Bagian dari",
+    "cols": {
+      "informasi": "Informasi",
+      "kategori": "Kategori"
+    }
+  },
+  "time": {
+    "years_ago": "tahun lalu",
+    "months_ago": "bln lalu",
+    "days_ago": "hari lalu",
+    "hours_ago": "jam lalu",
+    "minutes_ago": "menit lalu",
+    "seconds_ago": "dtk lalu",
+    "just_now": "Baru saja"
   }
 }

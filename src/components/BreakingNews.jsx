@@ -58,10 +58,11 @@ const BreakingNews = () => {
       if (offsetMinutes === 480) timezone = 'WITA';
       else if (offsetMinutes === 540) timezone = 'WIT';
 
-      const dateStr = now.toLocaleDateString('id-ID', {
+      const locale = lang === 'id' ? 'id-ID' : (lang === 'zh' ? 'zh-CN' : 'en-US');
+      const dateStr = now.toLocaleDateString(locale, {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
       });
-      const timeStr = now.toLocaleTimeString('id-ID', {
+      const timeStr = now.toLocaleTimeString(locale, {
         hour: '2-digit', minute: '2-digit', hour12: false
       }).replace('.', ':');
       
@@ -70,7 +71,7 @@ const BreakingNews = () => {
     updateTime();
     const timer = setInterval(updateTime, 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     let isMounted = true;
@@ -150,7 +151,8 @@ const BreakingNews = () => {
 
   const allTickerItems = [...customTickerItems, ...topics];
 
-  const todayFormatted = new Date().toLocaleDateString('id-ID', {
+  const locale = lang === 'id' ? 'id-ID' : (lang === 'zh' ? 'zh-CN' : 'en-US');
+  const todayFormatted = new Date().toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

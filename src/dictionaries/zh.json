@@ -50,5 +50,21 @@
     "promo_desc": "在领先的新闻门户网站上推广您的品牌和产品。",
     "advertise_now": "立即投放",
     "ads_label": "BEDAIN NEWS 广告"
+  },
+  "footer": {
+    "part_of": "所属",
+    "cols": {
+      "informasi": "信息",
+      "kategori": "类别"
+    }
+  },
+  "time": {
+    "years_ago": "年前",
+    "months_ago": "个月前",
+    "days_ago": "天前",
+    "hours_ago": "小时前",
+    "minutes_ago": "分钟前",
+    "seconds_ago": "秒前",
+    "just_now": "刚刚"
   }
 }

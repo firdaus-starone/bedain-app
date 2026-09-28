@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useI18n } from '../hooks/useI18n';
 
 const LatestNews = ({ articles, loading }) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   // Fallback data yang persis seperti Gambar 1
   const fallbackMain = {
     id: 'spotlight-main',
@@ -34,8 +34,8 @@ const LatestNews = ({ articles, loading }) => {
 
   const getMetaText = (article) => {
     if (article.meta) return article.meta;
-    const author = article.contributorName || article.author?.name || 'detikNews';
-    const time = article.publishedAt?.toDate ? article.publishedAt.toDate().toLocaleDateString('id-ID') : 'Baru saja';
+    const author = article.contributorName || article.author?.name || 'BedainNews';
+    const time = article.publishedAt?.toDate ? article.publishedAt.toDate().toLocaleDateString(lang === 'id' ? 'id-ID' : (lang === 'zh' ? 'zh-CN' : 'en-US')) : (t('time.just_now') || 'Baru saja');
     return `${author} | ${time}`;
   };
 

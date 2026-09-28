@@ -6,6 +6,7 @@ import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from './VideoBadge';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useI18n } from '../hooks/useI18n';
 
 // Global memory cache across CategorySections instances
 let cachedCategories = null;
@@ -13,6 +14,7 @@ let categoriesPromise = null;
 const categoryArticlesCache = new Map();
 
 const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
+  const { t, lang } = useI18n();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -135,22 +137,22 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
   };
 
   const timeAgo = (timestamp) => {
-    if (!timestamp) return 'Baru saja';
+    if (!timestamp) return t('time.just_now') || 'Baru saja';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp.seconds ? timestamp.seconds * 1000 : timestamp);
-    if (isNaN(date.getTime())) return 'Baru saja';
+    if (isNaN(date.getTime())) return t('time.just_now') || 'Baru saja';
     
     const seconds = Math.floor((new Date() - date) / 1000);
     let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " tahun lalu";
+    if (interval > 1) return `${Math.floor(interval)} ${t('time.years_ago') || 'tahun lalu'}`;
     interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " bln lalu";
+    if (interval > 1) return `${Math.floor(interval)} ${t('time.months_ago') || 'bln lalu'}`;
     interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " hari lalu";
+    if (interval > 1) return `${Math.floor(interval)} ${t('time.days_ago') || 'hari lalu'}`;
     interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " jam lalu";
+    if (interval > 1) return `${Math.floor(interval)} ${t('time.hours_ago') || 'jam lalu'}`;
     interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " mnt lalu";
-    return Math.floor(seconds) + " dtk lalu";
+    if (interval > 1) return `${Math.floor(interval)} ${t('time.minutes_ago') || 'mnt lalu'}`;
+    return `${Math.floor(seconds)} ${t('time.seconds_ago') || 'dtk lalu'}`;
   };
 
   if (loading) {
@@ -174,12 +176,14 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
         
         if (!featureArticle) return null;
         
+        const categoryName = t(`categories.${category.id}`) || (lang === 'en' ? category.name_en || category.name : lang === 'zh' ? category.name_zh || category.name : category.name);
+
         return (
           <section key={category.id || category.name} id={`kategori-${category.slug || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="category-block">
             <div className="category-header">
-              <h2 className="category-title" style={{ color: category.color || 'inherit' }}>{category.name}</h2>
+              <h2 className="category-title" style={{ color: category.color || 'inherit' }}>{categoryName}</h2>
               <Link href={`/cari?q=${encodeURIComponent(getCategoryQuery(category.name))}`} className="category-link">
-                Lihat Semua &rarr;
+                {t('home.view_all') || 'Lihat Semua'} &rarr;
               </Link>
             </div>
             
@@ -195,7 +199,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                           <VideoBadge article={article} />
                         </div>
                         <div className="more-news-content">
-                          <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)' }}>{category.name}</span>
+                          <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)' }}>{categoryName}</span>
                           <h3 className="more-news-title" style={{ fontSize: '1.05rem', lineHeight: 1.4 }}>
                             {article.title}
                           </h3>
@@ -214,7 +218,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                           <VideoBadge article={category.articles[3]} />
                         </div>
                         <div style={{ flex: '1' }}>
-                          <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)', marginBottom: '8px', display: 'block' }}>{category.name}</span>
+                          <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)', marginBottom: '8px', display: 'block' }}>{categoryName}</span>
                           <h3 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '12px', lineHeight: 1.3, color: 'var(--color-text)' }} className="hover-text-accent">
                             {category.articles[3].title}
                           </h3>
@@ -237,7 +241,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                           <VideoBadge article={article} />
                         </div>
                         <div className="more-news-content">
-                          <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)' }}>{category.name}</span>
+                          <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)' }}>{categoryName}</span>
                           <h3 className="more-news-title">
                             {article.title}
                           </h3>

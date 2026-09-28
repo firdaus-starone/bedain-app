@@ -50,5 +50,21 @@
     "promo_desc": "Promote your brand & products on the leading news portal.",
     "advertise_now": "Advertise Now",
     "ads_label": "BEDAIN NEWS ADS"
+  },
+  "footer": {
+    "part_of": "Part of",
+    "cols": {
+      "informasi": "Information",
+      "kategori": "Categories"
+    }
+  },
+  "time": {
+    "years_ago": "years ago",
+    "months_ago": "months ago",
+    "days_ago": "days ago",
+    "hours_ago": "hours ago",
+    "minutes_ago": "minutes ago",
+    "seconds_ago": "seconds ago",
+    "just_now": "Just now"
   }
 }
