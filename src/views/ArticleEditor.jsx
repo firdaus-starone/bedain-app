@@ -922,22 +922,24 @@ ${textToAnalyze}`;
 
     try {
       const prompt = `Terjemahkan artikel jurnalistik berikut ke dalam Bahasa Inggris dan Bahasa Mandarin.
-Kembalikan HANYA dalam format JSON dengan struktur:
+PENTING: KEMBALIKAN HANYA 1 (SATU) OBJEK JSON TUNGGAL. JANGAN KEMBALIKAN LEBIH DARI 1 OBJEK.
+
+Format WAJIB:
 {
   "en": {
     "title": "English Title",
-    "content": "English Content in HTML format (preserving original tags, MUST NOT contain unescaped quotes or unescaped newlines)"
+    "content": "English Content in HTML format"
   },
   "zh": {
     "title": "Mandarin Title",
-    "content": "Mandarin Content in HTML format (preserving original tags, MUST NOT contain unescaped quotes or unescaped newlines)"
+    "content": "Mandarin Content in HTML format"
   }
 }
 
-PENTING:
-- Konten HTML HARUS digabungkan menjadi satu baris (single line string) atau gunakan escape karakter '\\n'.
-- JANGAN gunakan raw newlines/enter di dalam string JSON.
-- JANGAN sertakan markdown backticks (\`\`\`).
+Aturan Ketat JSON:
+- Konten HTML HARUS diletakkan dalam satu baris (hilangkan enter) ATAU gunakan '\\n'.
+- Jangan gunakan kutip ganda (") tanpa di-escape (\\") di dalam string HTML.
+- HANYA KELUARKAN Teks JSON valid. Jangan ada sapaan atau markdown.
 
 Artikel Asli (ID):
 Judul: ${formData.title}
@@ -952,19 +954,27 @@ Konten: ${formData.content}
         parsed = JSON.parse(cleanText);
       } catch(e) {
         try {
-          const match = cleanText.match(/\{[\s\S]*\}/);
-          if (match) {
-            // Attempt to fix unescaped newlines inside strings if they exist
-            let potentialJson = match[0];
-            // Basic cleanup for control characters
-            potentialJson = potentialJson.replace(/[\u0000-\u001F]+/g, " ");
-            parsed = JSON.parse(potentialJson);
+          // Bersihkan karakter kontrol dan newline yang tidak ter-escape
+          let potentialJson = cleanText.replace(/[\u0000-\u001F]+/g, " ");
+          
+          // Deteksi jika AI mengeluarkan lebih dari 1 objek JSON, misal: {...} {...}
+          if (potentialJson.replace(/\s/g, '').includes('}{')) {
+             potentialJson = '[' + potentialJson.replace(/\}\s*\{/g, '},{') + ']';
+             const arr = JSON.parse(potentialJson);
+             parsed = Object.assign({}, ...arr);
           } else {
-            throw new Error("Format tidak dikenali");
+             // Ekstrak hanya dari { pertama sampai } terakhir
+             const firstBrace = potentialJson.indexOf('{');
+             const lastBrace = potentialJson.lastIndexOf('}');
+             if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+               parsed = JSON.parse(potentialJson.substring(firstBrace, lastBrace + 1));
+             } else {
+               throw new Error("Objek JSON tidak ditemukan");
+             }
           }
         } catch(e2) {
           console.error("Original AI Response:", aiResponseText);
-          throw new Error("Gagal membaca respon AI (" + e2.message + "). Coba lagi.");
+          throw new Error("Gagal membaca respon AI (" + e2.message + "). Silakan coba klik tombol translate lagi.");
         }
       }
 
