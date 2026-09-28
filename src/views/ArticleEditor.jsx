@@ -967,7 +967,7 @@ Konten Asli: ${formData.content}
              if (firstBrace !== -1 && lastBrace > firstBrace) {
                parsed = JSON.parse(sanitized.substring(firstBrace, lastBrace + 1));
              } else {
-               throw new Error("Bukan JSON format");
+               throw new Error("Bukan JSON format. Output AI: " + sanitized.substring(0, 100));
              }
           }
         } catch(e2) {
