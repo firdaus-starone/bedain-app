@@ -2662,8 +2662,11 @@ body {
     overflow: hidden !important;
   }
   .story-badge {
-    padding: 4px 8px !important;
-    font-size: 0.75rem !important;
+    padding: 2px 4px !important;
+    font-size: 0.55rem !important;
+    top: 6px !important;
+    left: 6px !important;
+    border-radius: 3px !important;
   }
 }
 .video-section-full {
