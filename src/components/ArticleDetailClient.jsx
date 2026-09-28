@@ -1091,7 +1091,7 @@ const ArticleDetail = () => {
             
 
             {/* AI Text-to-Speech Podcast Audio Player */}
-            <div style={{
+            <div className="tts-widget-container" style={{
               background: isPlayingTTS ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%)' : 'var(--color-bg-secondary)',
               border: isPlayingTTS ? '1.5px solid #ef4444' : '1px solid var(--color-border)',
               borderRadius: '16px',
@@ -1111,7 +1111,7 @@ const ArticleDetail = () => {
               `}</style>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
+                  <div className="tts-widget-icon" style={{
                     width: '44px',
                     height: '44px',
                     borderRadius: '12px',
@@ -1126,7 +1126,7 @@ const ArticleDetail = () => {
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text-primary)' }}>
+                      <span className="tts-widget-title" style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text-primary)' }}>
                         Dengarkan Berita AI
                       </span>
                       {isPlayingTTS && !ttsPaused && (
@@ -1157,7 +1157,7 @@ const ArticleDetail = () => {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                    <div className="tts-widget-desc" style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                       {isPlayingTTS ? (ttsPaused ? 'Narasi dijeda. Klik Play untuk melanjutkan.' : 'Narator AI sedang membacakan artikel ini untuk Anda...') : 'Dengarkan isi artikel layaknya podcast saat Anda sedang beraktivitas.'}
                     </div>
                   </div>
@@ -1165,6 +1165,7 @@ const ArticleDetail = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
+                    className="tts-widget-play-btn"
                     onClick={handleToggleTTS}
                     style={{
                       background: isPlayingTTS ? 'var(--color-accent)' : 'linear-gradient(135deg, #ef4444, #e11d48)',
@@ -1210,7 +1211,7 @@ const ArticleDetail = () => {
               </div>
 
               {/* Controls bar: speed & soundwave visualizer */}
-              <div style={{
+              <div className="tts-widget-controls" style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -1223,6 +1224,7 @@ const ArticleDetail = () => {
                   <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Kecepatan:</span>
                   {[0.8, 1.0, 1.25, 1.5].map(rate => (
                     <button
+                      className="tts-widget-speed-btn"
                       key={rate}
                       onClick={() => handleChangeRate(rate)}
                       style={{
@@ -1246,6 +1248,7 @@ const ArticleDetail = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Suara:</span>
                     <select
+                      className="tts-widget-voice-select"
                       value={ttsVoiceIndex}
                       onChange={(e) => {
                         setTtsVoiceIndex(Number(e.target.value));
