@@ -1314,8 +1314,10 @@ const ArticleDetail = () => {
                 {(() => {
                   let text = article.seoDescription || article.excerpt || '';
                   if (text.length < 100 && cleanText.length > 50) {
-                    let shortText = cleanText.substring(0, 220);
-                    text = shortText.substring(0, shortText.lastIndexOf(' ')) + '...';
+                    let cleaned = cleanText.replace(/&nbsp;/gi, ' ').replace(/\u00A0/g, ' ');
+                    let shortText = cleaned.substring(0, 220);
+                    let lastSpace = shortText.lastIndexOf(' ');
+                    text = lastSpace > 0 ? shortText.substring(0, lastSpace) + '...' : shortText + '...';
                   }
                   return text.replace(/&nbsp;/gi, ' ').replace(/\u00A0/g, ' ');
                 })()}
