@@ -114,7 +114,9 @@ const ArticleEditor = () => {
               title_en: data.title_en || '',
               content_en: data.content_en || '',
               title_zh: data.title_zh || '',
-              content_zh: data.content_zh || ''
+              content_zh: data.content_zh || '',
+              originalStatus: data.status,
+              originalPublishedAt: data.publishedAt || null
             });
           } else {
             alert('Berita tidak ditemukan.');
@@ -1049,7 +1051,9 @@ Konten: ${formData.content}
           title_zh: formData.title_zh || '',
           content_zh: formData.content_zh || '',
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
-          publishedAt: finalStatus === 'published' ? Timestamp.now() : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
+          publishedAt: finalStatus === 'published' 
+            ? (formData.originalPublishedAt ? formData.originalPublishedAt : Timestamp.now()) 
+            : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
         });
       } else {
         const articleData = {
