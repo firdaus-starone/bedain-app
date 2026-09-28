@@ -923,10 +923,10 @@ ${textToAnalyze}`;
     }
 
     setTranslating(true);
-    setNotifModal({ isOpen: true, type: 'translating', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris & Mandarin...', articleSlug: '', status: '' });
+    setNotifModal({ isOpen: true, type: 'translating', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris...', articleSlug: '', status: '' });
 
     try {
-      const prompt = `Terjemahkan Judul dan Konten berikut ke Bahasa Inggris DAN Bahasa Mandarin (Simplified).
+      const prompt = `Terjemahkan Judul dan Konten berikut ke Bahasa Inggris.
 
 FORMAT WAJIB BALASAN (Tanpa Markdown, Tanpa JSON):
 
@@ -935,20 +935,13 @@ Judul_EN: [Tulis judul Inggris di sini]
 [Tulis konten HTML Inggris di sini]
 </article_en>
 
-Judul_ZH: [Tulis judul Mandarin di sini]
-<article_zh>
-[Tulis konten HTML Mandarin di sini]
-</article_zh>
-
 Judul Asli: ${formData.title}
 Konten Asli: ${formData.content}`;
 
-      const aiResponse = await callGeminiAPI(prompt, "Hanya kembalikan format Judul_EN, <article_en>, Judul_ZH, dan <article_zh> tanpa format lain.", false);
+      const aiResponse = await callGeminiAPI(prompt, "Hanya kembalikan format Judul_EN dan <article_en> tanpa format lain.", false);
 
       let title_en = '';
       let content_en = '';
-      let title_zh = '';
-      let content_zh = '';
         
       // 1. Parse English
       const titleEnMatch = aiResponse.match(/Judul_EN:\s*([^\n]+)/i);
@@ -956,29 +949,19 @@ Konten Asli: ${formData.content}`;
       const contentEnMatch = aiResponse.match(/<article_en>([\s\S]*?)<\/article_en>/i);
       if (contentEnMatch) content_en = contentEnMatch[1].trim();
 
-      // 2. Parse Mandarin
-      const titleZhMatch = aiResponse.match(/Judul_ZH:\s*([^\n]+)/i);
-      if (titleZhMatch) title_zh = titleZhMatch[1].trim();
-      const contentZhMatch = aiResponse.match(/<article_zh>([\s\S]*?)<\/article_zh>/i);
-      if (contentZhMatch) content_zh = contentZhMatch[1].trim();
-
       // Bersihkan sisa markdown jika ada
       const cleanMarkdown = (text) => text.replace(/```(?:html)?/gi, '').replace(/```/g, '').trim();
       title_en = cleanMarkdown(title_en);
       content_en = cleanMarkdown(content_en);
-      title_zh = cleanMarkdown(title_zh);
-      content_zh = cleanMarkdown(content_zh);
 
       setFormData(prev => ({
         ...prev,
         title_en: title_en || prev.title_en,
         content_en: content_en || prev.content_en,
-        title_zh: title_zh || prev.title_zh,
-        content_zh: content_zh || prev.content_zh,
       }));
 
       setNotifModal({ isOpen: false, type: '', title: '', message: '', articleSlug: '', status: '' });
-      setTimeout(() => alert("Berhasil diterjemahkan! Silakan cek tab English dan Mandarin."), 300);
+      setTimeout(() => alert("Berhasil diterjemahkan! Silakan cek tab English."), 300);
 
     } catch(err) {
       console.error(err);
@@ -1212,26 +1195,23 @@ Konten Asli: ${formData.content}`;
                     <button type="button" onClick={() => setActiveLang('en')} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: activeLang === 'en' ? '#3b82f6' : 'transparent', color: activeLang === 'en' ? '#fff' : 'var(--admin-text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>
                       English
                     </button>
-                    <button type="button" onClick={() => setActiveLang('zh')} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: activeLang === 'zh' ? '#ef4444' : 'transparent', color: activeLang === 'zh' ? '#fff' : 'var(--admin-text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>
-                      Mandarin
-                    </button>
                   </div>
                   
                   <button type="button" onClick={handleTranslateAll} disabled={translating} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: translating ? 'not-allowed' : 'pointer', opacity: translating ? 0.7 : 1 }}>
-                    <Sparkles size={14} /> {translating ? 'Menerjemahkan...' : 'Translate Semua ke EN & ZH'}
+                    <Sparkles size={14} /> {translating ? 'Menerjemahkan...' : 'Translate ke English'}
                   </button>
                 </div>
 
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--admin-card-border)' }}>
                   <textarea 
                     name="title" 
-                    value={activeLang === 'id' ? formData.title : activeLang === 'en' ? formData.title_en : formData.title_zh} 
+                    value={activeLang === 'id' ? formData.title : formData.title_en} 
                     onChange={handleChange}
                     onInput={(e) => {
                       e.target.style.height = 'auto';
                       e.target.style.height = e.target.scrollHeight + 'px';
                     }}
-                    placeholder={activeLang === 'id' ? "Judul Berita Utama..." : activeLang === 'en' ? "English Title..." : "Mandarin Title..."}
+                    placeholder={activeLang === 'id' ? "Judul Berita Utama..." : "English Title..."}
                     rows={1}
                     className="editor-title-input"
                     style={{ 
@@ -1282,17 +1262,6 @@ Konten Asli: ${formData.content}`;
                       style={{ minHeight: '500px', fontSize: '1rem' }}
                     />
                   </div>
-                  <div style={{ display: activeLang === 'zh' ? 'block' : 'none' }}>
-                    <ReactQuill 
-                      theme="snow" 
-                      modules={quillModules}
-                      value={formData.content_zh} 
-                      onChange={(c, d, s) => {
-                        setFormData(p => ({ ...p, content_zh: c }));
-                      }} 
-                      placeholder="Write Mandarin content here..."
-                      style={{ minHeight: '500px', fontSize: '1rem' }}
-                    />
                   </div>
                 </div>
               </div>
