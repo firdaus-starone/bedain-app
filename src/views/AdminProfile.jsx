@@ -135,7 +135,7 @@ const AdminProfile = () => {
 
   return (
     <div className="admin-layout">
-      <main className="admin-main" style={{ padding: '30px' }}>
+      <main className="admin-main profile-main-pad" style={{ padding: '30px' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
@@ -153,7 +153,7 @@ const AdminProfile = () => {
             <div style={{ padding: '0 30px 30px', position: 'relative' }}>
               
               {/* Avatar Section */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '-50px', marginBottom: '20px' }}>
+              <div className="profile-header-avatar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '-50px', marginBottom: '20px' }}>
                 <div style={{ position: 'relative' }}>
                   <div 
                     style={{ 
@@ -191,7 +191,7 @@ const AdminProfile = () => {
               {/* Form Section */}
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Nama Lengkap</label>
                     <input 
@@ -234,7 +234,7 @@ const AdminProfile = () => {
                   ></textarea>
                 </div>
                 
-                <div style={{ marginTop: '10px', paddingTop: '20px', borderTop: '1px solid var(--admin-card-border)', display: 'flex', justifyContent: 'flex-end' }}>
+                <div className="profile-submit-wrap" style={{ marginTop: '10px', paddingTop: '20px', borderTop: '1px solid var(--admin-card-border)', display: 'flex', justifyContent: 'flex-end' }}>
                   <button 
                     type="submit" 
                     disabled={saving}
@@ -252,6 +252,27 @@ const AdminProfile = () => {
           
         </div>
       </main>
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          .profile-main-pad {
+            padding: 15px !important;
+          }
+          .profile-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .profile-header-avatar {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 15px;
+          }
+          .profile-submit-wrap {
+            justify-content: center !important;
+          }
+          .profile-submit-wrap button {
+            width: 100% !important;
+          }
+        }
+      `}} />
     </div>
   );
 };
