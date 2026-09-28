@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 const AdminProfile = () => {
   const router = useRouter();
-  const { user, userRole, loading: authLoading } = useAuth();
+  const { currentUser: user, userRole, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
