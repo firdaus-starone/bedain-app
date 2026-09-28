@@ -931,29 +931,30 @@ ${textToAnalyze}`;
 
     try {
       const prompt = `Terjemahkan Judul dan Konten berikut ke Bahasa Inggris.
-
-FORMAT WAJIB BALASAN (Tanpa Markdown, Tanpa JSON):
-
-Judul_EN: [Tulis judul Inggris di sini]
-<article_en>
-[Tulis konten HTML Inggris di sini]
-</article_en>
+Kembalikan HANYA format JSON yang valid dengan struktur berikut:
+{
+  "title_en": "Judul bahasa Inggris",
+  "content_en": "Konten bahasa Inggris dalam format HTML yang sama persis dengan aslinya"
+}
 
 Judul Asli: ${formData.title}
 Konten Asli: ${formData.content}`;
 
-      const aiResponse = await callGeminiAPI(prompt, "Hanya kembalikan format Judul_EN dan <article_en> tanpa format lain.", false);
+      const aiResponse = await callGeminiAPI(prompt, "Kamu adalah penerjemah berita profesional. HANYA kembalikan JSON valid tanpa teks lain.", true);
 
       let title_en = '';
       let content_en = '';
         
-      // 1. Parse English
-      const titleEnMatch = aiResponse.match(/Judul_EN:\s*([^\n]+)/i);
-      if (titleEnMatch) title_en = titleEnMatch[1].trim();
-      const contentEnMatch = aiResponse.match(/<article_en>([\s\S]*?)<\/article_en>/i);
-      if (contentEnMatch) content_en = contentEnMatch[1].trim();
+      try {
+        const parsed = JSON.parse(aiResponse);
+        title_en = parsed.title_en || '';
+        content_en = parsed.content_en || '';
+      } catch (e) {
+        console.error("Failed to parse JSON response:", e);
+        throw new Error("Format respons AI tidak valid.");
+      }
 
-      // Bersihkan sisa markdown jika ada
+      // Bersihkan sisa markdown jika ada (untuk berjaga-jaga)
       const cleanMarkdown = (text) => text.replace(/```(?:html)?/gi, '').replace(/```/g, '').trim();
       title_en = cleanMarkdown(title_en);
       content_en = cleanMarkdown(content_en);
