@@ -1203,7 +1203,7 @@ Konten Asli: ${formData.content}`;
                   </div>
                   
                   <button type="button" onClick={handleTranslateAll} disabled={translating} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: translating ? 'not-allowed' : 'pointer', opacity: translating ? 0.7 : 1 }}>
-                    <Sparkles size={14} /> {translating ? 'Menerjemahkan...' : 'Translate ke English'}
+                    <Sparkles size={14} /> {translating ? 'Menerjemahkan...' : 'Translate (Kilat) ⚡️'}
                   </button>
                 </div>
 
