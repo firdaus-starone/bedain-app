@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useI18n } from '../hooks/useI18n';
 import { X, Megaphone, ArrowRight } from 'lucide-react';
 import './StickySideAds.css';
 
 const AdBannerUI = ({ side, settings, onClose }) => {
+  const { t } = useI18n();
   const isLeft = side === 'left';
   const status = isLeft ? settings.stickyAdLeftStatus : settings.stickyAdRightStatus;
   
@@ -48,17 +50,17 @@ const AdBannerUI = ({ side, settings, onClose }) => {
           <Megaphone size={32} color="#2563EB" />
         </div>
         
-        {title && <h3 className="text-ad-title">{title}</h3>}
-        {desc && <p className="text-ad-desc">{desc}</p>}
+        {title && <h3 className="text-ad-title">{title === 'JANGKAU JUTAAN AUDIENS' ? (t('ads.reach_audience') || title) : title}</h3>}
+        {desc && <p className="text-ad-desc">{desc === 'Promosikan brand & produk Anda di portal berita terdepan.' ? (t('ads.promo_desc') || desc) : desc}</p>}
         
         {ctaText && (
           <div className="text-ad-cta">
-            {ctaText} <ArrowRight size={18} />
+            {ctaText === 'Pasang Sekarang' ? (t('ads.advertise_now') || ctaText) : ctaText} <ArrowRight size={18} />
           </div>
         )}
         
         <div className="text-ad-footer">
-          BEDAIN NEWS ADS
+          {t('ads.ads_label') || 'BEDAIN NEWS ADS'}
         </div>
       </div>
     </AdWrapper>

@@ -32,5 +32,23 @@
     "hot_topics": "Hot Topics",
     "opinion": "Opinion",
     "latest_news": "Latest News"
+  },
+  "categories": {
+    "berita": "News",
+    "ekonomi-bisnis": "Economy & Business",
+    "parlemen": "Parliament",
+    "pariwisata": "Tourism",
+    "lifestyle": "Lifestyle",
+    "budaya": "Culture",
+    "kementerian": "Ministries",
+    "internasional": "International",
+    "gadget": "Gadgets",
+    "hukum-kriminal": "Law & Crime"
+  },
+  "ads": {
+    "reach_audience": "REACH MILLIONS OF AUDIENCES",
+    "promo_desc": "Promote your brand & products on the leading news portal.",
+    "advertise_now": "Advertise Now",
+    "ads_label": "BEDAIN NEWS ADS"
   }
 }

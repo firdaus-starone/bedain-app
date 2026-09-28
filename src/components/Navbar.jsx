@@ -571,7 +571,7 @@ const Navbar = () => {
                         }
                       }}
                     >
-                      {menu.label}
+                      {t(`categories.${menu.id}`) || menu.label}
                     </a>
                   </li>
                 ))
@@ -607,7 +607,7 @@ const Navbar = () => {
                         }
                       }}
                     >
-                      {cat.name}
+                      {t(`categories.${cat.id}`) || cat.name}
                     </a>
                   </li>
                 ))
