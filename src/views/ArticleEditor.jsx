@@ -40,6 +40,8 @@ const ArticleEditor = () => {
   });
   
   const [catModal, setCatModal] = useState({ isOpen: false, name: '', loading: false });
+  const [activeLang, setActiveLang] = useState('id'); // 'id', 'en', 'zh'
+  const [translating, setTranslating] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -56,7 +58,11 @@ const ArticleEditor = () => {
     slug: '',
     videoUrl: '',
     location: '',
-    contributorName: ''
+    contributorName: '',
+    title_en: '',
+    content_en: '',
+    title_zh: '',
+    content_zh: ''
   });
 
   useEffect(() => {
@@ -104,7 +110,11 @@ const ArticleEditor = () => {
               tags: Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags || ''),
               slug: data.slug || '',
               location: data.location || '',
-              contributorName: data.contributorName || ''
+              contributorName: data.contributorName || '',
+              title_en: data.title_en || '',
+              content_en: data.content_en || '',
+              title_zh: data.title_zh || '',
+              content_zh: data.content_zh || ''
             });
           } else {
             alert('Berita tidak ditemukan.');
@@ -159,6 +169,17 @@ const ArticleEditor = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // For Title input, handle different languages
+    if (name === 'title') {
+      const fieldName = activeLang === 'id' ? 'title' : `title_${activeLang}`;
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: value
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -169,7 +190,8 @@ const ArticleEditor = () => {
     if (source === 'user') {
       isUserTypingRef.current = true;
     }
-    setFormData(prev => ({ ...prev, content }));
+    const fieldName = activeLang === 'id' ? 'content' : `content_${activeLang}`;
+    setFormData(prev => ({ ...prev, [fieldName]: content }));
   };
 
   const imageHandler = React.useCallback(() => {
@@ -882,6 +904,68 @@ ${textToAnalyze}`;
     }
   };
 
+  const handleTranslateAll = async () => {
+    if (!formData.title || !formData.content) {
+      alert("Harap isi Judul dan Isi Berita bahasa Indonesia terlebih dahulu.");
+      return;
+    }
+    const apiKey = getGeminiKey();
+    if (!apiKey) {
+      alert("API Key AI belum diatur! Buka Bedain AI Assistant untuk mengatur kunci.");
+      return;
+    }
+
+    setTranslating(true);
+    setNotifModal({ isOpen: true, type: 'success', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris & Mandarin...', articleSlug: '', status: '' });
+
+    try {
+      const prompt = `Terjemahkan artikel jurnalistik berikut ke dalam Bahasa Inggris dan Bahasa Mandarin.
+Kembalikan HANYA dalam format JSON dengan struktur:
+{
+  "en": {
+    "title": "English Title",
+    "content": "English Content in HTML format (preserving original tags)"
+  },
+  "zh": {
+    "title": "Mandarin Title",
+    "content": "Mandarin Content in HTML format (preserving original tags)"
+  }
+}
+
+Artikel Asli (ID):
+Judul: ${formData.title}
+Konten: ${formData.content}
+`;
+
+      const aiResponseText = await callGeminiAPI(prompt, "Kamu adalah ahli terjemahan jurnalistik profesional. WAJIB HANYA mengembalikan JSON yang valid.", true);
+      let parsed;
+      try {
+        parsed = JSON.parse(aiResponseText);
+      } catch(e) {
+        const cleaned = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(cleaned);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        title_en: parsed?.en?.title || prev.title_en,
+        content_en: parsed?.en?.content || prev.content_en,
+        title_zh: parsed?.zh?.title || prev.title_zh,
+        content_zh: parsed?.zh?.content || prev.content_zh,
+      }));
+
+      setNotifModal({ isOpen: false, type: '', title: '', message: '', articleSlug: '', status: '' });
+      setTimeout(() => alert("Berhasil diterjemahkan! Silakan cek tab English dan Mandarin."), 300);
+
+    } catch(err) {
+      console.error(err);
+      setNotifModal({ isOpen: false, type: '', title: '', message: '', articleSlug: '', status: '' });
+      setTimeout(() => alert("Gagal menerjemahkan: " + err.message), 300);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.content) {
@@ -940,6 +1024,10 @@ ${textToAnalyze}`;
           location: formData.location || '',
           updatedAt: Timestamp.now(),
           contributorName: formData.contributorName || '',
+          title_en: formData.title_en || '',
+          content_en: formData.content_en || '',
+          title_zh: formData.title_zh || '',
+          content_zh: formData.content_zh || '',
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
           publishedAt: finalStatus === 'published' ? Timestamp.now() : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
         });
@@ -1090,16 +1178,35 @@ ${textToAnalyze}`;
               {/* Removed AI Writing Assistant Banner */}
 
               <div style={{ background: 'var(--admin-card-bg)', borderRadius: '16px', border: '1px solid var(--admin-card-border)', overflow: 'hidden' }}>
+                {/* Language Tabs */}
+                <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--admin-card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', background: 'var(--admin-bg)' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" onClick={() => setActiveLang('id')} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: activeLang === 'id' ? '#10b981' : 'transparent', color: activeLang === 'id' ? '#fff' : 'var(--admin-text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      Indonesia
+                    </button>
+                    <button type="button" onClick={() => setActiveLang('en')} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: activeLang === 'en' ? '#3b82f6' : 'transparent', color: activeLang === 'en' ? '#fff' : 'var(--admin-text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      English
+                    </button>
+                    <button type="button" onClick={() => setActiveLang('zh')} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: activeLang === 'zh' ? '#ef4444' : 'transparent', color: activeLang === 'zh' ? '#fff' : 'var(--admin-text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      Mandarin
+                    </button>
+                  </div>
+                  
+                  <button type="button" onClick={handleTranslateAll} disabled={translating} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: translating ? 'not-allowed' : 'pointer', opacity: translating ? 0.7 : 1 }}>
+                    <Sparkles size={14} /> {translating ? 'Menerjemahkan...' : 'Translate Semua ke EN & ZH'}
+                  </button>
+                </div>
+
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--admin-card-border)' }}>
                   <textarea 
                     name="title" 
-                    value={formData.title} 
+                    value={activeLang === 'id' ? formData.title : activeLang === 'en' ? formData.title_en : formData.title_zh} 
                     onChange={handleChange}
                     onInput={(e) => {
                       e.target.style.height = 'auto';
                       e.target.style.height = e.target.scrollHeight + 'px';
                     }}
-                    placeholder="Judul Berita Utama..."
+                    placeholder={activeLang === 'id' ? "Judul Berita Utama..." : activeLang === 'en' ? "English Title..." : "Mandarin Title..."}
                     rows={1}
                     className="editor-title-input"
                     style={{ 
@@ -1128,9 +1235,9 @@ ${textToAnalyze}`;
                     ref={quillRef}
                     theme="snow" 
                     modules={quillModules}
-                    value={formData.content} 
+                    value={activeLang === 'id' ? formData.content : activeLang === 'en' ? formData.content_en : formData.content_zh} 
                     onChange={handleContentChange} 
-                    placeholder="Tuliskan cerita jurnalistik Anda di sini..."
+                    placeholder={activeLang === 'id' ? "Tuliskan cerita jurnalistik Anda di sini..." : activeLang === 'en' ? "Write English content here..." : "Write Mandarin content here..."}
                     style={{ minHeight: '500px', fontSize: '1rem' }}
                   />
                 </div>
