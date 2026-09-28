@@ -108,7 +108,7 @@ export const useSiteSettings = () => {
       }
     }
 
-    if (!cachedSettingsMemory && !fetchPromise) {
+    if (!fetchPromise) {
       fetchPromise = (async () => {
         try {
           const docRef = doc(db, 'settings', 'site');
@@ -131,7 +131,7 @@ export const useSiteSettings = () => {
           fetchPromise = null;
         }
       })();
-    } else if (fetchPromise) {
+    } else {
       fetchPromise.then((newSettings) => {
         if (isMounted && newSettings) {
           setSettings(newSettings);
