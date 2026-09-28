@@ -4,8 +4,10 @@ import Link from 'next/link';
 import LazyImage from './LazyImage';
 import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from './VideoBadge';
+import { useI18n } from '../hooks/useI18n';
 
 const MoreNewsGrid = ({ articles, loading }) => {
+  const { lang } = useI18n();
   const scrollRef = useRef(null);
   
   React.useEffect(() => {
@@ -46,16 +48,19 @@ const MoreNewsGrid = ({ articles, loading }) => {
     return null;
   }
 
-  const displayItems = articles.slice(0, 8).map(a => ({
-        id: a.id,
-        title: a.title,
-        slug: a.slug || a.id,
-        category: a.category || 'Berita',
-        icon: (a.category || 'P')[0].toUpperCase(),
-        count: '10+ Konten',
-        img: getArticleCardImage(a),
-        original: a
-  }));
+  const displayItems = articles.slice(0, 8).map(a => {
+    const displayTitle = lang === 'en' && a.title_en ? a.title_en : a.title;
+    return {
+      id: a.id,
+      title: displayTitle,
+      slug: a.slug || a.id,
+      category: a.category || 'Berita',
+      icon: (a.category || 'P')[0].toUpperCase(),
+      count: '10+ Konten',
+      img: getArticleCardImage(a),
+      original: a
+    };
+  });
 
   const getSlug = (item) => {
     if (item.slug && item.slug !== '#') return item.slug;

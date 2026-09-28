@@ -92,12 +92,13 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
              
              articles = published.slice(0, 5).map(data => ({
                  id: data.id,
-                 title: data.title,
+                 title: lang === 'en' && data.title_en ? data.title_en : data.title,
                  slug: data.slug,
                  img: getArticleCardImage(data),
                  videoUrl: data.videoUrl || data.youtubeUrl || data.video || null,
                  content: data.content || '',
-                 publishedAt: data.publishedAt || data.createdAt
+                 publishedAt: data.publishedAt || data.createdAt,
+                 original: data
              }));
              categoryArticlesCache.set(cat.name, articles);
            }

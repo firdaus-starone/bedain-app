@@ -39,9 +39,11 @@ const LatestNews = ({ articles, loading }) => {
     return `${author} | ${time}`;
   };
 
+  const getDisplayTitle = (item) => lang === 'en' && item.title_en ? item.title_en : item.title;
+
   const getSlug = (item) => {
     if (item.slug && item.slug !== '#') return item.slug;
-    return item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return (item.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   };
 
   if (loading) {
@@ -80,14 +82,14 @@ const LatestNews = ({ articles, loading }) => {
           <div className="recap-image" style={{ position: 'relative', overflow: 'hidden' }}>
             <Image 
               src={mainArticle.coverImage || fallbackMain.coverImage} 
-              alt={mainArticle.title} 
+              alt={getDisplayTitle(mainArticle)} 
               fill
               style={{ objectFit: 'cover' }}
               priority
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 800px"
             />
             <div className="recap-overlay">
-              <h2 className="recap-title">{mainArticle.title}</h2>
+              <h2 className="recap-title">{getDisplayTitle(mainArticle)}</h2>
               <div className="recap-meta">{getMetaText(mainArticle)}</div>
             </div>
           </div>
@@ -100,7 +102,7 @@ const LatestNews = ({ articles, loading }) => {
           </div>
           <div className="related-grid">
             {relatedArticles.map((article, idx) => (
-              <Link key={article.id || idx} href={`/article/${getSlug(article)}`} className="related-item">{article.title}</Link>
+              <Link key={article.id || idx} href={`/article/${getSlug(article)}`} className="related-item">{getDisplayTitle(article)}</Link>
             ))}
           </div>
         </div>

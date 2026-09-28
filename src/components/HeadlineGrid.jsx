@@ -113,6 +113,7 @@ const HeadlineGrid = ({ articles, loading }) => {
         {headlineItems.slice(0, 5).map((item, index) => {
           const itemSlug = getSlug(item);
           const itemImg = getArticleCardImage(item);
+          const displayTitle = lang === 'en' && item.title_en ? item.title_en : item.title;
 
           return (
             <Link key={item.id || index} href={`/article/${itemSlug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
@@ -120,7 +121,7 @@ const HeadlineGrid = ({ articles, loading }) => {
                 <div className="img-wrapper" style={{ position: 'relative' }}>
                   <Image 
                     src={itemImg} 
-                    alt={item.title} 
+                    alt={displayTitle} 
                     fill
                     style={{ objectFit: 'cover' }}
                     priority={index === 0}
@@ -128,7 +129,7 @@ const HeadlineGrid = ({ articles, loading }) => {
                   />
                   <VideoBadge article={item} />
                 </div>
-                <h3 className="card-title">{item.title}</h3>
+                <h3 className="card-title">{displayTitle}</h3>
               </article>
             </Link>
           );
@@ -141,6 +142,7 @@ const HeadlineGrid = ({ articles, loading }) => {
           {headlineItems.map((item, index) => {
             const itemSlug = getSlug(item);
             const itemImg = getArticleCardImage(item);
+            const displayTitle = lang === 'en' && item.title_en ? item.title_en : item.title;
             
             let hotTopicsText = (t('home.hot_topics') || 'TOPIK HANGAT').toUpperCase();
             if (hotTopicsText === 'TOPIK HANGAT') {
@@ -158,7 +160,7 @@ const HeadlineGrid = ({ articles, loading }) => {
                 <article className="story-card-item" style={{ position: 'relative' }}>
                   <Image 
                     src={itemImg} 
-                    alt={item.title} 
+                    alt={displayTitle} 
                     className="story-card-img"
                     fill
                     style={{ objectFit: 'cover' }}
@@ -175,8 +177,8 @@ const HeadlineGrid = ({ articles, loading }) => {
 
                   {/* Bottom White Title Box with Left Red Accent Bar */}
                   <div className="story-title-box">
-                    <h3 className="story-title-text" title={item.title}>
-                      {item.title.length > 45 ? item.title.substring(0, 45) + '...' : item.title}
+                    <h3 className="story-title-text" title={displayTitle}>
+                      {displayTitle?.length > 45 ? displayTitle.substring(0, 45) + '...' : displayTitle}
                     </h3>
                   </div>
 
