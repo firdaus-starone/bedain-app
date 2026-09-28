@@ -56,7 +56,7 @@ const HomePage = () => {
 
       <Navbar />
 
-      <div className="container" style={{ marginTop: 'var(--spacing-md)' }}>
+      <div className="container home-headline-container" style={{ marginTop: 'var(--spacing-md)' }}>
         <HeadlineGrid articles={headlineArticles} loading={loading} />
       </div>
       
@@ -90,6 +90,14 @@ const HomePage = () => {
       </main>
       
       <Footer />
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          .home-headline-container {
+            margin-top: 50px !important;
+          }
+        }
+      `}} />
     </div>
   );
 };
