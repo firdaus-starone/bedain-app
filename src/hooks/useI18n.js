@@ -55,7 +55,7 @@ export const I18nProvider = ({ children, initialLang = 'id' }) => {
       if (value && value[k] !== undefined) {
         value = value[k];
       } else {
-        return key; // Fallback to key if not found
+        return null; // Fallback to null so that || 'Fallback' works
       }
     }
     return value;

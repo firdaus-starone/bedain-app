@@ -571,7 +571,7 @@ const Navbar = () => {
                         }
                       }}
                     >
-                      {t(`categories.${menu.id}`) || menu.label}
+                      {t(`categories.${menu.id}`) || (lang === 'en' ? menu.label_en || menu.label : lang === 'zh' ? menu.label_zh || menu.label : menu.label)}
                     </a>
                   </li>
                 ))
@@ -607,7 +607,7 @@ const Navbar = () => {
                         }
                       }}
                     >
-                      {t(`categories.${cat.id}`) || cat.name}
+                      {t(`categories.${cat.id}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}
                     </a>
                   </li>
                 ))
