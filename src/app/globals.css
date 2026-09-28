@@ -5008,10 +5008,10 @@ body[class*="bg-[#121214]"] .local-news-widget {
 .local-news-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  margin-bottom: 16px;
   border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
 body[class*="bg-[#121214]"] .local-news-header {
@@ -5020,10 +5020,11 @@ body[class*="bg-[#121214]"] .local-news-header {
 
 .local-news-title {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #1e3a8a;
   margin: 0;
+  line-height: 1.3;
 }
 
 body[class*="bg-[#121214]"] .local-news-title {
@@ -5033,10 +5034,11 @@ body[class*="bg-[#121214]"] .local-news-title {
 .local-news-location {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: #333;
+  margin-top: 2px;
 }
 
 body[class*="bg-[#121214]"] .local-news-location {
@@ -5073,10 +5075,10 @@ body[class*="bg-[#121214]"] .local-news-location {
 
 .local-featured-title {
   font-family: var(--font-heading);
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -5084,7 +5086,7 @@ body[class*="bg-[#121214]"] .local-news-location {
 }
 
 .local-featured-date {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #ddd;
 }
 
@@ -5112,7 +5114,7 @@ body[class*="bg-[#121214]"] .local-list-item {
 
 .local-list-region {
   color: #f97316;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   margin-bottom: 4px;
 }
@@ -5120,10 +5122,10 @@ body[class*="bg-[#121214]"] .local-list-item {
 .local-list-title {
   color: #111;
   font-family: var(--font-heading);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.4;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
 body[class*="bg-[#121214]"] .local-list-title {
@@ -5131,7 +5133,7 @@ body[class*="bg-[#121214]"] .local-list-title {
 }
 
 .local-list-date {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #666;
 }
 
