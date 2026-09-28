@@ -926,67 +926,55 @@ ${textToAnalyze}`;
     setNotifModal({ isOpen: true, type: 'translating', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris & Mandarin...', articleSlug: '', status: '' });
 
     try {
-      const promptEN = `Terjemahkan Judul dan Konten berikut ke Bahasa Inggris.
+      const prompt = `Terjemahkan Judul dan Konten berikut ke Bahasa Inggris DAN Bahasa Mandarin (Simplified).
 
 FORMAT WAJIB BALASAN (Tanpa Markdown, Tanpa JSON):
-Judul: [Tulis judul Inggris di sini]
-<article>
+
+Judul_EN: [Tulis judul Inggris di sini]
+<article_en>
 [Tulis konten HTML Inggris di sini]
-</article>
+</article_en>
 
-Judul Asli: ${formData.title}
-Konten Asli: ${formData.content}`;
-
-      const promptZH = `Terjemahkan Judul dan Konten berikut ke Bahasa Mandarin (Simplified).
-
-FORMAT WAJIB BALASAN (Tanpa Markdown, Tanpa JSON):
-Judul: [Tulis judul Mandarin di sini]
-<article>
+Judul_ZH: [Tulis judul Mandarin di sini]
+<article_zh>
 [Tulis konten HTML Mandarin di sini]
-</article>
+</article_zh>
 
 Judul Asli: ${formData.title}
 Konten Asli: ${formData.content}`;
 
-      const [aiResponseEN, aiResponseZH] = await Promise.all([
-        callGeminiAPI(promptEN, "Hanya kembalikan dua bagian: 'Judul:' dan teks di dalam tag '<article>'.", false),
-        callGeminiAPI(promptZH, "Hanya kembalikan dua bagian: 'Judul:' dan teks di dalam tag '<article>'.", false)
-      ]);
+      const aiResponse = await callGeminiAPI(prompt, "Hanya kembalikan format Judul_EN, <article_en>, Judul_ZH, dan <article_zh> tanpa format lain.", false);
 
-      const parseResponse = (text) => {
-        let title = '';
-        let content = '';
+      let title_en = '';
+      let content_en = '';
+      let title_zh = '';
+      let content_zh = '';
         
-        // 1. Ambil Judul
-        const titleMatch = text.match(/Judul:\s*([^\n]+)/i);
-        if (titleMatch) title = titleMatch[1].trim();
-        
-        // 2. Ambil Konten di dalam tag <article>
-        const contentMatch = text.match(/<article>([\s\S]*?)<\/article>/i);
-        if (contentMatch) {
-          content = contentMatch[1].trim();
-        } else {
-          // Fallback jika AI lupa tag <article>, ambil semua sesudah 'Konten:'
-          const fallbackMatch = text.match(/Konten:\s*([\s\S]*)$/i);
-          if (fallbackMatch) content = fallbackMatch[1].trim();
-        }
+      // 1. Parse English
+      const titleEnMatch = aiResponse.match(/Judul_EN:\s*([^\n]+)/i);
+      if (titleEnMatch) title_en = titleEnMatch[1].trim();
+      const contentEnMatch = aiResponse.match(/<article_en>([\s\S]*?)<\/article_en>/i);
+      if (contentEnMatch) content_en = contentEnMatch[1].trim();
 
-        // Bersihkan markdown
-        title = title.replace(/```(?:html)?/gi, '').replace(/```/g, '').trim();
-        content = content.replace(/```(?:html)?/gi, '').replace(/```/g, '').trim();
+      // 2. Parse Mandarin
+      const titleZhMatch = aiResponse.match(/Judul_ZH:\s*([^\n]+)/i);
+      if (titleZhMatch) title_zh = titleZhMatch[1].trim();
+      const contentZhMatch = aiResponse.match(/<article_zh>([\s\S]*?)<\/article_zh>/i);
+      if (contentZhMatch) content_zh = contentZhMatch[1].trim();
 
-        return { title, content };
-      };
-
-      const parsedEN = parseResponse(aiResponseEN);
-      const parsedZH = parseResponse(aiResponseZH);
+      // Bersihkan sisa markdown jika ada
+      const cleanMarkdown = (text) => text.replace(/```(?:html)?/gi, '').replace(/```/g, '').trim();
+      title_en = cleanMarkdown(title_en);
+      content_en = cleanMarkdown(content_en);
+      title_zh = cleanMarkdown(title_zh);
+      content_zh = cleanMarkdown(content_zh);
 
       setFormData(prev => ({
         ...prev,
-        title_en: parsedEN.title || prev.title_en,
-        content_en: parsedEN.content || prev.content_en,
-        title_zh: parsedZH.title || prev.title_zh,
-        content_zh: parsedZH.content || prev.content_zh,
+        title_en: title_en || prev.title_en,
+        content_en: content_en || prev.content_en,
+        title_zh: title_zh || prev.title_zh,
+        content_zh: content_zh || prev.content_zh,
       }));
 
       setNotifModal({ isOpen: false, type: '', title: '', message: '', articleSlug: '', status: '' });
