@@ -207,7 +207,7 @@ const ArticleEditor = () => {
       if (file) {
         setLoading(true);
         try {
-          const url = await uploadAndCompressImage(file, 'articles/content');
+          const url = await uploadAndCompressImage(file, 'articles/content', currentUser?.uid);
           const editor = quillRef.current.getEditor();
           const range = editor.getSelection(true) || { index: editor.getLength() };
           editor.insertEmbed(range.index, 'image', url);
@@ -905,7 +905,7 @@ ${textToAnalyze}`;
 
     setUploadingImage(true);
     try {
-      const downloadUrl = await uploadAndCompressImage(file, 'articles/images');
+      const downloadUrl = await uploadAndCompressImage(file, 'articles/images', currentUser?.uid);
       setFormData(prev => ({ ...prev, imageUrl: downloadUrl }));
     } catch (error) {
       console.error("Error uploading image:", error);

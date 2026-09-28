@@ -8,7 +8,7 @@ import { storage } from './firebase';
  * @param {string} path - Path/folder di storage, misal 'articles/cover'
  * @returns {Promise<string>} - URL gambar setelah diunggah
  */
-export const uploadAndCompressImage = async (imageFile, path = 'articles/images') => {
+export const uploadAndCompressImage = async (imageFile, path = 'articles/images', uid = null) => {
   if (!imageFile) throw new Error("File gambar tidak ditemukan");
 
   // 1. Opsi Kompresi & Konversi WebP
@@ -24,7 +24,8 @@ export const uploadAndCompressImage = async (imageFile, path = 'articles/images'
     const compressedFile = await imageCompression(imageFile, options);
     
     // 3. Siapkan Ref Storage Firebase dengan nama unik
-    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
+    const uidSuffix = uid ? `_${uid}` : '';
+    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${uidSuffix}.webp`;
     const storageRef = ref(storage, `${path}/${uniqueFileName}`);
 
     // 4. Unggah ke Firebase Storage (gunakan uploadBytes agar promise resolve dengan benar)

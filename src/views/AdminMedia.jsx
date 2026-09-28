@@ -9,7 +9,7 @@ import { LayoutDashboard, PenTool, Globe, LogOut, Users, Image as ImageIcon, Cop
 
 
 const AdminMedia = () => {
-  const { userRole, loading: authLoading } = useAuth();
+  const { user, userRole, loading: authLoading } = useAuth();
   const [mediaList, setMediaList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -20,20 +20,29 @@ const AdminMedia = () => {
   const ITEMS_PER_PAGE = 12;
 
   useEffect(() => {
-    fetchMediaRefs();
-  }, []);
+    if (!authLoading) {
+      fetchMediaRefs();
+    }
+  }, [authLoading, userRole, user]);
 
   const fetchMediaRefs = async () => {
     setLoading(true);
     try {
-      const paths = ['articles/images', 'banners', 'sticky-ads'];
+      const paths = ['articles/images', 'articles/content', 'banners', 'sticky-ads'];
       const allItems = [];
       
       for (const p of paths) {
         try {
           const listRef = ref(storage, p);
           const res = await listAll(listRef);
-          allItems.push(...res.items);
+          
+          let validItems = res.items;
+          // Filter if role is reporter, they can only see files uploaded by themselves
+          if (userRole === 'reporter' && user?.uid) {
+            validItems = validItems.filter(item => item.name.includes(`_${user.uid}.`));
+          }
+          
+          allItems.push(...validItems);
         } catch (e) {
           console.warn(`Folder ${p} belum ada atau tidak bisa diakses`, e);
         }
@@ -122,7 +131,7 @@ const AdminMedia = () => {
 
     setUploading(true);
     try {
-      await uploadAndCompressImage(file, 'articles/images');
+      await uploadAndCompressImage(file, 'articles/images', user?.uid);
       await fetchMediaRefs(); // Refresh list
     } catch (error) {
       console.error("Upload gagal:", error);
