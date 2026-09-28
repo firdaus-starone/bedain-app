@@ -179,14 +179,14 @@ const Footer = () => {
                     <ul className="footer-links">
                       {categories.slice(0, Math.ceil(categories.length / 2)).map(cat => (
                         <li key={cat.id}>
-                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.id}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
+                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
                         </li>
                       ))}
                     </ul>
                     <ul className="footer-links">
                       {categories.slice(Math.ceil(categories.length / 2)).map(cat => (
                         <li key={cat.id}>
-                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.id}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
+                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
                         </li>
                       ))}
                     </ul>
