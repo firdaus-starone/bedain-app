@@ -14,14 +14,14 @@ const I18nContext = createContext({
   changeLanguage: () => {},
 });
 
-export const I18nProvider = ({ children, initialLang = 'id' }) => {
-  const [lang, setLang] = useState(initialLang);
+export const I18nProvider = ({ children }) => {
+  const [lang, setLang] = useState('id');
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    setLang(initialLang);
-  }, [initialLang]);
+    setLang('id');
+  }, []);
 
   const changeLanguage = (newLang) => {
     if (newLang === lang) return;
@@ -50,7 +50,7 @@ export const I18nProvider = ({ children, initialLang = 'id' }) => {
   const t = (key) => {
     if (typeof key !== 'string') return null;
     const keys = key.split('.');
-    let value = dictionaries[lang] || dictionaries['id'];
+    let value = dictionaries['id'];
     
     for (const k of keys) {
       if (value && value[k] !== undefined) {
