@@ -50,12 +50,12 @@ const AdBannerUI = ({ side, settings, onClose }) => {
           <Megaphone size={32} color="#2563EB" />
         </div>
         
-        {title && <h3 className="text-ad-title">{title === 'JANGKAU JUTAAN AUDIENS' ? (t('ads.reach_audience') || title) : title}</h3>}
-        {desc && <p className="text-ad-desc">{desc === 'Promosikan brand & produk Anda di portal berita terdepan.' ? (t('ads.promo_desc') || desc) : desc}</p>}
+        {title && <h3 className="text-ad-title">{t(title) || title}</h3>}
+        {desc && <p className="text-ad-desc">{t(desc) || desc}</p>}
         
         {ctaText && (
           <div className="text-ad-cta">
-            {ctaText === 'Pasang Sekarang' ? (t('ads.advertise_now') || ctaText) : ctaText} <ArrowRight size={18} />
+            {t(ctaText) || ctaText} <ArrowRight size={18} />
           </div>
         )}
         

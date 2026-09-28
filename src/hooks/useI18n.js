@@ -48,6 +48,7 @@ export const I18nProvider = ({ children, initialLang = 'id' }) => {
   };
 
   const t = (key) => {
+    if (typeof key !== 'string') return null;
     const keys = key.split('.');
     let value = dictionaries[lang] || dictionaries['id'];
     
