@@ -11,7 +11,6 @@ export default function LanguageSwitcher() {
   const languages = [
     { code: 'id', label: 'ID - Indonesia' },
     { code: 'en', label: 'EN - English' },
-    { code: 'zh', label: 'ZH - Mandarin' },
   ];
 
   // Close dropdown when clicking outside
