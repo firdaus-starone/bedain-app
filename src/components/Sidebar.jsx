@@ -5,6 +5,7 @@ import LazyImage from './LazyImage';
 import AdUnit from './AdUnit';
 import AdBanner from './AdBanner';
 import RedaksiWidget from './RedaksiWidget';
+import LocalNewsWidget from './LocalNewsWidget';
 import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useI18n } from '../hooks/useI18n';
@@ -184,6 +185,7 @@ const Sidebar = () => {
           <AdBanner slot="sidebar" />
           <AdUnit format="rectangle" />
           <RedaksiWidget />
+          <LocalNewsWidget />
 
       <div className="sidebar-widget">
         <h3 className="widget-title">{t('home.popular') || 'Terpopuler'}</h3>
