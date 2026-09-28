@@ -62,7 +62,7 @@ const AdUnit = ({ format = 'rectangle', client, slot, style = {}, className = ''
         background: variant === 'community' 
           ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%)'
           : 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(168, 85, 247, 0.08) 100%)',
-        border: `1px solid ${variant === 'community' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+        border: 'none',
         boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
         display: 'flex',
         flexDirection: 'row',

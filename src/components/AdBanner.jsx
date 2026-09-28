@@ -129,7 +129,7 @@ const AdBanner = ({ slot = 'article' }) => {
           overflow: 'hidden',
           position: 'relative',
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          border: '1px solid var(--color-border)',
+          border: 'none',
           background: 'var(--color-bg-secondary)'
         }}
       >
