@@ -515,9 +515,9 @@ const ArticleEditor = () => {
       }
     }
 
-    // 2. Jika semua model standar gagal (misal karena list model khusus) DAN bukan fatal error, lakukan auto-discovery model loop
-    if (!success && (!response || response.status === 404 || response.status === 429 || response.status >= 500)) {
-      console.log('Model standar gagal/tidak tersedia, mencoba auto-discovery model dari akun API...');
+    // 2. Jika semua model standar gagal (misal karena list model khusus) DAN bukan fatal error/quota, lakukan auto-discovery model loop
+    if (!success && response && response.status === 404) {
+      console.log('Model standar tidak ditemukan (404), mencoba auto-discovery model dari akun API...');
       try {
         const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
         const listData = await listResponse.json();
