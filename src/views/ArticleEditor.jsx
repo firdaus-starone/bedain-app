@@ -916,7 +916,7 @@ ${textToAnalyze}`;
     }
 
     setTranslating(true);
-    setNotifModal({ isOpen: true, type: 'success', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris & Mandarin...', articleSlug: '', status: '' });
+    setNotifModal({ isOpen: true, type: 'translating', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris & Mandarin...', articleSlug: '', status: '' });
 
     try {
       const prompt = `Terjemahkan artikel jurnalistik berikut ke dalam Bahasa Inggris dan Bahasa Mandarin.
@@ -1251,15 +1251,44 @@ Konten: ${formData.content}
 
 
                 <div className="modern-quill-container" style={{ padding: '8px 16px' }}>
-                  <ReactQuill 
-                    ref={quillRef}
-                    theme="snow" 
-                    modules={quillModules}
-                    value={activeLang === 'id' ? formData.content : activeLang === 'en' ? formData.content_en : formData.content_zh} 
-                    onChange={handleContentChange} 
-                    placeholder={activeLang === 'id' ? "Tuliskan cerita jurnalistik Anda di sini..." : activeLang === 'en' ? "Write English content here..." : "Write Mandarin content here..."}
-                    style={{ minHeight: '500px', fontSize: '1rem' }}
-                  />
+                  <div style={{ display: activeLang === 'id' ? 'block' : 'none' }}>
+                    <ReactQuill 
+                      ref={quillRef}
+                      theme="snow" 
+                      modules={quillModules}
+                      value={formData.content} 
+                      onChange={(c, d, s) => {
+                        if (s === 'user') isUserTypingRef.current = true;
+                        setFormData(p => ({ ...p, content: c }));
+                      }} 
+                      placeholder="Tuliskan cerita jurnalistik Anda di sini..."
+                      style={{ minHeight: '500px', fontSize: '1rem' }}
+                    />
+                  </div>
+                  <div style={{ display: activeLang === 'en' ? 'block' : 'none' }}>
+                    <ReactQuill 
+                      theme="snow" 
+                      modules={quillModules}
+                      value={formData.content_en} 
+                      onChange={(c, d, s) => {
+                        setFormData(p => ({ ...p, content_en: c }));
+                      }} 
+                      placeholder="Write English content here..."
+                      style={{ minHeight: '500px', fontSize: '1rem' }}
+                    />
+                  </div>
+                  <div style={{ display: activeLang === 'zh' ? 'block' : 'none' }}>
+                    <ReactQuill 
+                      theme="snow" 
+                      modules={quillModules}
+                      value={formData.content_zh} 
+                      onChange={(c, d, s) => {
+                        setFormData(p => ({ ...p, content_zh: c }));
+                      }} 
+                      placeholder="Write Mandarin content here..."
+                      style={{ minHeight: '500px', fontSize: '1rem' }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1690,19 +1719,25 @@ Konten: ${formData.content}
               borderRadius: '50%',
               background: notifModal.type === 'success'
                 ? 'linear-gradient(135deg, rgba(74, 222, 128, 0.2), rgba(16, 185, 129, 0.35))'
-                : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.35))',
+                : notifModal.type === 'translating'
+                  ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.35))'
+                  : 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.35))',
               border: notifModal.type === 'success'
                 ? '2px solid rgba(74, 222, 128, 0.6)'
-                : '2px solid rgba(239, 68, 68, 0.6)',
+                : notifModal.type === 'translating'
+                  ? '2px solid rgba(168, 85, 247, 0.6)'
+                  : '2px solid rgba(239, 68, 68, 0.6)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: notifModal.type === 'success' ? '#4ade80' : '#ef4444',
+              color: notifModal.type === 'success' ? '#4ade80' : notifModal.type === 'translating' ? '#a855f7' : '#ef4444',
               boxShadow: notifModal.type === 'success'
                 ? '0 0 35px rgba(74, 222, 128, 0.35)'
-                : '0 0 35px rgba(239, 68, 68, 0.35)'
+                : notifModal.type === 'translating'
+                  ? '0 0 35px rgba(168, 85, 247, 0.35)'
+                  : '0 0 35px rgba(239, 68, 68, 0.35)'
             }}>
-              {notifModal.type === 'success' ? <CheckCircle2 size={44} /> : <Sparkles size={44} />}
+              {notifModal.type === 'success' ? <CheckCircle2 size={44} /> : notifModal.type === 'translating' ? <div className="spinner" style={{ width: '30px', height: '30px', borderWidth: '3px', borderTopColor: '#a855f7' }}></div> : <Sparkles size={44} />}
             </div>
 
             <div>
@@ -1957,46 +1992,50 @@ Konten: ${formData.content}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                {notifModal.message.includes('AI') || notifModal.message.includes('API Key') ? (
-                  <button
-                    onClick={() => {
-                      setNotifModal({ ...notifModal, isOpen: false });
-                      setIsAIModalOpen(true);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '13px 20px',
-                      borderRadius: '12px',
-                      background: 'linear-gradient(135deg, var(--color-accent) 0%, #ff8a65 100%)',
-                      border: 'none',
-                      color: '#fff',
-                      fontWeight: 700,
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 16px rgba(230, 57, 70, 0.4)'
-                    }}
-                  >
-                    🔑 Pengaturan API Key AI
-                  </button>
-                ) : null}
-                <button
-                  onClick={() => {
-                    setNotifModal({ ...notifModal, isOpen: false });
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '13px 20px',
-                    borderRadius: '12px',
-                    background: 'transparent',
-                    border: '1px solid var(--admin-border)',
-                    color: 'var(--admin-text-secondary)',
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ✖️ Tutup
-                </button>
+                {notifModal.type === 'translating' ? null : (
+                  <>
+                    {(notifModal.message.includes('AI') || notifModal.message.includes('API Key')) && (
+                      <button
+                        onClick={() => {
+                          setNotifModal({ ...notifModal, isOpen: false });
+                          setIsAIModalOpen(true);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '13px 20px',
+                          borderRadius: '12px',
+                          background: 'linear-gradient(135deg, var(--color-accent) 0%, #ff8a65 100%)',
+                          border: 'none',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 16px rgba(230, 57, 70, 0.4)'
+                        }}
+                      >
+                        🔑 Pengaturan API Key AI
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setNotifModal({ ...notifModal, isOpen: false });
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '13px 20px',
+                        borderRadius: '12px',
+                        background: 'transparent',
+                        border: '1px solid var(--admin-border)',
+                        color: 'var(--admin-text-secondary)',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✖️ Tutup
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
