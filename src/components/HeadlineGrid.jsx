@@ -8,7 +8,7 @@ import VideoBadge from './VideoBadge';
 import { useI18n } from '../hooks/useI18n';
 
 const HeadlineGrid = ({ articles, loading }) => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const fallbackHeadlines = [
     {
       id: 'fallback-1',
