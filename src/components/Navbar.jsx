@@ -489,7 +489,7 @@ const Navbar = () => {
                 </svg>
               )}
             </button>
-            <LanguageSwitcher />
+
             <button className="menu-button desktop-only-menu-btn" aria-label="Menu" onClick={() => setIsMenuOpen(true)}>
               <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="4" y1="7" x2="20" y2="7"></line>

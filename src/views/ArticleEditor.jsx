@@ -1193,22 +1193,6 @@ Konten Asli: ${formData.content}`;
               {/* Removed AI Writing Assistant Banner */}
 
               <div style={{ background: 'var(--admin-card-bg)', borderRadius: '16px', border: '1px solid var(--admin-card-border)', overflow: 'hidden' }}>
-                {/* Language Tabs */}
-                <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--admin-card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', background: 'var(--admin-bg)' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" onClick={() => setActiveLang('id')} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: activeLang === 'id' ? '#10b981' : 'transparent', color: activeLang === 'id' ? '#fff' : 'var(--admin-text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>
-                      Indonesia
-                    </button>
-                    <button type="button" onClick={() => setActiveLang('en')} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: activeLang === 'en' ? '#3b82f6' : 'transparent', color: activeLang === 'en' ? '#fff' : 'var(--admin-text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}>
-                      English
-                    </button>
-                  </div>
-                  
-                  <button type="button" onClick={handleTranslateAll} disabled={translating} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: translating ? 'not-allowed' : 'pointer', opacity: translating ? 0.7 : 1 }}>
-                    <Sparkles size={14} /> {translating ? 'Menerjemahkan...' : 'Translate (Kilat) ⚡️'}
-                  </button>
-                </div>
-
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--admin-card-border)' }}>
                   <textarea 
                     name="title" 
