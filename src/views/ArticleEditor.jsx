@@ -924,34 +924,45 @@ Kembalikan HANYA dalam format JSON dengan struktur:
 {
   "en": {
     "title": "English Title",
-    "content": "English Content in HTML format (preserving original tags)"
+    "content": "English Content in HTML format (preserving original tags, MUST NOT contain unescaped quotes or unescaped newlines)"
   },
   "zh": {
     "title": "Mandarin Title",
-    "content": "Mandarin Content in HTML format (preserving original tags)"
+    "content": "Mandarin Content in HTML format (preserving original tags, MUST NOT contain unescaped quotes or unescaped newlines)"
   }
 }
+
+PENTING:
+- Konten HTML HARUS digabungkan menjadi satu baris (single line string) atau gunakan escape karakter '\\n'.
+- JANGAN gunakan raw newlines/enter di dalam string JSON.
+- JANGAN sertakan markdown backticks (\`\`\`).
 
 Artikel Asli (ID):
 Judul: ${formData.title}
 Konten: ${formData.content}
 `;
 
-      const aiResponseText = await callGeminiAPI(prompt, "Kamu adalah ahli terjemahan jurnalistik profesional. WAJIB HANYA mengembalikan JSON yang valid tanpa markdown apapun.", true);
+      const aiResponseText = await callGeminiAPI(prompt, "Kamu adalah sistem otomatis. HANYA KELUARKAN JSON TEXT. JANGAN ADA TEKS LAIN. PASTIKAN JSON VALID.", true);
       let parsed;
+      let cleanText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      
       try {
-        parsed = JSON.parse(aiResponseText);
+        parsed = JSON.parse(cleanText);
       } catch(e) {
         try {
-          const match = aiResponseText.match(/\{[\s\S]*\}/);
+          const match = cleanText.match(/\{[\s\S]*\}/);
           if (match) {
-            parsed = JSON.parse(match[0]);
+            // Attempt to fix unescaped newlines inside strings if they exist
+            let potentialJson = match[0];
+            // Basic cleanup for control characters
+            potentialJson = potentialJson.replace(/[\u0000-\u001F]+/g, " ");
+            parsed = JSON.parse(potentialJson);
           } else {
             throw new Error("Format tidak dikenali");
           }
         } catch(e2) {
           console.error("Original AI Response:", aiResponseText);
-          throw new Error("Gagal membaca respon AI (" + e.message + "). Coba lagi.");
+          throw new Error("Gagal membaca respon AI (" + e2.message + "). Coba lagi.");
         }
       }
 
