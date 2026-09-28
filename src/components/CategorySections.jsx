@@ -176,7 +176,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
         
         if (!featureArticle) return null;
         
-        const categoryName = t(`categories.${category.id}`) || (lang === 'en' ? category.name_en || category.name : lang === 'zh' ? category.name_zh || category.name : category.name);
+        const categoryName = t(`categories.${category.slug || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? category.name_en || category.name : lang === 'zh' ? category.name_zh || category.name : category.name);
 
         return (
           <section key={category.id || category.name} id={`kategori-${category.slug || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="category-block">
