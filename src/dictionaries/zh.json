@@ -43,13 +43,22 @@
     "kementerian": "部委",
     "internasional": "国际",
     "gadget": "小工具",
-    "hukum-kriminal": "法律与犯罪"
+    "hukum-kriminal": "法律与犯罪",
+    "politik": "政治",
+    "opini": "观点",
+    "pendidikan": "教育",
+    "sorotan": "焦点",
+    "sport": "体育",
+    "kesehatan": "健康",
+    "otomotif": "汽车",
+    "meja-redaksi": "编辑部"
   },
   "ads": {
     "reach_audience": "覆盖数百万受众",
     "promo_desc": "在领先的新闻门户网站上推广您的品牌和产品。",
     "advertise_now": "立即投放",
-    "ads_label": "BEDAIN NEWS 广告"
+    "ads_label": "BEDAIN NEWS 广告",
+    "premium_ad": "高级广告"
   },
   "footer": {
     "part_of": "所属",

@@ -20,6 +20,16 @@ const AdBannerUI = ({ side, settings, onClose }) => {
   const desc = isLeft ? settings.stickyAdLeftDesc : settings.stickyAdRightDesc;
   const ctaText = isLeft ? settings.stickyAdLeftCtaText : settings.stickyAdRightCtaText;
 
+  const mapAdText = (text) => {
+    if (!text) return text;
+    const tText = typeof text === 'string' ? text.trim() : text;
+    if (tText.toUpperCase() === 'JANGKAU JUTAAN AUDIENS') return t('ads.reach_audience') || text;
+    if (tText.includes('Promosikan brand')) return t('ads.promo_desc') || text;
+    if (tText.includes('Pasang Sekarang')) return t('ads.advertise_now') || text;
+    if (tText.includes('IKLAN PREMIUM')) return t('ads.premium_ad') || text;
+    return text;
+  };
+
   const AdWrapper = ({ children }) => (
     <div className={`sticky-ad ${side}-ad`}>
       <button className="close-ad-btn" onClick={onClose} aria-label="Tutup">
@@ -44,18 +54,18 @@ const AdBannerUI = ({ side, settings, onClose }) => {
   return (
     <AdWrapper>
       <div className="text-ad-card">
-        {badge && <div className="text-ad-badge">{badge}</div>}
+        {badge && <div className="text-ad-badge">{mapAdText(badge)}</div>}
         
         <div className="text-ad-icon-wrapper">
           <Megaphone size={32} color="#2563EB" />
         </div>
         
-        {title && <h3 className="text-ad-title">{t(title) || title}</h3>}
-        {desc && <p className="text-ad-desc">{t(desc) || desc}</p>}
+        {title && <h3 className="text-ad-title">{mapAdText(title)}</h3>}
+        {desc && <p className="text-ad-desc">{mapAdText(desc)}</p>}
         
         {ctaText && (
           <div className="text-ad-cta">
-            {t(ctaText) || ctaText} <ArrowRight size={18} />
+            {mapAdText(ctaText)} <ArrowRight size={18} />
           </div>
         )}
         

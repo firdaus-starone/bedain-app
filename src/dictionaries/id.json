@@ -43,13 +43,22 @@
     "kementerian": "Kementerian",
     "internasional": "Internasional",
     "gadget": "Gadget",
-    "hukum-kriminal": "Hukum & Kriminal"
+    "hukum-kriminal": "Hukum & Kriminal",
+    "politik": "Politik",
+    "opini": "Opini",
+    "pendidikan": "Pendidikan",
+    "sorotan": "Sorotan",
+    "sport": "Sport",
+    "kesehatan": "Kesehatan",
+    "otomotif": "Otomotif",
+    "meja-redaksi": "Meja Redaksi"
   },
   "ads": {
     "reach_audience": "JANGKAU JUTAAN AUDIENS",
     "promo_desc": "Promosikan brand & produk Anda di portal berita terdepan.",
     "advertise_now": "Pasang Sekarang",
-    "ads_label": "BEDAIN NEWS ADS"
+    "ads_label": "BEDAIN NEWS ADS",
+    "premium_ad": "IKLAN PREMIUM"
   },
   "footer": {
     "part_of": "Bagian dari",

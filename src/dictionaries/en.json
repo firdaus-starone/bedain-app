@@ -43,13 +43,22 @@
     "kementerian": "Ministries",
     "internasional": "International",
     "gadget": "Gadgets",
-    "hukum-kriminal": "Law & Crime"
+    "hukum-kriminal": "Law & Crime",
+    "politik": "Politics",
+    "opini": "Opinion",
+    "pendidikan": "Education",
+    "sorotan": "Spotlight",
+    "sport": "Sports",
+    "kesehatan": "Health",
+    "otomotif": "Automotive",
+    "meja-redaksi": "Editorial Desk"
   },
   "ads": {
     "reach_audience": "REACH MILLIONS OF AUDIENCES",
     "promo_desc": "Promote your brand & products on the leading news portal.",
     "advertise_now": "Advertise Now",
-    "ads_label": "BEDAIN NEWS ADS"
+    "ads_label": "BEDAIN NEWS ADS",
+    "premium_ad": "PREMIUM ADS"
   },
   "footer": {
     "part_of": "Part of",
