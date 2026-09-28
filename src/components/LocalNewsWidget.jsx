@@ -65,9 +65,7 @@ const LocalNewsWidget = () => {
   }, [location, articles, isDetecting]);
 
   if (loading || isDetecting) {
-    return (
-      <div className="local-news-widget skeleton-pulse" style={{ height: '400px', borderRadius: '12px', margin: '20px 0' }}></div>
-    );
+    return null;
   }
 
   if (localArticles.length === 0) return null;
