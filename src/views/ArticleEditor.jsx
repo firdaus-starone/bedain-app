@@ -478,9 +478,8 @@ const ArticleEditor = () => {
     }
 
     const modelsToTry = [
-      'gemini-2.0-flash',
       'gemini-1.5-flash',
-      'gemini-2.0-flash-exp',
+      'gemini-2.0-flash',
       'gemini-1.5-pro',
       'gemini-pro'
     ];
@@ -491,15 +490,19 @@ const ArticleEditor = () => {
 
     // 1. Coba daftar model standar terlebih dahulu
     for (const modelName of modelsToTry) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 seconds timeout
       try {
         response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
+            body: JSON.stringify(body),
+            signal: controller.signal
           }
         );
+        clearTimeout(timeoutId);
         data = await response.json();
         
         if (response.ok && !data.error && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
@@ -511,6 +514,7 @@ const ArticleEditor = () => {
           break;
         }
       } catch (e) {
+        clearTimeout(timeoutId);
         console.warn(`Model ${modelName} gagal dipanggil:`, e);
       }
     }
