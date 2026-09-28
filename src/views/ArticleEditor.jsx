@@ -953,22 +953,57 @@ Konten Asli: ${formData.content}
           // Bersihkan karakter newline/tab yang mungkin terlewat
           let sanitized = cleanText.replace(/[\r\n\t]+/g, " ");
           
-          // Jika AI mengembalikan 2 objek terpisah misalnya: {...} {...}
-          const multipleObjectsMatch = sanitized.match(/}\s*{/g);
-          if (multipleObjectsMatch && multipleObjectsMatch.length > 0) {
-             // Paksa bungkus ke array dan gabungkan
-             const arrayStr = '[' + sanitized.replace(/}\s*{/g, '},{') + ']';
-             const arr = JSON.parse(arrayStr);
-             parsed = Object.assign({}, ...arr);
+          // Bulletproof JSON extractor: cari semua blok {...} yang seimbang
+          const extractAllJSON = (str) => {
+            let results = [];
+            let currentStr = str;
+            while(true) {
+              let firstBrace = currentStr.indexOf('{');
+              if (firstBrace === -1) break;
+              let depth = 0;
+              let found = false;
+              let inString = false;
+              let escapeNext = false;
+              for (let i = firstBrace; i < currentStr.length; i++) {
+                let char = currentStr[i];
+                if (escapeNext) {
+                  escapeNext = false;
+                  continue;
+                }
+                if (char === '\\\\') {
+                  escapeNext = true;
+                  continue;
+                }
+                if (char === '"') {
+                  inString = !inString;
+                }
+                if (!inString) {
+                  if (char === '{') depth++;
+                  else if (char === '}') {
+                    depth--;
+                    if (depth === 0) {
+                      results.push(currentStr.substring(firstBrace, i + 1));
+                      currentStr = currentStr.substring(i + 1);
+                      found = true;
+                      break;
+                    }
+                  }
+                }
+              }
+              if (!found) break;
+            }
+            return results;
+          };
+
+          const extractedObjects = extractAllJSON(sanitized);
+          if (extractedObjects.length > 0) {
+            let combined = {};
+            for (let objStr of extractedObjects) {
+               Object.assign(combined, JSON.parse(objStr));
+            }
+            parsed = combined;
           } else {
-             // Ekstrak dari { pertama ke } terakhir
-             const firstBrace = sanitized.indexOf('{');
-             const lastBrace = sanitized.lastIndexOf('}');
-             if (firstBrace !== -1 && lastBrace > firstBrace) {
-               parsed = JSON.parse(sanitized.substring(firstBrace, lastBrace + 1));
-             } else {
-               throw new Error("Bukan JSON format. Output AI: " + sanitized.substring(0, 100));
-             }
+            throw new Error("Bukan JSON format. Output AI: " + sanitized.substring(0, 100));
           }
         } catch(e2) {
           console.error("Original AI Response:", aiResponseText);
