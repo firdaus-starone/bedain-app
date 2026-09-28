@@ -1296,7 +1296,7 @@ const ArticleDetail = () => {
             </div>
 
             {/* Excerpt Lead */}
-            {(article.seoDescription || article.excerpt) && (
+            {(article.seoDescription || article.excerpt || cleanText.length > 50) && (
               <div style={{
                 fontSize: '1.05rem',
                 fontWeight: 500,
@@ -1311,7 +1311,14 @@ const ArticleDetail = () => {
                 fontFamily: 'var(--font-heading)',
                 overflowWrap: 'break-word'
               }}>
-                {(article.seoDescription || article.excerpt).replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ')}
+                {(() => {
+                  let text = article.seoDescription || article.excerpt || '';
+                  if (text.length < 100 && cleanText.length > 50) {
+                    let shortText = cleanText.substring(0, 220);
+                    text = shortText.substring(0, shortText.lastIndexOf(' ')) + '...';
+                  }
+                  return text.replace(/&nbsp;/gi, ' ').replace(/\u00A0/g, ' ');
+                })()}
               </div>
             )}
 
