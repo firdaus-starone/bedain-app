@@ -926,60 +926,53 @@ ${textToAnalyze}`;
     setNotifModal({ isOpen: true, type: 'translating', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris & Mandarin...', articleSlug: '', status: '' });
 
     try {
-      const prompt = `Terjemahkan artikel jurnalistik berikut ke dalam Bahasa Inggris dan Bahasa Mandarin.
-PENTING: KEMBALIKAN HANYA 1 (SATU) OBJEK JSON TUNGGAL. JANGAN KEMBALIKAN LEBIH DARI 1 OBJEK.
+      const prompt = `Terjemahkan artikel berikut ke Bahasa Inggris dan Mandarin.
+PENTING: KEMBALIKAN HANYA SEBUAH JSON OBJECT TUNGGAL.
 
-Format WAJIB:
-{
-  "en": {
-    "title": "English Title",
-    "content": "English Content in HTML format"
-  },
-  "zh": {
-    "title": "Mandarin Title",
-    "content": "Mandarin Content in HTML format"
-  }
-}
+Contoh Format yang Benar:
+{"en":{"title":"Judul Inggris","content":"<p>Konten Inggris</p>"},"zh":{"title":"Judul Mandarin","content":"<p>Konten Mandarin</p>"}}
 
-Aturan Ketat JSON:
-- Konten HTML HARUS diletakkan dalam satu baris (hilangkan enter) ATAU gunakan '\\n'.
-- Jangan gunakan kutip ganda (") tanpa di-escape (\\") di dalam string HTML.
-- HANYA KELUARKAN Teks JSON valid. Jangan ada sapaan atau markdown.
+ATURAN MUTLAK:
+1. JANGAN ADA TEKS APAPUN selain JSON.
+2. JANGAN KEMBALIKAN 2 OBJECT TERPISAH, gabungkan di dalam 1 object seperti contoh di atas.
+3. HILANGKAN SEMUA ENTER/NEWLINE dari dalam teks konten. Semua teks HTML harus nyambung dalam 1 baris.
+4. Gunakan escape quote (\\") jika perlu.
 
-Artikel Asli (ID):
-Judul: ${formData.title}
-Konten: ${formData.content}
+Judul Asli: ${formData.title}
+Konten Asli: ${formData.content}
 `;
 
-      const aiResponseText = await callGeminiAPI(prompt, "Kamu adalah sistem otomatis. HANYA KELUARKAN JSON TEXT. JANGAN ADA TEKS LAIN. PASTIKAN JSON VALID.", true);
+      const aiResponseText = await callGeminiAPI(prompt, "HANYA KELUARKAN 1 BARIS JSON STRING. JANGAN GUNAKAN MARKDOWN. JANGAN ADA ENTER.", true);
       let parsed;
-      let cleanText = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      let cleanText = aiResponseText.replace(/```(?:json)?/gi, '').trim();
       
       try {
         parsed = JSON.parse(cleanText);
       } catch(e) {
         try {
-          // Bersihkan karakter kontrol dan newline yang tidak ter-escape
-          let potentialJson = cleanText.replace(/[\u0000-\u001F]+/g, " ");
+          // Bersihkan karakter newline/tab yang mungkin terlewat
+          let sanitized = cleanText.replace(/[\r\n\t]+/g, " ");
           
-          // Deteksi jika AI mengeluarkan lebih dari 1 objek JSON, misal: {...} {...}
-          if (potentialJson.replace(/\s/g, '').includes('}{')) {
-             potentialJson = '[' + potentialJson.replace(/\}\s*\{/g, '},{') + ']';
-             const arr = JSON.parse(potentialJson);
+          // Jika AI mengembalikan 2 objek terpisah misalnya: {...} {...}
+          const multipleObjectsMatch = sanitized.match(/}\s*{/g);
+          if (multipleObjectsMatch && multipleObjectsMatch.length > 0) {
+             // Paksa bungkus ke array dan gabungkan
+             const arrayStr = '[' + sanitized.replace(/}\s*{/g, '},{') + ']';
+             const arr = JSON.parse(arrayStr);
              parsed = Object.assign({}, ...arr);
           } else {
-             // Ekstrak hanya dari { pertama sampai } terakhir
-             const firstBrace = potentialJson.indexOf('{');
-             const lastBrace = potentialJson.lastIndexOf('}');
-             if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-               parsed = JSON.parse(potentialJson.substring(firstBrace, lastBrace + 1));
+             // Ekstrak dari { pertama ke } terakhir
+             const firstBrace = sanitized.indexOf('{');
+             const lastBrace = sanitized.lastIndexOf('}');
+             if (firstBrace !== -1 && lastBrace > firstBrace) {
+               parsed = JSON.parse(sanitized.substring(firstBrace, lastBrace + 1));
              } else {
-               throw new Error("Objek JSON tidak ditemukan");
+               throw new Error("Bukan JSON format");
              }
           }
         } catch(e2) {
           console.error("Original AI Response:", aiResponseText);
-          throw new Error("Gagal membaca respon AI (" + e2.message + "). Silakan coba klik tombol translate lagi.");
+          throw new Error(e2.message + " (Silakan klik Translate lagi)");
         }
       }
 
