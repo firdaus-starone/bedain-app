@@ -394,7 +394,8 @@ const ArticleDetail = () => {
         );
         if (idVoices.length > 0) {
           setAvailableVoices(idVoices);
-          setTtsVoiceIndex(0);
+          const preferredIdx = idVoices.findIndex(v => v.name.toLowerCase().includes('bahasa indonesia') || v.name.toLowerCase().includes('google'));
+          setTtsVoiceIndex(preferredIdx !== -1 ? preferredIdx : 0);
         } else {
           setAvailableVoices(voices);
         }
@@ -1297,13 +1298,13 @@ const ArticleDetail = () => {
             {/* Excerpt Lead */}
             {(article.seoDescription || article.excerpt) && (
               <div style={{
-                fontSize: '1.2rem',
-                fontWeight: 600,
-                lineHeight: 1.7,
+                fontSize: '1.05rem',
+                fontWeight: 500,
+                lineHeight: 1.6,
                 color: 'var(--color-text-primary)',
                 fontStyle: 'italic',
-                padding: '20px 24px',
-                margin: '8px 0 32px 0',
+                padding: '16px 20px',
+                margin: '8px 0 24px 0',
                 background: 'var(--color-bg-secondary)',
                 borderLeft: '4px solid var(--color-accent)',
                 borderRadius: '0 12px 12px 0',
