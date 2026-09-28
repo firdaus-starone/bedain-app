@@ -970,7 +970,7 @@ Konten Asli: ${formData.content}
                   escapeNext = false;
                   continue;
                 }
-                if (char === '\\\\') {
+                if (char === '\\') {
                   escapeNext = true;
                   continue;
                 }
