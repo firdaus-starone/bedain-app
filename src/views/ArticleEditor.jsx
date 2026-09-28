@@ -926,97 +926,67 @@ ${textToAnalyze}`;
     setNotifModal({ isOpen: true, type: 'translating', title: '⏳ Sedang Menerjemahkan...', message: 'AI sedang menerjemahkan artikel ke Bahasa Inggris & Mandarin...', articleSlug: '', status: '' });
 
     try {
-      const promptEN = `Terjemahkan artikel berikut ke Bahasa Inggris.
-PENTING: KEMBALIKAN HANYA SEBUAH JSON OBJECT TUNGGAL.
+      const promptEN = `Terjemahkan Judul dan Konten berikut ke Bahasa Inggris.
 
-Contoh Format:
-{"title":"Judul Inggris","content":"<p>Konten Inggris</p>"}
-
-ATURAN MUTLAK:
-1. JANGAN ADA TEKS APAPUN selain JSON.
-2. HILANGKAN SEMUA ENTER/NEWLINE dari dalam teks konten.
-3. Gunakan escape quote (\\") jika perlu.
+FORMAT WAJIB BALASAN (Tanpa Markdown, Tanpa JSON):
+Judul: [Tulis judul Inggris di sini]
+<article>
+[Tulis konten HTML Inggris di sini]
+</article>
 
 Judul Asli: ${formData.title}
 Konten Asli: ${formData.content}`;
 
-      const promptZH = `Terjemahkan artikel berikut ke Bahasa Mandarin (Simplified).
-PENTING: KEMBALIKAN HANYA SEBUAH JSON OBJECT TUNGGAL.
+      const promptZH = `Terjemahkan Judul dan Konten berikut ke Bahasa Mandarin (Simplified).
 
-Contoh Format:
-{"title":"Judul Mandarin","content":"<p>Konten Mandarin</p>"}
-
-ATURAN MUTLAK:
-1. JANGAN ADA TEKS APAPUN selain JSON.
-2. HILANGKAN SEMUA ENTER/NEWLINE dari dalam teks konten.
-3. Gunakan escape quote (\\") jika perlu.
+FORMAT WAJIB BALASAN (Tanpa Markdown, Tanpa JSON):
+Judul: [Tulis judul Mandarin di sini]
+<article>
+[Tulis konten HTML Mandarin di sini]
+</article>
 
 Judul Asli: ${formData.title}
 Konten Asli: ${formData.content}`;
 
       const [aiResponseEN, aiResponseZH] = await Promise.all([
-        callGeminiAPI(promptEN, "HANYA KELUARKAN 1 BARIS JSON STRING.", true),
-        callGeminiAPI(promptZH, "HANYA KELUARKAN 1 BARIS JSON STRING.", true)
+        callGeminiAPI(promptEN, "Hanya kembalikan dua bagian: 'Judul:' dan teks di dalam tag '<article>'.", false),
+        callGeminiAPI(promptZH, "Hanya kembalikan dua bagian: 'Judul:' dan teks di dalam tag '<article>'.", false)
       ]);
 
-      const parseJSONResponse = (aiResponseText) => {
-        let cleanText = aiResponseText.replace(/```(?:json)?/gi, '').trim();
-        try {
-          return JSON.parse(cleanText);
-        } catch(e) {
-          let sanitized = cleanText.replace(/[\r\n\t]+/g, " ");
-          const extractAllJSON = (str) => {
-            let results = [];
-            let currentStr = str;
-            while(true) {
-              let firstBrace = currentStr.indexOf('{');
-              if (firstBrace === -1) break;
-              let depth = 0;
-              let found = false;
-              let inString = false;
-              let escapeNext = false;
-              for (let i = firstBrace; i < currentStr.length; i++) {
-                let char = currentStr[i];
-                if (escapeNext) { escapeNext = false; continue; }
-                if (char === '\\') { escapeNext = true; continue; }
-                if (char === '"') { inString = !inString; }
-                if (!inString) {
-                  if (char === '{') depth++;
-                  else if (char === '}') {
-                    depth--;
-                    if (depth === 0) {
-                      results.push(currentStr.substring(firstBrace, i + 1));
-                      currentStr = currentStr.substring(i + 1);
-                      found = true;
-                      break;
-                    }
-                  }
-                }
-              }
-              if (!found) break;
-            }
-            return results;
-          };
-
-          const extractedObjects = extractAllJSON(sanitized);
-          if (extractedObjects.length > 0) {
-            let objStr = extractedObjects[0];
-            let fixedObjStr = objStr.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
-            return JSON.parse(fixedObjStr);
-          }
-          return {}; // Fallback empty object
+      const parseResponse = (text) => {
+        let title = '';
+        let content = '';
+        
+        // 1. Ambil Judul
+        const titleMatch = text.match(/Judul:\s*([^\n]+)/i);
+        if (titleMatch) title = titleMatch[1].trim();
+        
+        // 2. Ambil Konten di dalam tag <article>
+        const contentMatch = text.match(/<article>([\s\S]*?)<\/article>/i);
+        if (contentMatch) {
+          content = contentMatch[1].trim();
+        } else {
+          // Fallback jika AI lupa tag <article>, ambil semua sesudah 'Konten:'
+          const fallbackMatch = text.match(/Konten:\s*([\s\S]*)$/i);
+          if (fallbackMatch) content = fallbackMatch[1].trim();
         }
+
+        // Bersihkan markdown
+        title = title.replace(/```(?:html)?/gi, '').replace(/```/g, '').trim();
+        content = content.replace(/```(?:html)?/gi, '').replace(/```/g, '').trim();
+
+        return { title, content };
       };
 
-      const parsedEN = parseJSONResponse(aiResponseEN);
-      const parsedZH = parseJSONResponse(aiResponseZH);
+      const parsedEN = parseResponse(aiResponseEN);
+      const parsedZH = parseResponse(aiResponseZH);
 
       setFormData(prev => ({
         ...prev,
-        title_en: parsedEN?.title || prev.title_en,
-        content_en: parsedEN?.content || prev.content_en,
-        title_zh: parsedZH?.title || prev.title_zh,
-        content_zh: parsedZH?.content || prev.content_zh,
+        title_en: parsedEN.title || prev.title_en,
+        content_en: parsedEN.content || prev.content_en,
+        title_zh: parsedZH.title || prev.title_zh,
+        content_zh: parsedZH.content || prev.content_zh,
       }));
 
       setNotifModal({ isOpen: false, type: '', title: '', message: '', articleSlug: '', status: '' });
