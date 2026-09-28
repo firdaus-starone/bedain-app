@@ -937,13 +937,22 @@ Judul: ${formData.title}
 Konten: ${formData.content}
 `;
 
-      const aiResponseText = await callGeminiAPI(prompt, "Kamu adalah ahli terjemahan jurnalistik profesional. WAJIB HANYA mengembalikan JSON yang valid.", true);
+      const aiResponseText = await callGeminiAPI(prompt, "Kamu adalah ahli terjemahan jurnalistik profesional. WAJIB HANYA mengembalikan JSON yang valid tanpa markdown apapun.", true);
       let parsed;
       try {
         parsed = JSON.parse(aiResponseText);
       } catch(e) {
-        const cleaned = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        parsed = JSON.parse(cleaned);
+        try {
+          const match = aiResponseText.match(/\{[\s\S]*\}/);
+          if (match) {
+            parsed = JSON.parse(match[0]);
+          } else {
+            throw new Error("Format tidak dikenali");
+          }
+        } catch(e2) {
+          console.error("Original AI Response:", aiResponseText);
+          throw new Error("Gagal membaca respon AI (" + e.message + "). Coba lagi.");
+        }
       }
 
       setFormData(prev => ({
