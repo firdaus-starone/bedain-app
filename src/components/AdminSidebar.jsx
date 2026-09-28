@@ -213,10 +213,14 @@ const AdminSidebar = () => {
       {/* User Summary Box */}
       <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-accent) 0%, #800 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '14px', flexShrink: 0 }}>
-              {(currentUser?.email || 'A')[0].toUpperCase()}
-            </div>
+          <Link onClick={handleNavClick} href="/admin/profile" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1, cursor: 'pointer' }}>
+            {currentUser?.photoURL ? (
+              <img src={currentUser.photoURL} alt="Avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
+            ) : (
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-accent) 0%, #800 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '14px', flexShrink: 0 }}>
+                {(currentUser?.displayName || currentUser?.email || 'A')[0].toUpperCase()}
+              </div>
+            )}
             <div style={{ overflow: 'hidden' }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Superadmin'}
@@ -225,7 +229,7 @@ const AdminSidebar = () => {
                 {userRole || 'Admin'}
               </div>
             </div>
-          </div>
+          </Link>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={toggleTheme} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: '#aaa', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }} title="Toggle Theme">
               {theme === 'light' ? (
