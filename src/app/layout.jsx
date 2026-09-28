@@ -46,10 +46,10 @@ export default async function RootLayout({ children }) {
     <html lang={locale}>
       <body className={`bg-[#121214] text-white ${poppins.variable} ${inter.variable}`}>
         <GlobalAdsense />
-        <StickySideAds />
-        <PushNotificationPrompt />
-        <CustomAlert />
         <I18nProvider initialLang={locale}>
+          <StickySideAds />
+          <PushNotificationPrompt />
+          <CustomAlert />
           {children}
         </I18nProvider>
       </body>
