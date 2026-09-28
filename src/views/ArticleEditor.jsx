@@ -946,11 +946,13 @@ Konten Asli: ${formData.content}`;
       let content_en = '';
         
       try {
-        const parsed = JSON.parse(aiResponse);
+        const cleanedResponse = aiResponse.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanedResponse);
         title_en = parsed.title_en || '';
         content_en = parsed.content_en || '';
       } catch (e) {
         console.error("Failed to parse JSON response:", e);
+        console.error("Raw AI Response:", aiResponse);
         throw new Error("Format respons AI tidak valid.");
       }
 
