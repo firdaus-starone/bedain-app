@@ -49,7 +49,7 @@ const MoreNewsGrid = ({ articles, loading }) => {
   }
 
   const displayItems = articles.slice(0, 8).map(a => {
-    const displayTitle = lang === 'en' && a.title_en ? a.title_en : a.title;
+    const displayTitle = (lang === 'en' && a.title_en ? a.title_en : a.title) || '';
     return {
       id: a.id,
       title: displayTitle,

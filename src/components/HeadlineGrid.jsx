@@ -113,7 +113,7 @@ const HeadlineGrid = ({ articles, loading }) => {
         {headlineItems.slice(0, 5).map((item, index) => {
           const itemSlug = getSlug(item);
           const itemImg = getArticleCardImage(item);
-          const displayTitle = lang === 'en' && item.title_en ? item.title_en : item.title;
+          const displayTitle = (lang === 'en' && item.title_en ? item.title_en : item.title) || '';
 
           return (
             <Link key={item.id || index} href={`/article/${itemSlug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
@@ -142,7 +142,7 @@ const HeadlineGrid = ({ articles, loading }) => {
           {headlineItems.map((item, index) => {
             const itemSlug = getSlug(item);
             const itemImg = getArticleCardImage(item);
-            const displayTitle = lang === 'en' && item.title_en ? item.title_en : item.title;
+            const displayTitle = (lang === 'en' && item.title_en ? item.title_en : item.title) || '';
             
             let hotTopicsText = (t('home.hot_topics') || 'TOPIK HANGAT').toUpperCase();
             if (hotTopicsText === 'TOPIK HANGAT') {

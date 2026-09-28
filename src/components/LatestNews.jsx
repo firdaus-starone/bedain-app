@@ -39,7 +39,7 @@ const LatestNews = ({ articles, loading }) => {
     return `${author} | ${time}`;
   };
 
-  const getDisplayTitle = (item) => lang === 'en' && item.title_en ? item.title_en : item.title;
+  const getDisplayTitle = (item) => (lang === 'en' && item.title_en ? item.title_en : item.title) || '';
 
   const getSlug = (item) => {
     if (item.slug && item.slug !== '#') return item.slug;
