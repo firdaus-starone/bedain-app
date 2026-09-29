@@ -24,9 +24,14 @@ const SearchPage = () => {
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('Semua');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'popular'
 
-  // Infinite Scroll State
-  const [displayCount, setDisplayCount] = useState(12);
+  // Load More State
+  const [displayCount, setDisplayCount] = useState(20);
   const observerTarget = React.useRef(null);
+
+  // Reset display count when query/filter/sort changes
+  useEffect(() => {
+    setDisplayCount(20);
+  }, [queryParam, activeCategoryFilter, sortBy]);
 
   useEffect(() => {
     setSearchInput(queryParam);
@@ -117,32 +122,7 @@ const SearchPage = () => {
     });
   }, [articles, queryParam, activeCategoryFilter, sortBy]);
 
-  // Infinite Scroll Intersection Observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setDisplayCount(prev => prev + 12);
-        }
-      },
-      { threshold: 0.1 }
-    );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
-    };
-  }, [observerTarget.current, searchResults]);
-
-  // Reset display count when query/filter/sort changes
-  useEffect(() => {
-    setDisplayCount(12);
-  }, [queryParam, activeCategoryFilter, sortBy]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -202,7 +182,7 @@ const SearchPage = () => {
           </div>
 
           <h1 style={{
-            fontSize: 'clamp(1.4rem, 4vw, 2rem)',
+            fontSize: 'clamp(1.15rem, 3.5vw, 1.8rem)',
             fontFamily: 'var(--font-heading)',
             marginBottom: '16px',
             color: 'var(--color-text-primary)',
@@ -413,11 +393,24 @@ const SearchPage = () => {
               ))}
             </div>
             
-            {/* Infinite Scroll Trigger */}
+            {/* Load More Button */}
             {displayCount < searchResults.length && (
-              <div ref={observerTarget} style={{ textAlign: 'center', padding: '48px 0' }}>
-                <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
-                <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>Memuat lebih banyak berita...</span>
+              <div style={{ textAlign: 'center', padding: '32px 0 16px' }}>
+                <button 
+                  onClick={() => setDisplayCount(prev => prev + 20)}
+                  style={{
+                    backgroundColor: 'var(--color-bg-tertiary)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                    padding: '10px 24px',
+                    borderRadius: '24px',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Lihat Lebih Banyak Berita ({searchResults.length - displayCount})
+                </button>
               </div>
             )}
           </>
