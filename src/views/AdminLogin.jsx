@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import SEO from '../components/SEO';
@@ -30,17 +30,24 @@ const AdminLogin = () => {
     }
   };
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push('/admin/dashboard');
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      router.push('/admin/dashboard');
+      await signInWithRedirect(auth, provider);
     } catch (err) {
       setError('Gagal login dengan Google: ' + err.message);
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
