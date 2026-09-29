@@ -1,9 +1,11 @@
 import React from 'react';
+import QRCode from 'react-qr-code';
 
 const IdCard = ({ data, idRef }) => {
   const { name, regNumber, roleTitle, region, photoURL } = data;
 
   const defaultPhoto = "https://ui-avatars.com/api/?name=" + encodeURIComponent(name || "Bedain News") + "&background=333&color=fff&size=512";
+  const verificationUrl = `https://bedainnews.com/verify?id=${encodeURIComponent(regNumber || 'B-00.00-000')}`;
 
   return (
     <div 
@@ -24,11 +26,7 @@ const IdCard = ({ data, idRef }) => {
         boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
       }}
     >
-      {/* 
-        The photo box in the provided image is roughly centered vertically,
-        maybe starting at 35% from the top and taking about 30% of height.
-        Let's position it absolutely. We can fine-tune these percentages.
-      */}
+      {/* Photo Box */}
       <div style={{
         position: 'absolute',
         top: '37.5%',
@@ -48,7 +46,7 @@ const IdCard = ({ data, idRef }) => {
         />
       </div>
 
-      {/* Text Details */}
+      {/* Text Details & QR Code Container */}
       <div style={{
         position: 'absolute',
         top: '69%',
@@ -59,9 +57,10 @@ const IdCard = ({ data, idRef }) => {
         gap: '12px',
         zIndex: 5
       }}>
+        {/* Text */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
           <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NAMA</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {name || 'NAMA LENGKAP'}</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {name || 'NAMA LENGKAP'}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
           <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NO. REG</div>
@@ -69,11 +68,24 @@ const IdCard = ({ data, idRef }) => {
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
           <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>JABATAN</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {roleTitle || 'JABATAN'}</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {roleTitle || 'JABATAN'}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
           <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>WILAYAH</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {region || 'NASIONAL'}</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {region || 'NASIONAL'}</div>
+        </div>
+
+        {/* QR Code */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+          <div style={{ padding: '6px', backgroundColor: '#fff', borderRadius: '8px' }}>
+            <QRCode 
+              value={verificationUrl} 
+              size={64} 
+              level="M"
+              fgColor="#000000"
+              bgColor="#ffffff"
+            />
+          </div>
         </div>
       </div>
     </div>
