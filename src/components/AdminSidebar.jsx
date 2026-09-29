@@ -109,8 +109,8 @@ const AdminSidebar = () => {
       </div>
 
       <aside className={`admin-sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
-        <div>
-          <Link onClick={handleNavClick} href="/admin/dashboard" className="admin-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '20px 16px', borderBottom: '1px solid var(--admin-border)', textDecoration: 'none', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <Link onClick={handleNavClick} href="/admin/dashboard" className="admin-logo" style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--admin-sidebar-bg)', display: 'flex', alignItems: 'center', gap: '8px', padding: '20px 16px', borderBottom: '1px solid var(--admin-border)', textDecoration: 'none', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
             {settings?.logoUrl ? (
             <img src={settings.logoUrl} alt={settings.siteName || 'Logo'} style={{ height: '28px', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
           ) : (
