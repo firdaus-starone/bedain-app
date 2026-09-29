@@ -42,45 +42,45 @@ const IdCard = ({ data, idRef }) => {
           src={photoURL || defaultPhoto} 
           alt="Profile" 
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          crossOrigin="anonymous" 
+          /* Removed crossOrigin="anonymous" to fix broken image */
         />
       </div>
 
       {/* Text Details & QR Code Container */}
       <div style={{
         position: 'absolute',
-        top: '69%',
+        top: '68%',
         left: '10%',
         width: '80%',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '6px', // Reduced gap to save space
         zIndex: 5
       }}>
         {/* Text */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
-          <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NAMA</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {name || 'NAMA LENGKAP'}</div>
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NAMA</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {name || 'NAMA LENGKAP'}</div>
         </div>
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
-          <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NO. REG</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {regNumber || 'B-00.00-000'}</div>
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NO. REG</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {regNumber || 'B-00.00-000'}</div>
         </div>
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
-          <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>JABATAN</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {roleTitle || 'JABATAN'}</div>
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>JABATAN</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {roleTitle || 'JABATAN'}</div>
         </div>
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '4px' }}>
-          <div style={{ width: '90px', fontSize: '15px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>WILAYAH</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {region || 'NASIONAL'}</div>
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>WILAYAH</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {region || 'NASIONAL'}</div>
         </div>
 
         {/* QR Code */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-          <div style={{ padding: '6px', backgroundColor: '#fff', borderRadius: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '6px' }}>
+          <div style={{ padding: '4px', backgroundColor: '#fff', borderRadius: '6px' }}>
             <QRCode 
               value={verificationUrl} 
-              size={64} 
+              size={52} 
               level="M"
               fgColor="#000000"
               bgColor="#ffffff"
