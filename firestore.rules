@@ -53,7 +53,7 @@ service cloud.firestore {
 
     // Koleksi Profil Pengguna / Redaksi CMS
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       // Boleh membuat profil awal saat login pertama kali ATAU ditambahkan oleh admin
       allow create: if (isAuthenticated() && request.auth.uid == userId) || hasRole(['superadmin', 'admin']);
       // Hanya admin yang boleh ubah role. Pengguna biasa hanya boleh ubah profilnya sendiri selain field 'role'.

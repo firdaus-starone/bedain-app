@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { uploadAndCompressImage } from '../lib/uploadImage';
@@ -141,7 +141,7 @@ const AdminProfile = () => {
       
       // 2. Update Firestore Document
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         name: formData.name,
         photoURL: formData.photoURL,
         bio: formData.bio,
@@ -149,7 +149,7 @@ const AdminProfile = () => {
         roleTitle: formData.roleTitle,
         region: formData.region,
         updatedAt: new Date()
-      });
+      }, { merge: true });
       
       alert("Profil berhasil diperbarui!");
       // Optionally reload the page to refresh the sidebar avatar
