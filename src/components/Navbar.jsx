@@ -11,7 +11,7 @@ import {
   Cpu, TrendingUp, Sparkles, Film, Heart, Landmark, 
   Trophy, Car, Globe, Flame, Shield, Briefcase, 
   Utensils, Plane, Music, Newspaper, Info, FileText, Bell, PenTool, Send, Home, Clock, Zap, Bookmark, Trash2, X, Check,
-  Radio, PieChart, Target, Leaf, Award, Smartphone, Star, Lightbulb, Compass, MonitorPlay, Anchor, Activity
+  Radio, PieChart, Target, Leaf, Award, Smartphone, Star, Lightbulb, Compass, MonitorPlay, Anchor, Activity, User
 } from 'lucide-react';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '../lib/firebase';
@@ -488,6 +488,15 @@ const Navbar = () => {
                   <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                 </svg>
               )}
+            </button>
+
+            <button 
+              className="theme-toggle" 
+              aria-label="Profil User" 
+              onClick={() => router.push('/admin/login')} 
+              title="Masuk / Profil Saya"
+            >
+              <User size={20} />
             </button>
 
             <button className="menu-button desktop-only-menu-btn" aria-label="Menu" onClick={() => setIsMenuOpen(true)}>
