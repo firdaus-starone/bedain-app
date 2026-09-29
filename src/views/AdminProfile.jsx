@@ -6,8 +6,10 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { uploadAndCompressImage } from '../lib/uploadImage';
-import { User, Mail, Camera, Save, ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
+import { User, Mail, Camera, Save, ArrowLeft, Loader2, ShieldCheck, Download } from 'lucide-react';
 import Link from 'next/link';
+import html2canvas from 'html2canvas';
+import IdCard from '../components/IdCard';
 
 const AdminProfile = () => {
   const router = useRouter();
@@ -18,10 +20,14 @@ const AdminProfile = () => {
     name: '',
     email: '',
     photoURL: '',
-    bio: ''
+    bio: '',
+    regNumber: '',
+    roleTitle: '',
+    region: 'NASIONAL'
   });
   
   const fileInputRef = useRef(null);
+  const idCardRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -53,7 +59,10 @@ const AdminProfile = () => {
           ...prev,
           name: data.name || prev.name,
           photoURL: data.photoURL || prev.photoURL,
-          bio: data.bio || ''
+          bio: data.bio || '',
+          regNumber: data.regNumber || '',
+          roleTitle: data.roleTitle || '',
+          region: data.region || 'NASIONAL'
         }));
       }
     } catch (error) {
@@ -65,7 +74,28 @@ const AdminProfile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value.toUpperCase() })); // Convert to uppercase for ID card feel
+  };
+
+  const handleDownloadIdCard = async () => {
+    if (!idCardRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(idCardRef.current, {
+        scale: 2, // High resolution
+        useCORS: true, // Allow cross-origin images (like avatars)
+        backgroundColor: null
+      });
+      
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `ID-CARD-${formData.name || 'JURNALIS'}.png`;
+      link.click();
+    } catch (error) {
+      console.error("Gagal mengunduh ID Card:", error);
+      alert("Gagal mengunduh ID Card. Pastikan foto profil Anda sudah terunggah dengan benar.");
+    }
   };
 
   const handlePhotoClick = () => {
@@ -115,6 +145,9 @@ const AdminProfile = () => {
         name: formData.name,
         photoURL: formData.photoURL,
         bio: formData.bio,
+        regNumber: formData.regNumber,
+        roleTitle: formData.roleTitle,
+        region: formData.region,
         updatedAt: new Date()
       });
       
@@ -136,19 +169,22 @@ const AdminProfile = () => {
   return (
     <div className="admin-layout">
       <main className="admin-main profile-main-pad" style={{ padding: '30px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', color: 'var(--admin-text-primary)', cursor: 'pointer' }}>
               <ArrowLeft size={20} />
             </Link>
             <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: 0, color: 'var(--admin-text-primary)' }}>Profil Pengguna</h1>
           </div>
 
-          <div style={{ backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '16px', overflow: 'hidden' }}>
+          <div className="profile-layout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px', alignItems: 'start' }}>
             
-            {/* Header Banner */}
-            <div style={{ height: '120px', background: 'linear-gradient(135deg, rgba(230, 32, 32, 0.8), rgba(0, 0, 0, 0.9))' }}></div>
+            {/* Form Column */}
+            <div style={{ backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '16px', overflow: 'hidden' }}>
+              
+              {/* Header Banner */}
+              <div style={{ height: '120px', background: 'linear-gradient(135deg, rgba(230, 32, 32, 0.8), rgba(0, 0, 0, 0.9))' }}></div>
             
             <div style={{ padding: '0 30px 30px', position: 'relative' }}>
               
@@ -234,6 +270,47 @@ const AdminProfile = () => {
                   ></textarea>
                 </div>
                 
+                <div style={{ padding: '20px', backgroundColor: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: '8px', marginTop: '10px' }}>
+                  <h3 style={{ fontSize: '1rem', color: '#d4af37', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldCheck size={18} /> Detail ID Card (Kartu Pers)
+                  </h3>
+                  <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--admin-text-secondary)', marginBottom: '5px' }}>Nomor Registrasi (NO. REG)</label>
+                      <input 
+                        type="text" 
+                        name="regNumber"
+                        value={formData.regNumber}
+                        onChange={handleChange}
+                        placeholder="Cth: B-26.10-001"
+                        className="admin-input"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--admin-text-secondary)', marginBottom: '5px' }}>Jabatan Redaksi</label>
+                      <input 
+                        type="text" 
+                        name="roleTitle"
+                        value={formData.roleTitle}
+                        onChange={handleChange}
+                        placeholder="Cth: PEMIMPIN REDAKSI"
+                        className="admin-input"
+                      />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--admin-text-secondary)', marginBottom: '5px' }}>Wilayah Tugas</label>
+                      <input 
+                        type="text" 
+                        name="region"
+                        value={formData.region}
+                        onChange={handleChange}
+                        placeholder="Cth: NASIONAL / JAWA BARAT"
+                        className="admin-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="profile-submit-wrap" style={{ marginTop: '10px', paddingTop: '20px', borderTop: '1px solid var(--admin-card-border)', display: 'flex', justifyContent: 'flex-end' }}>
                   <button 
                     type="submit" 
@@ -250,14 +327,43 @@ const AdminProfile = () => {
             </div>
           </div>
           
+          {/* ID Card Preview Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+             <IdCard data={formData} idRef={idCardRef} />
+             
+             <button 
+               onClick={handleDownloadIdCard}
+               className="admin-btn"
+               style={{ 
+                 padding: '12px 24px', 
+                 backgroundColor: '#d4af37', 
+                 color: '#000', 
+                 border: 'none', 
+                 borderRadius: '8px',
+                 fontWeight: 'bold',
+                 fontSize: '1rem',
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '8px',
+                 cursor: 'pointer',
+                 boxShadow: '0 4px 10px rgba(212, 175, 55, 0.3)',
+                 width: '100%',
+                 justifyContent: 'center'
+               }}
+             >
+               <Download size={20} /> Unduh ID Card
+             </button>
+          </div>
+          
         </div>
-      </main>
-      <style dangerouslySetInnerHTML={{__html: `
+      </div>
+    </main>
+    <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
           .profile-main-pad {
             padding: 15px !important;
           }
-          .profile-grid {
+          .profile-grid, .profile-layout-grid {
             grid-template-columns: 1fr !important;
           }
           .profile-header-avatar {
