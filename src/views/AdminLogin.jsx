@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import SEO from '../components/SEO';
@@ -55,7 +55,8 @@ const AdminLogin = () => {
     setError('');
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithRedirect(auth, provider);
+      await signInWithPopup(auth, provider);
+      // user object will be caught by onAuthStateChanged
     } catch (err) {
       setError('Gagal login dengan Google: ' + err.message);
       console.error(err);
