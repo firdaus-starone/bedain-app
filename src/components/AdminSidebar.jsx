@@ -21,6 +21,7 @@ const AdminSidebar = () => {
   const [pendingComments, setPendingComments] = useState(0);
   const [pendingSubmissions, setPendingSubmissions] = useState(0);
   const [pendingMessages, setPendingMessages] = useState(0);
+  const [pendingUsers, setPendingUsers] = useState(0);
   const [theme, setTheme] = useState(typeof window !== 'undefined' ? localStorage.getItem('theme') || 'dark' : 'dark');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -47,6 +48,10 @@ const AdminSidebar = () => {
         const qMsgs = query(collection(db, 'contact_messages'), where('status', '==', 'unread'));
         const snapMsgs = await getDocs(qMsgs);
         setPendingMessages(snapMsgs.size);
+
+        const qUsers = query(collection(db, 'users'), where('role', '==', 'pending'));
+        const snapUsers = await getDocs(qUsers);
+        setPendingUsers(snapUsers.size);
       } catch (err) {
         console.error('Error fetching pending counts:', err);
       }
@@ -157,8 +162,13 @@ const AdminSidebar = () => {
                 <Menu size={18} className="admin-nav-icon" /> Manajemen Menu
               </Link>
               
-              <Link onClick={handleNavClick} href="/admin/users" className={`admin-nav-item ${isActive('/admin/users') ? 'active' : ''}`}>
+              <Link onClick={handleNavClick} href="/admin/users" className={`admin-nav-item ${isActive('/admin/users') ? 'active' : ''}`} style={{ position: 'relative' }}>
                 <Users size={18} className="admin-nav-icon" /> Tim Jurnalis
+                {pendingUsers > 0 && (
+                  <span style={{ marginLeft: 'auto', background: '#e63946', color: '#fff', borderRadius: '10px', padding: '1px 7px', fontSize: '11px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>
+                    {pendingUsers}
+                  </span>
+                )}
               </Link>
 
               <Link onClick={handleNavClick} href="/admin/comments" className={`admin-nav-item ${isActive('/admin/comments') ? 'active' : ''}`} style={{ position: 'relative' }}>
