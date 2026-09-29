@@ -46,12 +46,12 @@ const IdCard = ({ data, idRef }) => {
         />
       </div>
 
-      {/* Text Details & QR Code Container */}
+      {/* Text Details Container */}
       <div style={{
         position: 'absolute',
         top: '68%',
-        left: '10%',
-        width: '80%',
+        left: '5%',
+        width: '90%',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px', // Reduced gap to save space
@@ -74,18 +74,26 @@ const IdCard = ({ data, idRef }) => {
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>WILAYAH</div>
           <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {region || 'NASIONAL'}</div>
         </div>
+      </div>
 
-        {/* QR Code */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '6px' }}>
-          <div style={{ padding: '4px', backgroundColor: '#fff', borderRadius: '6px' }}>
-            <QRCode 
-              value={verificationUrl} 
-              size={52} 
-              level="M"
-              fgColor="#000000"
-              bgColor="#ffffff"
-            />
-          </div>
+      {/* QR Code Container (Absolutely positioned at bottom) */}
+      <div style={{
+        position: 'absolute',
+        bottom: '3%', // Anchored to bottom so it never gets pushed out
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 5,
+        display: 'flex', 
+        justifyContent: 'center'
+      }}>
+        <div style={{ padding: '4px', backgroundColor: '#fff', borderRadius: '6px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+          <QRCode 
+            value={verificationUrl} 
+            size={48} 
+            level="M"
+            fgColor="#000000"
+            bgColor="#ffffff"
+          />
         </div>
       </div>
     </div>
