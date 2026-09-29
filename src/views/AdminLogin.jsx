@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import SEO from '../components/SEO';
- // Reusing global styles, but we will add specific admin styles
+import { ArrowLeft } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -209,6 +210,28 @@ const AdminLogin = () => {
 
       {/* Right Side: Login Form */}
       <div className="admin-split-right">
+        {/* Back to Home Button */}
+        <div style={{ position: 'absolute', top: '30px', left: '30px', zIndex: 10 }}>
+          <Link href="/" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: 'var(--color-text-secondary)',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: 600,
+            padding: '8px 16px',
+            borderRadius: '100px',
+            background: 'var(--color-bg-secondary)',
+            border: '1px solid var(--color-border)',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text-primary)'; e.currentTarget.style.borderColor = 'var(--color-text-secondary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}>
+            <ArrowLeft size={16} /> Kembali ke Beranda
+          </Link>
+        </div>
+
         <div className="admin-login-card">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '40px' }}>
             <div style={{ background: '#ffffff', padding: '12px 20px', borderRadius: '16px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
