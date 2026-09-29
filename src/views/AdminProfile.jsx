@@ -184,16 +184,16 @@ const AdminProfile = () => {
             <div style={{ backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '16px', overflow: 'hidden' }}>
               
               {/* Header Banner */}
-              <div style={{ height: '120px', background: 'linear-gradient(135deg, rgba(230, 32, 32, 0.8), rgba(0, 0, 0, 0.9))' }}></div>
+              <div style={{ height: '80px', background: 'linear-gradient(135deg, rgba(230, 32, 32, 0.8), rgba(0, 0, 0, 0.9))' }}></div>
             
-            <div style={{ padding: '0 30px 30px', position: 'relative' }}>
+            <div style={{ padding: '0 25px 25px', position: 'relative' }}>
               
               {/* Avatar Section */}
-              <div className="profile-header-avatar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '-50px', marginBottom: '20px' }}>
+              <div className="profile-header-avatar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '-40px', marginBottom: '15px' }}>
                 <div style={{ position: 'relative' }}>
                   <div 
                     style={{ 
-                      width: '100px', height: '100px', borderRadius: '50%', border: '4px solid var(--admin-card-bg)', 
+                      width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--admin-card-bg)', 
                       backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', justifyContent: 'center', 
                       overflow: 'hidden', backgroundImage: `url(${formData.photoURL})`, backgroundSize: 'cover', backgroundPosition: 'center',
                       boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
@@ -225,9 +225,9 @@ const AdminProfile = () => {
               </div>
               
               {/* Form Section */}
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 
-                <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Nama Lengkap</label>
                     <input 
@@ -265,16 +265,16 @@ const AdminProfile = () => {
                     onChange={handleChange}
                     placeholder="Tulis sedikit tentang diri Anda (Opsional)..."
                     className="admin-input"
-                    rows="4"
+                    rows="2"
                     style={{ resize: 'vertical' }}
                   ></textarea>
                 </div>
                 
-                <div style={{ padding: '20px', backgroundColor: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: '8px', marginTop: '10px' }}>
-                  <h3 style={{ fontSize: '1rem', color: '#d4af37', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ padding: '15px', backgroundColor: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: '8px', marginTop: '5px' }}>
+                  <h3 style={{ fontSize: '0.95rem', color: '#d4af37', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ShieldCheck size={18} /> Detail ID Card (Kartu Pers)
                   </h3>
-                  <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--admin-text-secondary)', marginBottom: '5px' }}>Nomor Registrasi (NO. REG)</label>
                       <input 
