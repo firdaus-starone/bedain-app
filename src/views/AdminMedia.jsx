@@ -37,10 +37,10 @@ const AdminMedia = () => {
           const res = await listAll(listRef);
           
           let validItems = res.items;
-          // Filter if role is reporter, they can only see files uploaded by themselves
-          if (userRole === 'reporter' && user?.uid) {
-            validItems = validItems.filter(item => item.name.includes(`_${user.uid}.`));
-          }
+          // Reporters can now see all media files just like admins/editors
+          // if (userRole === 'reporter' && user?.uid) {
+          //   validItems = validItems.filter(item => item.name.includes(`_${user.uid}.`));
+          // }
           
           allItems.push(...validItems);
         } catch (e) {
