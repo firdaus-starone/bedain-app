@@ -10,6 +10,7 @@ export default function AdminLayout({ children }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isPending, setIsPending] = useState(false);
+    const [userData, setUserData] = useState(null);
     const [logoutTrigger, setLogoutTrigger] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
@@ -28,8 +29,10 @@ export default function AdminLayout({ children }) {
                     
                     if (userDoc.exists() && ['admin', 'superadmin', 'editor', 'reporter'].includes(userDoc.data().role)) {
                         setIsAdmin(true);
+                        setUserData(userDoc.data());
                     } else if (userDoc.exists() && userDoc.data().role === 'pending') {
                         setIsPending(true);
+                        setUserData(userDoc.data());
                     } else if (user.email === 'redaksi@bedainnews.com' || user.email === 'firdausdprdkkr@gmail.com' || user.email === 'firdausdev01@gmail.com') {
                         // Fallback override for official email during migration
                         setIsAdmin(true);
@@ -62,12 +65,38 @@ export default function AdminLayout({ children }) {
     }
 
     if (isPending) {
+        const isProfileComplete = userData?.kabKota && userData?.noHp;
+
+        if (!isProfileComplete && pathname !== '/admin/profile') {
+            // Give it a tiny delay to prevent router conflict if it was just loaded
+            setTimeout(() => router.push('/admin/profile'), 100);
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#121214', color: '#fff' }}>
+                    <div className="spinner"></div>
+                </div>
+            );
+        }
+
+        if (pathname === '/admin/profile') {
+            return (
+                <div className="admin-layout" style={{ display: 'block', backgroundColor: '#121214', minHeight: '100vh', padding: '20px' }}>
+                    <div style={{ maxWidth: '900px', margin: '40px auto' }}>
+                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid #3b82f6', color: '#fff', padding: '20px', borderRadius: '12px', marginBottom: '24px' }}>
+                            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem' }}>Langkah Terakhir! 🚀</h3>
+                            <p style={{ margin: 0, opacity: 0.9 }}>Silakan lengkapi profil Anda (khususnya <strong>Kabupaten / Kota</strong> dan <strong>Nomor HP</strong>) agar Admin dapat memverifikasi akun Anda.</p>
+                        </div>
+                        {children}
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#121214', color: '#fff', padding: '20px', textAlign: 'center' }}>
                 <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '40px', borderRadius: '16px', maxWidth: '400px' }}>
                     <h2 style={{ fontSize: '1.5rem', marginBottom: '16px', fontWeight: 700 }}>Menunggu Persetujuan</h2>
                     <p style={{ color: '#a1a1aa', lineHeight: 1.6, marginBottom: '24px' }}>
-                        Akun Anda berhasil didaftarkan, namun saat ini berstatus <strong>Pending</strong>. Silakan hubungi Admin atau Pemimpin Redaksi untuk mengaktifkan hak akses jurnalis Anda.
+                        Terima kasih telah melengkapi profil! Akun Anda saat ini berstatus <strong>Pending</strong>. Silakan hubungi Admin atau Pemimpin Redaksi untuk mengaktifkan hak akses Anda.
                     </p>
                     <button 
                         onClick={() => auth.signOut().then(() => router.push('/admin/login'))}
