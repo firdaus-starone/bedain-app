@@ -37,7 +37,11 @@ export default function AdminLayout({ children }) {
                         // Fallback override for official email during migration
                         setIsAdmin(true);
                     } else {
-                        router.push('/');
+                        // User document doesn't exist yet (first time login with Google)
+                        // useAuth.js is probably creating it right now.
+                        // We will treat them as pending by default.
+                        setIsPending(true);
+                        setUserData({}); // Empty userData means incomplete profile
                     }
                 } catch (error) {
                     console.error("Error checking user role:", error);
