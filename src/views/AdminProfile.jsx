@@ -191,7 +191,7 @@ const AdminProfile = () => {
             <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: 0, color: 'var(--admin-text-primary)' }}>Profil Pengguna</h1>
           </div>
 
-          <div className="profile-layout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px', alignItems: 'start' }}>
+          <div className="profile-layout-grid" style={{ display: 'grid', gridTemplateColumns: ['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) ? '1fr 300px' : '1fr', gap: '30px', alignItems: 'start' }}>
             
             {/* Form Column */}
             <div style={{ backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '16px', overflow: 'hidden' }}>
@@ -305,7 +305,7 @@ const AdminProfile = () => {
                   ></textarea>
                 </div>
                 
-                {false && (
+                {['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) && (
                 <div style={{ padding: '15px', backgroundColor: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: '8px', marginTop: '5px' }}>
                   <h3 style={{ fontSize: '0.95rem', color: '#d4af37', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ShieldCheck size={18} /> Detail ID Card (Kartu Pers)
@@ -365,7 +365,7 @@ const AdminProfile = () => {
           </div>
           
           {/* ID Card Preview Column - Temporarily Hidden */}
-          {false && (
+          {['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', width: '100%' }}>
              <div style={{ width: '300px', height: '525px', position: 'relative' }}>
                <div style={{ position: 'absolute', top: 0, left: 0, transform: 'scale(0.75)', transformOrigin: 'top left' }}>
