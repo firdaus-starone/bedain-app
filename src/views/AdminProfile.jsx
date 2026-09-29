@@ -80,6 +80,11 @@ const AdminProfile = () => {
   const handleDownloadIdCard = async () => {
     if (!idCardRef.current) return;
     
+    // Simpan transform asli dan hapus sebelum capture agar text width tidak salah hitung
+    const parent = idCardRef.current.parentElement;
+    const originalTransform = parent.style.transform;
+    parent.style.transform = 'none';
+
     try {
       const canvas = await html2canvas(idCardRef.current, {
         scale: 2, // High resolution
@@ -95,6 +100,9 @@ const AdminProfile = () => {
     } catch (error) {
       console.error("Gagal mengunduh ID Card:", error);
       alert("Gagal mengunduh ID Card. Pastikan foto profil Anda sudah terunggah dengan benar.");
+    } finally {
+      // Kembalikan transform seperti semula
+      parent.style.transform = originalTransform;
     }
   };
 
