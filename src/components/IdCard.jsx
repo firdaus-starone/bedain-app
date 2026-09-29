@@ -50,8 +50,8 @@ const IdCard = ({ data, idRef }) => {
       <div style={{
         position: 'absolute',
         top: '68%',
-        left: '5%',
-        width: '90%',
+        left: '10%',
+        width: '80%',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px', // Reduced gap to save space
