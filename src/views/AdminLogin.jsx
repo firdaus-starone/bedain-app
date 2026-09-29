@@ -120,6 +120,14 @@ const AdminLogin = () => {
           opacity: 0.7;
           cursor: not-allowed;
         }
+        @media (max-width: 768px) {
+          .admin-split-right {
+            padding: 20px !important;
+          }
+          .admin-login-card {
+            margin-top: -10vh; /* slightly move up on mobile */
+          }
+        }
       `}</style>
       
       {/* Left Side: Hero Image */}
@@ -148,8 +156,10 @@ const AdminLogin = () => {
       {/* Right Side: Login Form */}
       <div className="admin-split-right">
         <div className="admin-login-card">
-          <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '40px' }}>
-            <img src="/logo.png" alt="Bedain Logo" style={{ height: '60px', objectFit: 'contain', marginBottom: '20px', alignSelf: 'flex-start' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '40px' }}>
+            <div style={{ background: '#ffffff', padding: '12px 20px', borderRadius: '16px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
+              <img src="/logo.png" alt="Bedain Logo" style={{ height: '50px', objectFit: 'contain', display: 'block' }} />
+            </div>
             <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>
               Selamat Datang Kembali
             </h1>
