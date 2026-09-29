@@ -23,7 +23,9 @@ const AdminProfile = () => {
     bio: '',
     regNumber: '',
     roleTitle: '',
-    region: 'NASIONAL'
+    region: 'NASIONAL',
+    kabKota: '',
+    noHp: ''
   });
   
   const fileInputRef = useRef(null);
@@ -52,7 +54,6 @@ const AdminProfile = () => {
       // Then fetch additional details from Firestore
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
-      
       if (userSnap.exists()) {
         const data = userSnap.data();
         setFormData(prev => ({
@@ -62,7 +63,9 @@ const AdminProfile = () => {
           bio: data.bio || '',
           regNumber: data.regNumber || '',
           roleTitle: data.roleTitle || '',
-          region: data.region || 'NASIONAL'
+          region: data.region || 'NASIONAL',
+          kabKota: data.kabKota || '',
+          noHp: data.noHp || ''
         }));
       }
     } catch (error) {
@@ -156,6 +159,8 @@ const AdminProfile = () => {
         regNumber: formData.regNumber,
         roleTitle: formData.roleTitle,
         region: formData.region,
+        kabKota: formData.kabKota,
+        noHp: formData.noHp,
         updatedAt: new Date()
       }, { merge: true });
       
@@ -262,6 +267,28 @@ const AdminProfile = () => {
                       />
                     </div>
                     <small style={{ color: '#666', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Email digunakan untuk login dan tidak dapat diubah.</small>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Kabupaten / Kota</label>
+                    <input 
+                      type="text" 
+                      name="kabKota"
+                      value={formData.kabKota}
+                      onChange={handleChange}
+                      placeholder="Cth: Kota Makassar"
+                      className="admin-input"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Nomor HP / WhatsApp</label>
+                    <input 
+                      type="text" 
+                      name="noHp"
+                      value={formData.noHp}
+                      onChange={handleChange}
+                      placeholder="Cth: 081234567890"
+                      className="admin-input"
+                    />
                   </div>
                 </div>
 
