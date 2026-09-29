@@ -175,12 +175,27 @@ const AdminLogin = () => {
           background: var(--color-bg-secondary);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
+        .back-btn-container {
+          position: absolute;
+          top: 30px;
+          left: 30px;
+          z-index: 10;
+        }
         @media (max-width: 768px) {
           .admin-split-right {
             padding: 20px !important;
+            justify-content: flex-start;
+            padding-top: 40px !important;
+          }
+          .back-btn-container {
+            position: relative;
+            top: auto;
+            left: auto;
+            margin-bottom: 40px;
+            align-self: flex-start;
           }
           .admin-login-card {
-            margin-top: -10vh; /* slightly move up on mobile */
+            margin-top: 0;
           }
         }
       `}</style>
@@ -211,7 +226,7 @@ const AdminLogin = () => {
       {/* Right Side: Login Form */}
       <div className="admin-split-right">
         {/* Back to Home Button */}
-        <div style={{ position: 'absolute', top: '30px', left: '30px', zIndex: 10 }}>
+        <div className="back-btn-container">
           <Link href="/" style={{
             display: 'flex',
             alignItems: 'center',
