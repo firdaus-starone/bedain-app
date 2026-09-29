@@ -169,7 +169,7 @@ const AdminProfile = () => {
   return (
     <div className="admin-layout">
       <main className="admin-main profile-main-pad" style={{ padding: '30px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', color: 'var(--admin-text-primary)', cursor: 'pointer' }}>
@@ -178,7 +178,7 @@ const AdminProfile = () => {
             <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: 0, color: 'var(--admin-text-primary)' }}>Profil Pengguna</h1>
           </div>
 
-          <div className="profile-layout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '30px', alignItems: 'start' }}>
+          <div className="profile-layout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '30px', alignItems: 'start' }}>
             
             {/* Form Column */}
             <div style={{ backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '16px', overflow: 'hidden' }}>
@@ -328,8 +328,12 @@ const AdminProfile = () => {
           </div>
           
           {/* ID Card Preview Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
-             <IdCard data={formData} idRef={idCardRef} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', width: '100%' }}>
+             <div style={{ width: '300px', height: '525px', position: 'relative' }}>
+               <div style={{ position: 'absolute', top: 0, left: 0, transform: 'scale(0.75)', transformOrigin: 'top left' }}>
+                 <IdCard data={formData} idRef={idCardRef} />
+               </div>
+             </div>
              
              <button 
                onClick={handleDownloadIdCard}
