@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import SEO from '../components/SEO';
@@ -23,7 +23,18 @@ const AdminLogin = () => {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/admin/dashboard');
     } catch (err) {
-      setError('Gagal login: ' + err.message);
+      // Jika akun belum ada, otomatis daftarkan!
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        try {
+          await createUserWithEmailAndPassword(auth, email, password);
+          router.push('/admin/dashboard');
+          return;
+        } catch (createErr) {
+          setError('Gagal mendaftar: ' + createErr.message);
+        }
+      } else {
+        setError('Gagal login: ' + err.message);
+      }
       console.error(err);
     } finally {
       setLoading(false);
