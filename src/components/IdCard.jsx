@@ -20,7 +20,7 @@ const IdCard = ({ data, idRef }) => {
         position: 'relative',
         overflow: 'hidden',
         borderRadius: '24px', // Match the curve if needed, but background has its own border
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Arial', 'Helvetica', sans-serif", // Use system font to prevent html2canvas text overlapping
         color: '#fff',
         margin: '0 auto',
         backgroundImage: 'url(/assets/KARTUPERS.png)',
