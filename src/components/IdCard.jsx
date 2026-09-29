@@ -6,6 +6,10 @@ const IdCard = ({ data, idRef }) => {
 
   const defaultPhoto = "https://ui-avatars.com/api/?name=" + encodeURIComponent(name || "Bedain News") + "&background=333&color=fff&size=512";
   const verificationUrl = `https://bedainnews.com/verify?id=${encodeURIComponent(regNumber || 'B-00.00-000')}`;
+  
+  const imageUrl = photoURL || defaultPhoto;
+  // Route through our proxy API to guarantee CORS headers for html2canvas
+  const proxiedImageUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
 
   return (
     <div 
@@ -39,10 +43,10 @@ const IdCard = ({ data, idRef }) => {
         backgroundColor: '#002244' // fallback behind image
       }}>
         <img 
-          src={photoURL || defaultPhoto} 
+          src={proxiedImageUrl} 
           alt="Profile" 
+          crossOrigin="anonymous"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          /* Removed crossOrigin="anonymous" to fix broken image */
         />
       </div>
 
@@ -59,20 +63,20 @@ const IdCard = ({ data, idRef }) => {
       }}>
         {/* Text */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
-          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NAMA</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {name || 'NAMA LENGKAP'}</div>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>NAMA</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {name || 'NAMA LENGKAP'}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
-          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>NO. REG</div>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>NO. REG</div>
           <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {regNumber || 'B-00.00-000'}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
-          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>JABATAN</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {roleTitle || 'JABATAN'}</div>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>JABATAN</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {roleTitle || 'JABATAN'}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
-          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37', letterSpacing: '1px' }}>WILAYAH</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>: {region || 'NASIONAL'}</div>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>WILAYAH</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {region || 'NASIONAL'}</div>
         </div>
       </div>
 
