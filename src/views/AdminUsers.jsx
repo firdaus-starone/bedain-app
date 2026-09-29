@@ -304,7 +304,7 @@ const AdminUsers = () => {
                         <div style={{ fontSize: '12.5px', color: 'var(--admin-text-secondary)' }}>{user.email || 'No Email'}</div>
                       </td>
                       <td>
-                        <span className={`status-badge ${(user.role || '').toLowerCase() === 'superadmin' ? 'status-published' : (user.role || '').toLowerCase() === 'editor' ? 'status-draft' : ''}`}>
+                        <span className={`status-badge ${(user.role || '').toLowerCase() === 'superadmin' ? 'status-published' : (user.role || '').toLowerCase() === 'editor' ? 'status-draft' : (user.role || '').toLowerCase() === 'pending' ? 'status-draft' : ''}`} style={(user.role || '').toLowerCase() === 'pending' ? { background: '#fee2e2', color: '#ef4444' } : {}}>
                           {(user.role || 'reporter').toUpperCase()}
                         </span>
                       </td>
@@ -317,6 +317,7 @@ const AdminUsers = () => {
                               className="admin-input"
                               style={{padding: '6px 10px', width: 'auto', fontSize: '13px', borderRadius: '6px'}}
                             >
+                              <option value="pending">Pending (Menunggu)</option>
                               <option value="reporter">Reporter (Hanya Draf)</option>
                               <option value="editor">Editor (Bisa Tayang/Hapus)</option>
                               <option value="admin">Admin (Kelola Tim)</option>

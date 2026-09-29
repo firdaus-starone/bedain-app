@@ -16,7 +16,7 @@ export const useAuth = () => {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
 
-        let role = 'reporter'; // Default role
+        let role = 'pending'; // Default role
 
         if (userSnap.exists()) {
           role = userSnap.data().role;
@@ -33,6 +33,8 @@ export const useAuth = () => {
             if (usersSnapshot.empty || user.email === 'redaksi@bedainnews.com') {
               // This is the very first user in the database or the official redaksi email, make them Superadmin
               role = 'superadmin';
+            } else {
+              role = 'pending'; // Requires admin approval
             }
             
             // Save new user profile to Firestore
