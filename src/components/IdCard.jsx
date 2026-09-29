@@ -64,19 +64,19 @@ const IdCard = ({ data, idRef }) => {
         {/* Text */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>NAMA</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {name || 'NAMA LENGKAP'}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(name || 'NAMA LENGKAP').toUpperCase()}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
-          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>NO. REG</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {regNumber || 'B-00.00-000'}</div>
+          <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>NOREG</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(regNumber || 'B-00.00-000').toUpperCase()}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>JABATAN</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {roleTitle || 'JABATAN'}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(roleTitle || 'JABATAN').toUpperCase()}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>WILAYAH</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>: {region || 'NASIONAL'}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(region || 'NASIONAL').toUpperCase()}</div>
         </div>
       </div>
 
