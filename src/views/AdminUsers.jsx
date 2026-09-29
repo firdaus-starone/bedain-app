@@ -7,8 +7,9 @@ import { signOut, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPas
 import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, firebaseConfig } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, PenTool, Globe, LogOut, Users, ArrowLeft, ShieldAlert, Image as ImageIcon, Settings, Tag, FileText, UserPlus, X, Trash2, Mail, User } from 'lucide-react';
-
+import { LayoutDashboard, PenTool, Globe, LogOut, Users, ArrowLeft, ShieldAlert, Image as ImageIcon, Settings, Tag, FileText, UserPlus, X, Trash2, Mail, User, CreditCard, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import IdCard from '../components/IdCard';
 
 const Navigate = ({to}) => { React.useEffect(() => { if (typeof window !== 'undefined') window.location.href = to; }, [to]); return null; };
 
@@ -16,6 +17,10 @@ const AdminUsers = () => {
   const { currentUser, userRole, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // State untuk Lihat ID Card
+  const [viewingIdCardFor, setViewingIdCardFor] = useState(null);
+  const idCardRef = React.useRef(null);
 
   // State untuk Tambah Jurnalis
   const [showAddModal, setShowAddModal] = useState(false);
@@ -197,6 +202,25 @@ const AdminUsers = () => {
     );
   };
 
+  const handleDownloadIdCard = async (userName) => {
+    if (!idCardRef.current) return;
+    try {
+      const canvas = await html2canvas(idCardRef.current, {
+        scale: 2, // High resolution
+        useCORS: true, // Allow cross-origin images
+        backgroundColor: null
+      });
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `ID-CARD-${userName || 'JURNALIS'}.png`;
+      link.click();
+    } catch (error) {
+      console.error("Gagal mengunduh ID Card:", error);
+      showToast("Gagal mengunduh ID Card. Pastikan foto profil sudah terunggah dengan benar.", "error");
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -292,6 +316,22 @@ const AdminUsers = () => {
                           ) : (
                             <span style={{color: 'var(--admin-text-secondary)', fontSize:'13px', fontStyle:'italic', marginRight: '5px'}}>It's you</span>
                           )}
+
+                          <button
+                            onClick={() => setViewingIdCardFor(user)}
+                            className="admin-btn-icon"
+                            title="Lihat ID Card Jurnalis"
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.15)', // Green tone
+                              color: '#10b981',
+                              border: 'none',
+                              padding: '7px',
+                              borderRadius: '6px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <CreditCard size={15} />
+                          </button>
 
                           <button
                             onClick={() => openEditModal(user)}
@@ -457,6 +497,84 @@ const AdminUsers = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Lihat ID Card */}
+        {viewingIdCardFor && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+            backdropFilter: 'blur(4px)'
+          }}>
+            <div style={{
+              backgroundColor: 'var(--admin-card-bg)',
+              borderRadius: '14px',
+              padding: '28px',
+              width: '100%',
+              maxWidth: '480px',
+              border: '1px solid var(--admin-card-border)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--admin-text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <CreditCard size={20} color="#10b981" />
+                  ID Card: {viewingIdCardFor.name || viewingIdCardFor.email}
+                </h3>
+                <button 
+                  onClick={() => setViewingIdCardFor(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--admin-text-secondary)', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* ID Card Component wrapper scaled down slightly if needed to fit modal, or full scale */}
+              <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center', marginBottom: '-50px' }}>
+                <IdCard 
+                  data={{
+                    name: viewingIdCardFor.name,
+                    regNumber: viewingIdCardFor.regNumber,
+                    roleTitle: viewingIdCardFor.roleTitle || viewingIdCardFor.role,
+                    region: viewingIdCardFor.region || 'NASIONAL',
+                    photoURL: viewingIdCardFor.photoURL
+                  }} 
+                  idRef={idCardRef} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', width: '100%' }}>
+                <button
+                  onClick={() => handleDownloadIdCard(viewingIdCardFor.name)}
+                  className="admin-btn admin-btn-primary"
+                  style={{ 
+                    padding: '12px 24px', 
+                    borderRadius: '8px', 
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Download size={18} />
+                  Unduh ID Card
+                </button>
+              </div>
             </div>
           </div>
         )}
