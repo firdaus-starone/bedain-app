@@ -26,7 +26,7 @@ export default function AdminLayout({ children }) {
                     
                     if (userDoc.exists() && ['admin', 'superadmin', 'editor', 'reporter'].includes(userDoc.data().role)) {
                         setIsAdmin(true);
-                    } else if (user.email === 'redaksi@bedainnews.com') {
+                    } else if (user.email === 'redaksi@bedainnews.com' || user.email === 'firdausdprdkkr@gmail.com' || user.email === 'firdausdev01@gmail.com') {
                         // Fallback override for official email during migration
                         setIsAdmin(true);
                     } else {
