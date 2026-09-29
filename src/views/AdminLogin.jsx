@@ -23,7 +23,7 @@ const AdminLogin = () => {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/admin/dashboard');
     } catch (err) {
-      setError('Gagal login: Periksa kembali email dan password Anda.');
+      setError('Gagal login: ' + err.message);
       console.error(err);
     } finally {
       setLoading(false);
