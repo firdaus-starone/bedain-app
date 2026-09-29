@@ -70,6 +70,7 @@ const Navbar = () => {
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarksModal, setShowBookmarksModal] = useState(false);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [newsletterContact, setNewsletterContact] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
   const [pushStatus, setPushStatus] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'granted' : 'default');
@@ -436,68 +437,82 @@ const Navbar = () => {
               </svg>
             </button>
 
-            <button className="theme-toggle" aria-label="Langganan Notifikasi & Newsletter" onClick={() => setShowSubscribeModal(true)} title="Pusat Langganan & Notifikasi" style={{ color: 'var(--color-accent)' }}>
-              <Bell size={20} />
-            </button>
-
-            <button
-              className="theme-toggle"
-              aria-label="Berita Tersimpan (Bookmarks)"
-              onClick={() => setShowBookmarksModal(true)}
-              title="Berita Tersimpan / Baca Nanti"
-              style={{ position: 'relative', color: bookmarks.length > 0 ? 'var(--color-accent)' : 'inherit' }}
-            >
-              <Bookmark size={20} fill={bookmarks.length > 0 ? 'currentColor' : 'none'} />
-              {bookmarks.length > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
-                  background: '#ef4444',
-                  color: '#fff',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                }}>
-                  {bookmarks.length > 9 ? '9+' : bookmarks.length}
-                </span>
+            {/* User Dropdown Menu */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                className="theme-toggle" 
+                aria-label="Profil User" 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                title="Menu Profil"
+              >
+                <User size={20} />
+                {bookmarks.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    background: '#ef4444',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    boxShadow: '0 0 0 2px var(--color-bg-primary)'
+                  }}></span>
+                )}
+              </button>
+              
+              {showUserMenu && (
+                <>
+                  <div 
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 }}
+                    onClick={() => setShowUserMenu(false)}
+                  ></div>
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 12px)',
+                    right: 0,
+                    background: 'var(--color-bg-secondary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '12px',
+                    boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
+                    minWidth: '220px',
+                    zIndex: 100,
+                    padding: '8px 0',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <button 
+                      onClick={() => { setShowUserMenu(false); router.push('/admin/login'); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                    >
+                      <User size={18} /> Profil Saya
+                    </button>
+                    <button 
+                      onClick={() => { setShowUserMenu(false); setShowSubscribeModal(true); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                    >
+                      <Bell size={18} /> Notifikasi
+                    </button>
+                    <button 
+                      onClick={() => { setShowUserMenu(false); setShowBookmarksModal(true); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                    >
+                      <Bookmark size={18} /> Baca Nanti ({bookmarks.length})
+                    </button>
+                    <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }}></div>
+                    <button 
+                      onClick={() => { toggleTheme(); setShowUserMenu(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                    >
+                      {theme === 'light' ? (
+                        <><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> Mode Gelap</>
+                      ) : (
+                        <><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> Mode Terang</>
+                      )}
+                    </button>
+                  </div>
+                </>
               )}
-            </button>
-
-            <button className="theme-toggle" aria-label="Toggle Theme" onClick={toggleTheme}>
-              {theme === 'light' ? (
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="5"></circle>
-                  <line x1="12" y1="1" x2="12" y2="3"></line>
-                  <line x1="12" y1="21" x2="12" y2="23"></line>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                  <line x1="1" y1="12" x2="3" y2="12"></line>
-                  <line x1="21" y1="12" x2="23" y2="12"></line>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
-              )}
-            </button>
-
-            <button 
-              className="theme-toggle" 
-              aria-label="Profil User" 
-              onClick={() => router.push('/admin/login')} 
-              title="Masuk / Profil Saya"
-            >
-              <User size={20} />
-            </button>
+            </div>
 
             <button className="menu-button desktop-only-menu-btn" aria-label="Menu" onClick={() => setIsMenuOpen(true)}>
               <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
