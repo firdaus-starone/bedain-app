@@ -36,7 +36,7 @@ const IdCard = ({ data, idRef }) => {
         top: '37.5%',
         left: '21.5%',
         width: '57%',
-        height: '29.5%',
+        height: '33.5%', // Adjusted to make it exactly 1:1 ratio (228x228)
         borderRadius: '12px',
         overflow: 'hidden',
         zIndex: 2,
@@ -53,7 +53,7 @@ const IdCard = ({ data, idRef }) => {
       {/* Text Details Container */}
       <div style={{
         position: 'absolute',
-        top: '68%',
+        top: '72%', // Moved down from 68% to accommodate the taller 1:1 photo
         left: '10%',
         width: '80%',
         display: 'flex',
