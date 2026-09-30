@@ -1386,12 +1386,12 @@ body {
     padding-right: 12px;
   }
   .logo-img {
-    height: 32px;
+    height: 38px;
     flex-shrink: 0;
   }
   .logo {
-    gap: 6px;
-    font-size: 1.15rem;
+    gap: 8px;
+    font-size: 1.4rem;
     min-width: 0;
   }
   .logo-text {
@@ -1411,7 +1411,7 @@ body {
     display: flex !important;
   }
   .nav-brand-group {
-    gap: 8px;
+    gap: 12px;
     flex: 1;
     min-width: 0;
   }
@@ -1424,19 +1424,19 @@ body {
     font-size: 0.85rem;
   }
   .nav-right {
-    gap: 6px;
+    gap: 8px;
   }
   .theme-toggle,
   .menu-button,
   .mobile-search-icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
   }
   .theme-toggle svg,
   .menu-button svg,
   .mobile-search-icon-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
   }
   .mobile-search-expand-bar {
     padding: 0 var(--spacing-md) 10px var(--spacing-md) !important;
