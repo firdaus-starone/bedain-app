@@ -1,4 +1,5 @@
 import { Poppins, Inter } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import GlobalAdsense from '../components/GlobalAdsense';
 import StickySideAds from '../components/StickySideAds';
@@ -44,6 +45,22 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang={locale}>
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-1YDVGEPDH6"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-1YDVGEPDH6', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
+      </head>
       <body className={`bg-[#121214] text-white ${poppins.variable} ${inter.variable}`}>
         <GlobalAdsense />
         <I18nProvider initialLang={locale}>
