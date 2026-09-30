@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /api/
 
-Sitemap: https://pionirhouse.com/sitemap.xml
+Sitemap: https://bedainnews.com/sitemap.xml
