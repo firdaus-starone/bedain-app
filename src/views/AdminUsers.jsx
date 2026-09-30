@@ -7,9 +7,10 @@ import { signOut, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPas
 import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, firebaseConfig } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, PenTool, Globe, LogOut, Users, ArrowLeft, ShieldAlert, Image as ImageIcon, Settings, Tag, FileText, UserPlus, X, Trash2, Mail, User, CreditCard, Download } from 'lucide-react';
+import { LayoutDashboard, PenTool, Globe, LogOut, Users, ArrowLeft, ShieldAlert, Image as ImageIcon, Settings, Tag, FileText, UserPlus, X, Trash2, Mail, User, CreditCard, Download, Camera } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import IdCard from '../components/IdCard';
+import { uploadAndCompressImage } from '../lib/uploadImage';
 
 const Navigate = ({to}) => { React.useEffect(() => { if (typeof window !== 'undefined') window.location.href = to; }, [to]); return null; };
 
@@ -32,6 +33,9 @@ const AdminUsers = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('reporter');
+  const [editPhotoURL, setEditPhotoURL] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const editFileInputRef = React.useRef(null);
 
   // State untuk Notifikasi & Konfirmasi
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -166,6 +170,36 @@ const AdminUsers = () => {
     setEditingUser(user);
     setEditName(user.name || '');
     setEditRole(user.role || 'reporter');
+    setEditPhotoURL(user.photoURL || '');
+  };
+
+  const handleEditPhotoClick = () => {
+    if (editFileInputRef.current) {
+      editFileInputRef.current.click();
+    }
+  };
+
+  const handleEditFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("Ukuran foto maksimal 2MB!", "warning");
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      const newPhotoURL = await uploadAndCompressImage(file, 'users/avatars', editingUser.id);
+      setEditPhotoURL(newPhotoURL);
+      showToast("Foto berhasil diunggah! Jangan lupa klik Simpan Perubahan.", "success");
+    } catch (error) {
+      console.error("Gagal mengunggah foto profil:", error);
+      showToast("Gagal mengunggah foto. Silakan coba lagi.", "error");
+    } finally {
+      setIsUploadingPhoto(false);
+      if (editFileInputRef.current) editFileInputRef.current.value = '';
+    }
   };
 
   const handleEditUser = async (e) => {
@@ -173,8 +207,8 @@ const AdminUsers = () => {
     setSaving(true);
     try {
       const userRef = doc(db, 'users', editingUser.id);
-      await updateDoc(userRef, { name: editName.trim(), role: editRole });
-      setUsers(users.map(u => u.id === editingUser.id ? { ...u, name: editName.trim(), role: editRole } : u));
+      await updateDoc(userRef, { name: editName.trim(), role: editRole, photoURL: editPhotoURL });
+      setUsers(users.map(u => u.id === editingUser.id ? { ...u, name: editName.trim(), role: editRole, photoURL: editPhotoURL } : u));
       setEditingUser(null);
       showToast('Data jurnalis berhasil diperbarui!', 'success');
     } catch (err) {
@@ -628,6 +662,42 @@ const AdminUsers = () => {
               </div>
 
               <form onSubmit={handleEditUser}>
+                
+                {/* Photo Upload for Edit User */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div 
+                      style={{ 
+                        width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--admin-card-bg)', 
+                        backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                        overflow: 'hidden', backgroundImage: `url(${editPhotoURL})`, backgroundSize: 'cover', backgroundPosition: 'center',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                      }}
+                    >
+                      {!editPhotoURL && <User size={40} color="#666" />}
+                    </div>
+                    
+                    <button 
+                      onClick={handleEditPhotoClick}
+                      type="button"
+                      disabled={isUploadingPhoto}
+                      style={{
+                        position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px',
+                        backgroundColor: '#3b82f6', borderRadius: '50%', border: 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                        color: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.3)', transition: 'all 0.2s'
+                      }}
+                      title="Ubah Foto Profil Jurnalis"
+                    >
+                      {isUploadingPhoto ? <div className="spinner" style={{width: '16px', height: '16px', borderTopColor: '#fff', margin: 0}}></div> : <Camera size={16} />}
+                    </button>
+                    <input type="file" accept="image/*" ref={editFileInputRef} onChange={handleEditFileChange} style={{ display: 'none' }} />
+                  </div>
+                  <span style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', marginTop: '8px' }}>
+                    {isUploadingPhoto ? 'Mengunggah...' : 'Klik ikon kamera untuk mengubah foto'}
+                  </span>
+                </div>
+
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
                     Email Jurnalis (Tidak bisa diubah)

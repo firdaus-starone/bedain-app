@@ -28,7 +28,12 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() in roles;
     }
 
-    // Role yang boleh mengelola konten
+    // Role yang boleh mengelola konten utama (termasuk reporter)
+    function isReporterEditorOrAdmin() {
+      return hasRole(['reporter', 'editor', 'admin', 'superadmin']);
+    }
+
+    // Role yang boleh mengelola pengaturan dan struktur situs
     function isEditorOrAdmin() {
       return hasRole(['editor', 'admin', 'superadmin']);
     }
@@ -36,7 +41,7 @@ service cloud.firestore {
     // Koleksi Artikel Berita
     match /articles/{articleId} {
       allow read: if true;
-      allow create, update, delete: if isEditorOrAdmin();
+      allow create, update, delete: if isReporterEditorOrAdmin();
       
       // Sub-koleksi terjemahan
       match /translations/{langCode} {
