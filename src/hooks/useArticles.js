@@ -7,6 +7,7 @@ export const useArticles = (options = {}) => {
   const cacheKey = `bedain_articles_cache_${options.limit || 'all'}_${options.category || 'all'}_${options.isHeadline ?? 'all'}`;
 
   const [articles, setArticles] = useState(() => {
+    if (options.initialData && options.initialData.length > 0) return options.initialData;
     try {
       const cached = localStorage.getItem(cacheKey);
       if (cached) return JSON.parse(cached);
@@ -15,6 +16,7 @@ export const useArticles = (options = {}) => {
   });
   
   const [loading, setLoading] = useState(() => {
+    if (options.initialData && options.initialData.length > 0) return false;
     try {
       if (localStorage.getItem(cacheKey)) return false;
     } catch(e) {}
