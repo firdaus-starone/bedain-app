@@ -4796,6 +4796,25 @@ body {
   font-size: 0.9rem;
   display: flex;
 }
+
+@media (max-width: 768px) {
+  .new-articles-toast-container {
+    width: 90%;
+    top: 75px;
+  }
+  .new-articles-toast-btn {
+    padding: 10px 16px;
+    font-size: 0.82rem;
+    width: 100%;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .new-articles-toast-badge {
+    width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
+  }
+}
 .google-news-preferred-btn:hover {
   transform: translateY(-2px);
   background: #1a73e80f !important;
