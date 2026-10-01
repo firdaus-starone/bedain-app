@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, PenTool, TrendingUp, LayoutGrid } from 'lucide-react';
+import { Home, Search, PenTool, TrendingUp, Film } from 'lucide-react';
 import { useI18n } from '../hooks/useI18n';
 
 const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
@@ -105,20 +105,15 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
           <span className="bottom-nav-label">{t('navigation.trending') || 'Trending'}</span>
         </a>
 
-        {/* 5. Menu / Kategori (Versi Icon Baru: LayoutGrid) */}
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          className="bottom-nav-item bottom-nav-menu-btn"
-          aria-label="Buka Menu Kategori"
+        {/* 5. Video (New Menu) */}
+        <Link
+          href="/video"
+          className={`bottom-nav-item ${isActive('/video') ? 'active' : ''}`}
+          aria-label="Video"
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" className="bottom-nav-icon">
-            <line x1="4" y1="7" x2="20" y2="7"></line>
-            <line x1="10" y1="12" x2="20" y2="12"></line>
-            <line x1="4" y1="17" x2="20" y2="17"></line>
-          </svg>
-          <span className="bottom-nav-label">{t('navigation.menu') || 'Menu'}</span>
-        </button>
+          <Film size={22} className="bottom-nav-icon" />
+          <span className="bottom-nav-label">Video</span>
+        </Link>
       </div>
     </nav>,
     document.body
