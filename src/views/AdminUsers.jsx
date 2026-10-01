@@ -318,7 +318,7 @@ const AdminUsers = () => {
               </button>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px', WebkitOverflowScrolling: 'touch' }}>
-              {['all', 'superadmin', 'admin', 'editor', 'reporter'].map(role => (
+              {['all', 'admin', 'editor', 'reporter'].map(role => (
                 <button
                   key={role}
                   onClick={() => setFilterRole(role)}
