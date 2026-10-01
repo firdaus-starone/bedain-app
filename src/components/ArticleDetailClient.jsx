@@ -36,7 +36,7 @@ const ArticleDetail = () => {
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState('normal'); // 'normal', 'large', 'xlarge'
   const [reaction, setReaction] = useState(null);
-  const [reactionCounts, setReactionCounts] = useState({ like: 142, insightful: 98, fire: 65, love: 110 });
+  const [reactionCounts, setReactionCounts] = useState({ like: 0, insightful: 0, fire: 0, love: 0 });
   const [scrolled, setScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isClient, setIsClient] = useState(false);
@@ -1025,12 +1025,12 @@ const ArticleDetail = () => {
                     <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
                     <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
                   </button>
-                  <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-                    <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
-                  </button>
                   <button className="share-icon-btn" onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
                     <MessageSquare size={18} />
                     <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{article?.commentCount || 0}</span>
+                  </button>
+                  <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                    <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
                   </button>
                   <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
                     <Share2 size={18} />
