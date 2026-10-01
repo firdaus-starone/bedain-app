@@ -18,6 +18,7 @@ const AdminUsers = () => {
   const { currentUser, userRole, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterRole, setFilterRole] = useState('all');
   
   // State untuk Lihat ID Card
   const [viewingIdCardFor, setViewingIdCardFor] = useState(null);
@@ -316,6 +317,27 @@ const AdminUsers = () => {
                 Tambah Jurnalis
               </button>
             </div>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px', WebkitOverflowScrolling: 'touch' }}>
+              {['all', 'superadmin', 'admin', 'editor', 'reporter'].map(role => (
+                <button
+                  key={role}
+                  onClick={() => setFilterRole(role)}
+                  className={`admin-btn ${filterRole === role ? 'admin-btn-primary' : ''}`}
+                  style={{ 
+                    padding: '8px 16px', 
+                    borderRadius: '8px', 
+                    border: filterRole !== role ? '1px solid var(--admin-border)' : 'none', 
+                    background: filterRole !== role ? 'transparent' : '', 
+                    color: filterRole !== role ? 'var(--admin-text-secondary)' : '#fff',
+                    whiteSpace: 'nowrap',
+                    textTransform: 'capitalize',
+                    fontWeight: filterRole === role ? 600 : 400
+                  }}
+                >
+                  {role === 'all' ? 'Semua' : role}
+                </button>
+              ))}
+            </div>
             
             {loading ? (
               <div className="admin-loading">Memuat daftar pengguna...</div>
@@ -329,7 +351,7 @@ const AdminUsers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(user => (
+                  {users.filter(user => filterRole === 'all' || (user.role || 'reporter').toLowerCase() === filterRole).map(user => (
                     <tr key={user.id}>
                       <td className="admin-table-title">
                         <div style={{ fontWeight: 600, color: 'var(--admin-text-primary)', marginBottom: '3px' }}>
