@@ -321,8 +321,6 @@ const SmartAnalytics = ({ articles = [] }) => {
         </div>
 
       </div>
-
-      </div>
     </div>
   );
 };
