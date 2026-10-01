@@ -75,6 +75,58 @@ const TimeZoneCards = () => {
   );
 };
 
+const GoogleTrendsWidget = () => {
+  const [trends, setTrends] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrends = async () => {
+      try {
+        const res = await fetch('/api/trends');
+        const data = await res.json();
+        if (data.trends) {
+          setTrends(data.trends.slice(0, 5)); // Show top 5
+        }
+      } catch (err) {
+        console.error('Failed to load trends:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrends();
+  }, []);
+
+  if (loading) {
+    return <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '20px', height: '100%', minHeight: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner"></div></div>;
+  }
+
+  if (trends.length === 0) return null;
+
+  return (
+    <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', borderRadius: '12px', padding: '20px', height: '100%' }}>
+      <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--admin-text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <TrendingUp size={16} style={{ color: '#3b82f6' }} /> Topik Viral Google Indonesia Hari Ini
+      </h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {trends.map((t, idx) => (
+          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: idx !== trends.length - 1 ? '1px solid var(--admin-card-border)' : 'none', paddingBottom: idx !== trends.length - 1 ? '12px' : '0' }}>
+            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
+              {idx + 1}
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--admin-text-primary)', marginBottom: '2px' }}>{t.title}</div>
+              <div style={{ fontSize: '11px', color: 'var(--admin-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Eye size={10} /> {t.traffic} pencarian
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
 const AdminDashboard = () => {
   const { currentUser, userRole, loading: authLoading } = useAuth();
   const [allArticles, setAllArticles] = useState([]);
@@ -435,6 +487,11 @@ const AdminDashboard = () => {
               </div>
             </Link>
           </div>
+        </div>
+
+        {/* Google Trends Integration */}
+        <div style={{ marginBottom: '36px' }}>
+          <GoogleTrendsWidget />
         </div>
 
         {/* Smart Analytics Dashboard */}
