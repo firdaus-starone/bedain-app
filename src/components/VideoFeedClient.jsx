@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit, updateDoc, doc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getArticleVideoData, getArticleCardImage } from '../lib/videoHelpers';
 import { X, Heart, MessageCircle, Share2, Bookmark, ArrowLeft } from 'lucide-react';
@@ -12,6 +12,7 @@ export default function VideoFeedClient() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [userReactions, setUserReactions] = useState({});
   const router = useRouter();
   const containerRef = useRef(null);
 
@@ -33,6 +34,14 @@ export default function VideoFeedClient() {
           });
 
         const videosOnly = articles.filter(a => a.status === 'published' && getArticleVideoData(a));
+        
+        // Load initial local reactions
+        const initialReactions = {};
+        videosOnly.forEach(a => {
+          const stored = localStorage.getItem(`reaction_${a.id}`);
+          if (stored) initialReactions[a.id] = stored;
+        });
+        setUserReactions(initialReactions);
         setVideos(videosOnly);
       } catch (err) {
         console.error("Error fetching videos:", err);
@@ -50,6 +59,53 @@ export default function VideoFeedClient() {
     const index = Math.round(scrollPosition / windowHeight);
     if (index !== currentIndex && index >= 0 && index < videos.length) {
       setCurrentIndex(index);
+    }
+  };
+
+  const handleLike = async (articleId, index) => {
+    const isLiked = userReactions[articleId] === 'like';
+    const newReaction = isLiked ? null : 'like';
+    
+    // Optimistic UI update
+    const newVideos = [...videos];
+    const article = { ...newVideos[index] };
+    const currentLikes = article.reactions?.like || 0;
+    
+    if (isLiked) {
+      article.reactions = { ...article.reactions, like: Math.max(0, currentLikes - 1) };
+    } else {
+      article.reactions = { ...article.reactions, like: currentLikes + 1 };
+    }
+    newVideos[index] = article;
+    setVideos(newVideos);
+    setUserReactions(prev => ({ ...prev, [articleId]: newReaction }));
+
+    if (newReaction === 'like') localStorage.setItem(`reaction_${articleId}`, 'like');
+    else localStorage.removeItem(`reaction_${articleId}`);
+
+    try {
+      await updateDoc(doc(db, 'articles', articleId), {
+        [`reactions.like`]: increment(isLiked ? -1 : 1)
+      });
+    } catch (err) {
+      console.error('Error updating reaction:', err);
+    }
+  };
+
+  const handleShare = async (article) => {
+    const url = `${window.location.origin}/article/${getSlug(article)}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          url: url
+        });
+      } catch (err) {
+        console.error("Error sharing", err);
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Tautan disalin!');
     }
   };
 
@@ -169,21 +225,30 @@ export default function VideoFeedClient() {
             <div style={{ position: 'absolute', bottom: '90px', right: '12px', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
               
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <button style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Heart size={26} />
+                <button 
+                  onClick={() => handleLike(article.id, index)}
+                  style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: userReactions[article.id] === 'like' ? '#e63946' : '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
+                >
+                  <Heart size={26} fill={userReactions[article.id] === 'like' ? '#e63946' : 'none'} />
                 </button>
-                <span style={{ color: '#fff', fontSize: '12px', fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>{article.reactionCounts?.like || 0}</span>
+                <span style={{ color: '#fff', fontSize: '12px', fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>{article.reactions?.like || 0}</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <Link href={`/article/${getSlug(article)}`} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button 
+                  onClick={() => router.push(`/article/${getSlug(article)}`)} 
+                  style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
                   <MessageCircle size={26} />
-                </Link>
+                </button>
                 <span style={{ color: '#fff', fontSize: '12px', fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>{article.commentCount || 0}</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <button style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button 
+                  onClick={() => handleShare(article)}
+                  style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
                   <Share2 size={26} />
                 </button>
               </div>
