@@ -8,8 +8,9 @@ import { TrendingUp, Users, MapPin, Award, Eye, Flame, Newspaper, X } from 'luci
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
 
+import { useRouter } from 'next/navigation';
+
 const SmartAnalytics = ({ articles = [] }) => {
-  const [showAllCities, setShowAllCities] = useState(false);
   // 1. Author Rankings (Penulis Terpopuler berdasarkan akumulasi views)
   const authorStats = useMemo(() => {
     const map = {};
@@ -130,7 +131,6 @@ const SmartAnalytics = ({ articles = [] }) => {
         </div>
       </div>
 
-      {/* Grid 2 Columns: Top Authors & Category Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         
         {/* Penulis Terpopuler */}
@@ -191,7 +191,7 @@ const SmartAnalytics = ({ articles = [] }) => {
 
         {/* Demografi Kota Pengunjung */}
         <div 
-          onClick={() => setShowAllCities(true)}
+          onClick={() => window.location.href = '/admin/demographics'}
           style={{
           background: 'var(--admin-card-bg)',
           border: '1px solid var(--admin-card-border)',
@@ -322,94 +322,7 @@ const SmartAnalytics = ({ articles = [] }) => {
 
       </div>
 
-      {/* Modal Demografi Lengkap */}
-      {showAllCities && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 99999,
-          padding: '20px'
-        }} onClick={() => setShowAllCities(false)}>
-          <div style={{
-            background: 'var(--admin-card-bg)',
-            border: '1px solid var(--admin-card-border)',
-            borderRadius: '20px',
-            width: '100%',
-            maxWidth: '500px',
-            maxHeight: '80vh',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-            overflow: 'hidden'
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ 
-              padding: '20px 24px', 
-              borderBottom: '1px solid var(--admin-card-border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <MapPin size={22} color="#3b82f6" />
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--admin-text-primary)' }}>
-                  Semua Kota Pengunjung
-                </h3>
-              </div>
-              <button 
-                onClick={() => setShowAllCities(false)}
-                style={{
-                  background: 'var(--admin-hover-bg)',
-                  border: 'none',
-                  color: 'var(--admin-text-secondary)',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            
-            <div style={{ 
-              padding: '24px', 
-              overflowY: 'auto', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '16px' 
-            }}>
-              {cityStatsFull.map((item, index) => (
-                <div key={item.name} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--admin-text-primary)' }}>
-                      {index + 1}. {item.name}
-                    </span>
-                    <span style={{ color: 'var(--admin-text-secondary)', fontWeight: 600 }}>
-                      {item.views.toLocaleString('id-ID')} <span style={{ opacity: 0.6 }}>({item.percentage}%)</span>
-                    </span>
-                  </div>
-                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${item.percentage}%`,
-                      height: '100%',
-                      background: COLORS[index % COLORS.length] || '#3b82f6',
-                      borderRadius: '4px'
-                    }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
