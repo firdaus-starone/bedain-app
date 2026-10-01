@@ -36,7 +36,7 @@ const VideoSection = () => {
         const q = query(
           collection(db, 'articles'),
           orderBy('publishedAt', 'desc'),
-          limit(30)
+          limit(1000)
         );
         const snap = await getDocs(q);
         const now = new Date();

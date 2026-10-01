@@ -20,7 +20,7 @@ export default function VideoFeedClient() {
         const q = query(
           collection(db, 'articles'),
           orderBy('publishedAt', 'desc'),
-          limit(100) // Fetch recent articles, filter client-side
+          limit(1000) // Fetch recent articles, filter client-side
         );
         const snap = await getDocs(q);
         const now = new Date();
