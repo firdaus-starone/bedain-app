@@ -87,6 +87,7 @@ export default async function RootLayout({ children }) {
             }
           `}
         </Script>
+        <link rel="alternate" type="application/rss+xml" title="Bedain News RSS Feed" href="https://bedainnews.com/feed.xml" />
       </head>
       <body className={`bg-[#121214] text-white ${poppins.variable} ${inter.variable}`}>
         <GlobalAdsense />

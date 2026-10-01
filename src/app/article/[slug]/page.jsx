@@ -35,6 +35,9 @@ async function getArticleBySlug(slug) {
         content: doc.content?.stringValue || '',
         coverImage: doc.coverImage?.stringValue || doc.imageUrl?.stringValue || '',
         category: doc.category?.stringValue || '',
+        author: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
+        publishedAt: doc.publishedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
+        updatedAt: doc.updatedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
       };
     }
   } catch (error) {
@@ -50,16 +53,16 @@ export async function generateMetadata({ params }) {
 
   if (!article) {
     return {
-      title: 'Artikel Tidak Ditemukan - BEDAINAPP',
+      title: 'Artikel Tidak Ditemukan - Bedain News',
       description: 'Artikel yang Anda cari tidak ditemukan.'
     };
   }
 
-  const siteName = 'BEDAINAPP';
+  const siteName = 'Bedain News';
   const title = `${article.seoTitle || article.title} - ${siteName}`;
   const description = article.seoDescription || article.excerpt || article.content.replace(/<[^>]+>/g, '').substring(0, 160);
   
-  let coverImg = article.coverImage || 'https://bedainnews.com/logo.png';
+  let coverImg = article.coverImage || 'https://bedainnews.com/logo-bundar.png';
   if (!coverImg.startsWith('http')) {
     coverImg = `https://bedainnews.com${coverImg.startsWith('/') ? '' : '/'}${coverImg}`;
   }
@@ -80,6 +83,9 @@ export async function generateMetadata({ params }) {
         }
       ],
       type: 'article',
+      publishedTime: article.publishedAt,
+      modifiedTime: article.updatedAt,
+      authors: [article.author]
     },
     twitter: {
       card: 'summary_large_image',
@@ -90,7 +96,56 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function ArticlePage() {
-  // Client component will use useParams() to get the slug
-  return <ArticleDetailClient />;
+export default async function ArticlePage({ params }) {
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
+  const article = await getArticleBySlug(slug);
+
+  let schemaScript = null;
+  if (article) {
+    const siteName = 'Bedain News';
+    const title = article.title;
+    const description = article.seoDescription || article.excerpt || article.content.replace(/<[^>]+>/g, '').substring(0, 160);
+    let coverImg = article.coverImage || 'https://bedainnews.com/logo-bundar.png';
+    if (!coverImg.startsWith('http')) {
+      coverImg = `https://bedainnews.com${coverImg.startsWith('/') ? '' : '/'}${coverImg}`;
+    }
+
+    const schemaData = {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      "headline": title,
+      "image": [coverImg],
+      "datePublished": article.publishedAt,
+      "dateModified": article.updatedAt,
+      "author": [{
+        "@type": "Person",
+        "name": article.author,
+        "url": "https://bedainnews.com"
+      }],
+      "publisher": {
+        "@type": "Organization",
+        "name": siteName,
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://bedainnews.com/logo-bundar.png"
+        }
+      },
+      "description": description
+    };
+
+    schemaScript = (
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
+    );
+  }
+
+  return (
+    <>
+      {schemaScript}
+      <ArticleDetailClient />
+    </>
+  );
 }
