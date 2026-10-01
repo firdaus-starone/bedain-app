@@ -25,6 +25,17 @@ export const metadata = {
   title: 'Bedain News',
   description: 'Portal berita terkini dan terpercaya.',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png' },
+    ]
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -58,6 +69,22 @@ export default async function RootLayout({ children }) {
             gtag('config', 'G-1YDVGEPDH6', {
               page_path: window.location.pathname,
             });
+          `}
+        </Script>
+        <Script id="organization-schema" type="application/ld+json" strategy="afterInteractive">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Bedain News",
+              "url": "https://bedainnews.com",
+              "logo": "https://bedainnews.com/logo-bundar.png",
+              "sameAs": [
+                "https://www.facebook.com/bedainnews",
+                "https://twitter.com/bedainnews",
+                "https://www.instagram.com/bedainnews"
+              ]
+            }
           `}
         </Script>
       </head>
