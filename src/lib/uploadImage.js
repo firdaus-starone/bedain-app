@@ -11,12 +11,12 @@ import { storage } from './firebase';
 export const uploadAndCompressImage = async (imageFile, path = 'articles/images', uid = null) => {
   if (!imageFile) throw new Error("File gambar tidak ditemukan");
 
-  // 1. Opsi Kompresi & Konversi WebP
+  // 1. Opsi Kompresi & Konversi (Sangat Penting untuk WhatsApp/FB OG Meta)
   const options = {
-    maxSizeMB: 1, // Maksimal 1MB
+    maxSizeMB: 0.25, // Maksimal 250KB (Batas aman WhatsApp < 300KB)
     maxWidthOrHeight: 1200, // Dimensi maksimal 1200px
     useWebWorker: false, // MATIKAN web worker karena sering hang di production (Vite)
-    fileType: 'image/webp' // Paksa ubah format ke webp (mirip inspirasikalbar)
+    fileType: 'image/jpeg' // Paksa ubah format ke JPG (WhatsApp/FB sering menolak WebP)
   };
 
   try {
@@ -25,7 +25,7 @@ export const uploadAndCompressImage = async (imageFile, path = 'articles/images'
     
     // 3. Siapkan Ref Storage Firebase dengan nama unik
     const uidSuffix = uid ? `_${uid}` : '';
-    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${uidSuffix}.webp`;
+    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${uidSuffix}.jpg`;
     const storageRef = ref(storage, `${path}/${uniqueFileName}`);
 
     // 4. Unggah ke Firebase Storage (gunakan uploadBytes agar promise resolve dengan benar)

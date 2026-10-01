@@ -16,19 +16,16 @@ const RedaksiWidget = () => {
     let isMounted = true;
     const fetchRedaksi = async () => {
       try {
-        // Query latest articles and filter in JS to avoid ANY composite index issues
         const q = query(
           collection(db, 'articles'),
+          where('category', '==', 'Meja Redaksi'),
+          where('status', '==', 'published'),
           orderBy('publishedAt', 'desc'),
-          limit(100)
+          limit(6)
         );
         const snap = await getDocs(q);
         
-        let fetched = snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(a => a.status === 'published' && a.category && a.category.toLowerCase().includes('redaksi'));
-          
-        fetched = fetched.slice(0, 6);
+        let fetched = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         if (fetched.length === 0) {
           fetched = [

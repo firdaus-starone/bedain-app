@@ -254,50 +254,8 @@ const ArticleEditor = () => {
 
 
   const boldTagsInContent = (tagsInput, htmlContent) => {
-    let currentTags = [];
-    if (typeof tagsInput === 'string') {
-      currentTags = tagsInput.split(',').map(t => t.trim()).filter(t => t.length > 1);
-    } else if (Array.isArray(tagsInput)) {
-      currentTags = tagsInput.map(t => String(t).trim()).filter(t => t.length > 1);
-    }
-    if (currentTags.length > 0 && htmlContent) {
-      try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlContent, 'text/html');
-        const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false);
-        const textNodes = [];
-        let node;
-        while (node = walker.nextNode()) {
-            if (node.parentNode.nodeName !== 'STRONG' && node.parentNode.nodeName !== 'B' && node.parentNode.nodeName !== 'A' && node.parentNode.nodeName !== 'H1' && node.parentNode.nodeName !== 'H2' && node.parentNode.nodeName !== 'H3') {
-                textNodes.push(node);
-            }
-        }
-        
-        currentTags.sort((a, b) => b.length - a.length);
-        const escapedTags = currentTags.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-        const regex = new RegExp(`\\b(${escapedTags.join('|')})\\b`, 'gi');
-        let modified = false;
-
-        textNodes.forEach(textNode => {
-            if (regex.test(textNode.nodeValue)) {
-                modified = true;
-                regex.lastIndex = 0;
-                const span = document.createElement('span');
-                span.innerHTML = textNode.nodeValue.replace(regex, '<strong>$1</strong>');
-                while(span.firstChild) {
-                    textNode.parentNode.insertBefore(span.firstChild, textNode);
-                }
-                textNode.parentNode.removeChild(textNode);
-            }
-        });
-
-        if (modified) {
-          return doc.body.innerHTML;
-        }
-      } catch (e) {
-        console.error("Error bolding tags:", e);
-      }
-    }
+    // Fitur auto-bold dimatikan atas permintaan jurnalis mainstream
+    // agar tulisan tetap bersih tanpa highlight tebal acak.
     return htmlContent;
   };
 

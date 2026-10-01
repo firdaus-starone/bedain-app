@@ -1348,12 +1348,12 @@ const ArticleDetail = () => {
                 const isAdInsertPos1 = index === 2;
                 const isAdInsertPos2 = index === 5;
                 
-                // Helper untuk mereplace huruf "B" berdiri sendiri menjadi logo tanpa merusak HTML tags
+                // Helper untuk mereplace kode "[B]" menjadi logo tanpa merusak HTML tags
                 const replaceBWithLogo = (htmlStr) => {
                   if (!htmlStr) return htmlStr;
-                  return htmlStr.replace(/(<[^>]+>)|(\bB\b)/g, (match, tag, letterB) => {
+                  return htmlStr.replace(/(<[^>]+>)|(\[B\])/g, (match, tag, letterB) => {
                     if (tag) return tag;
-                    if (letterB) return '<img src="/icon-192x192.png" alt="B" class="inline-b-logo" />';
+                    if (letterB) return '<img src="/icon-192x192.png" alt="Bedain News" class="inline-b-logo" />';
                     return match;
                   });
                 };

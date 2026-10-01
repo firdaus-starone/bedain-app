@@ -889,6 +889,8 @@ body {
   object-fit: contain;
   width: auto;
   height: 56px;
+  background-color: transparent;
+  border-radius: 50%; /* hide white box corners if it's a circle logo */
 }
 .navbar-secondary-group {
   width: 100%;
