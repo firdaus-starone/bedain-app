@@ -19,9 +19,8 @@ export default function VideoFeedClient() {
       try {
         const q = query(
           collection(db, 'articles'),
-          where('status', '==', 'published'),
           orderBy('publishedAt', 'desc'),
-          limit(50) // Fetch recent articles, filter client-side
+          limit(100) // Fetch recent articles, filter client-side
         );
         const snap = await getDocs(q);
         const now = new Date();
@@ -32,7 +31,7 @@ export default function VideoFeedClient() {
             return pDate <= now;
           });
 
-        const videosOnly = articles.filter(a => getArticleVideoData(a));
+        const videosOnly = articles.filter(a => a.status === 'published' && getArticleVideoData(a));
         setVideos(videosOnly);
       } catch (err) {
         console.error("Error fetching videos:", err);
