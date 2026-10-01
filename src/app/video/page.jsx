@@ -1,4 +1,4 @@
-import VideoFeedClient from '@/components/VideoFeedClient';
+import VideoFeedClient from '../../components/VideoFeedClient';
 
 export const metadata = {
   title: 'Video - Bedain News',
