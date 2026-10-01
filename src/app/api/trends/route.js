@@ -22,9 +22,9 @@ export async function GET() {
     
     while ((match = itemRegex.exec(xml)) !== null && items.length < 10) {
       const itemXml = match[1];
-      const titleMatch = itemXml.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
+      const titleMatch = itemXml.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
       const trafficMatch = itemXml.match(/<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/);
-      const newsMatch = itemXml.match(/<ht:news_item>[\s\S]*?<ht:news_item_title><!\[CDATA\[(.*?)\]\]><\/ht:news_item_title>/);
+      const newsMatch = itemXml.match(/<ht:news_item>[\s\S]*?<ht:news_item_title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/ht:news_item_title>/);
       
       if (titleMatch) {
         items.push({
