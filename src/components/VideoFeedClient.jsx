@@ -6,6 +6,7 @@ import { getArticleVideoData, getArticleCardImage } from '../lib/videoHelpers';
 import { X, Heart, MessageCircle, Share2, Bookmark, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import BottomNav from './BottomNav';
 
 export default function VideoFeedClient() {
   const [videos, setVideos] = useState([]);
@@ -92,9 +93,9 @@ export default function VideoFeedClient() {
       }}
     >
       {/* Top Bar (Back Button) */}
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '20px', zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '20px', paddingTop: 'max(20px, env(safe-area-inset-top, 40px))', zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
         <button 
-          onClick={() => router.back()} 
+          onClick={() => router.push('/')} 
           style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', padding: '10px', borderRadius: '50%', cursor: 'pointer', pointerEvents: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}
         >
           <ArrowLeft size={24} />
@@ -150,7 +151,7 @@ export default function VideoFeedClient() {
             <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)', pointerEvents: 'none', zIndex: 10 }}></div>
 
             {/* Floating Info (Bottom Left) */}
-            <div style={{ position: 'absolute', bottom: '20px', left: '16px', right: '70px', zIndex: 20, color: '#fff', pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', bottom: '90px', left: '16px', right: '70px', zIndex: 20, color: '#fff', pointerEvents: 'none' }}>
               <Link href={`/article/${getSlug(article)}`} style={{ textDecoration: 'none', color: '#fff', pointerEvents: 'auto' }}>
                 <span style={{ display: 'inline-block', background: 'var(--color-accent)', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>
                   {article.category || 'Berita'}
@@ -165,7 +166,7 @@ export default function VideoFeedClient() {
             </div>
 
             {/* Action Buttons (Bottom Right) */}
-            <div style={{ position: 'absolute', bottom: '20px', right: '12px', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+            <div style={{ position: 'absolute', bottom: '90px', right: '12px', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
               
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                 <button style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -203,6 +204,7 @@ export default function VideoFeedClient() {
           overflow: hidden; /* Prevent body scroll on this page */
         }
       `}</style>
+      <BottomNav />
     </div>
   );
 }
