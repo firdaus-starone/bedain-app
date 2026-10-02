@@ -26,6 +26,7 @@ const Sidebar = () => {
 
   const [trending, setTrending] = useState(() => cachedSidebarMemory?.trending || []);
   const [featuredOpinion, setFeaturedOpinion] = useState(() => cachedSidebarMemory?.opinion || null);
+  const [hotTopics, setHotTopics] = useState(() => cachedSidebarMemory?.hotTopics || ['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget', 'StartUp', 'Kripto', 'Otomotif']);
   const [loading, setLoading] = useState(() => !cachedSidebarMemory);
   const [email, setEmail] = useState('');
   const [subscribing, setSubscribing] = useState(false);
@@ -70,6 +71,7 @@ const Sidebar = () => {
         if (isMounted && data) {
           if (data.trending) setTrending(data.trending);
           if (data.opinion) setFeaturedOpinion(data.opinion);
+          if (data.hotTopics) setHotTopics(data.hotTopics);
           setLoading(false);
         }
       });
@@ -126,7 +128,36 @@ const Sidebar = () => {
           publishedAt: a.publishedAt || Date.now()
         })) : [];
 
-        const resultData = { trending: trendingResult, opinion: opinion };
+        // Ekstrak tag untuk Topik Hangat
+        const topicCounts = {};
+        const tagDisplays = {};
+        
+        articles.slice(0, 50).forEach((article) => {
+           const rawTags = article.tags || [];
+           const tags = typeof rawTags === 'string' ? rawTags.split(',') : rawTags;
+           if (Array.isArray(tags)) {
+             tags.forEach(tag => {
+               if (typeof tag !== 'string') return;
+               const cleanTag = tag.replace(/^#/, '').trim();
+               if (cleanTag && cleanTag.length > 2) {
+                 const key = cleanTag.toLowerCase();
+                 topicCounts[key] = (topicCounts[key] || 0) + 1;
+                 if (!tagDisplays[key] || cleanTag === cleanTag.toUpperCase()) {
+                   tagDisplays[key] = cleanTag;
+                 }
+               }
+             });
+           }
+        });
+
+        const sortedTopics = Object.entries(topicCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(entry => tagDisplays[entry[0]]);
+        
+        const finalHotTopics = sortedTopics.length > 0 ? sortedTopics : ['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget', 'StartUp', 'Kripto', 'Otomotif'];
+
+        const resultData = { trending: trendingResult, opinion: opinion, hotTopics: finalHotTopics };
         cachedSidebarMemory = resultData;
         return resultData;
       } catch (err) {
@@ -140,6 +171,7 @@ const Sidebar = () => {
       if (isMounted && data) {
         if (data.trending) setTrending(data.trending);
         if (data.opinion) setFeaturedOpinion(data.opinion);
+        if (data.hotTopics) setHotTopics(data.hotTopics);
         setLoading(false);
       }
       fetchSidebarPromise = null;
@@ -300,7 +332,7 @@ const Sidebar = () => {
           <div className="sidebar-widget tags-widget">
         <h3 className="widget-title">{t('home.hot_topics') || 'Topik Hangat'}</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-          {['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget', 'StartUp', 'Kripto', 'Otomotif'].map((tag, i) => (
+          {hotTopics.map((tag, i) => (
             <Link key={i} href={`/cari?q=${encodeURIComponent(tag.replace('#', ''))}`} style={{
               display: 'flex',
               alignItems: 'center',
