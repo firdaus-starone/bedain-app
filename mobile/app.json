@@ -3,6 +3,9 @@
     "name": "mobile",
     "slug": "mobile",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
@@ -11,6 +14,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.bedain.newsapp",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -37,6 +41,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ca5a336f-7faa-4798-94f6-7aeb5b9c743f"
+      }
     }
   }
 }

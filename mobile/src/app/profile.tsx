@@ -108,7 +108,7 @@ export default function ProfileModal() {
             <Ionicons name="chevron-forward" size={20} color={dyn.chevron} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleFeatureNotReady('Bookmark & Tersimpan')}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/bookmarks')}>
             <View style={[styles.menuIconBox, dyn.menuIconBox]}>
               <Ionicons name="bookmark-outline" size={20} color="#1b61d1" />
             </View>

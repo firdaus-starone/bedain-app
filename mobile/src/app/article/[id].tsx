@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, Dimensions, useWindowDimensions, Platform, Animated, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, Dimensions, useWindowDimensions, Platform, Animated, TextInput, Share, Alert, Linking } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, limit, getDocs, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
@@ -25,6 +26,10 @@ export default function ArticleDetail() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [relatedArticles, setRelatedArticles] = useState<any[]>([]);
   const [recommendedArticles, setRecommendedArticles] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [articleBanners, setArticleBanners] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -44,7 +49,35 @@ export default function ArticleDetail() {
         const docRef = doc(db, 'articles', id as string);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setArticle({ id: docSnap.id, ...docSnap.data() });
+          const articleData = { id: docSnap.id, ...docSnap.data() };
+          setArticle(articleData);
+          
+          // Fetch Comments
+          const slug = articleData.slug || articleData.id;
+          const qComments = query(
+            collection(db, 'comments'),
+            where('articleSlug', '==', slug),
+            where('status', '==', 'approved'),
+            orderBy('createdAt', 'desc')
+          );
+          const snapComments = await getDocs(qComments);
+          setComments(snapComments.docs.map(d => ({ id: d.id, ...d.data() })));
+          
+          // Fetch Article Banners
+          try {
+            const qBanners = query(collection(db, 'banners'), where('status', '==', 'active'), where('slot', '==', 'article'));
+            const snapBanners = await getDocs(qBanners);
+            setArticleBanners(snapBanners.docs.map(d => ({ id: d.id, ...d.data() })));
+          } catch(e) {}
+          
+          // Check Bookmark
+          try {
+            const stored = await AsyncStorage.getItem('bookmarks');
+            if (stored) {
+              const list = JSON.parse(stored);
+              setIsBookmarked(list.some((b: any) => b.id === docSnap.id));
+            }
+          } catch (e) {}
         }
       } catch (e) {
         console.error('Error fetching article:', e);
@@ -96,7 +129,75 @@ export default function ArticleDetail() {
     );
   }
 
+  const handleShare = async () => {
+    try {
+      if (!article) return;
+      const shareUrl = `https://bedainapp--bedain-eb6a6.us-central1.hosted.app/article/${article.slug || article.id}`;
+      await Share.share({
+        message: `${article.title}\n\nBaca selengkapnya di: ${shareUrl}`,
+        url: shareUrl,
+        title: article.title
+      });
+    } catch (error: any) {
+      console.error('Error sharing:', error.message);
+    }
+  };
+
+  const submitComment = async () => {
+    if (!commentText.trim() || submittingComment || !article) return;
+    setSubmittingComment(true);
+    try {
+      await addDoc(collection(db, 'comments'), {
+        articleSlug: article.slug || article.id,
+        articleTitle: article.title || '',
+        authorName: 'Pembaca Mobile',
+        authorEmail: '',
+        content: commentText.trim(),
+        status: 'pending',
+        reported: false,
+        createdAt: serverTimestamp(),
+      });
+      setCommentText('');
+      Alert.alert('Komentar Terkirim', 'Komentar Anda berhasil dikirim dan menunggu moderasi oleh tim redaksi.');
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Gagal', 'Gagal mengirim komentar. Coba lagi.');
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
   const thumb = article.coverImage || article.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80';
+
+  const toggleBookmark = async () => {
+    try {
+      if (!article) return;
+      const stored = await AsyncStorage.getItem('bookmarks');
+      let list = stored ? JSON.parse(stored) : [];
+      
+      if (isBookmarked) {
+        list = list.filter((b: any) => b.id !== article.id);
+        setIsBookmarked(false);
+        Alert.alert('Batal Disimpan', 'Berita dihapus dari daftar simpanan.');
+      } else {
+        list.push({
+          id: article.id,
+          title: article.title,
+          category: article.category || 'Berita',
+          slug: article.slug || article.id,
+          thumb: thumb,
+          savedAt: Date.now()
+        });
+        setIsBookmarked(true);
+        Alert.alert('Tersimpan', 'Berita berhasil disimpan untuk dibaca nanti.');
+      }
+      await AsyncStorage.setItem('bookmarks', JSON.stringify(list));
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Gagal', 'Gagal menyimpan berita.');
+    }
+  };
+
   let dateStr = 'Baru saja';
   if (article.publishedAt) {
     const dateObj = typeof article.publishedAt.toDate === 'function' ? article.publishedAt.toDate() : new Date(article.publishedAt);
@@ -145,6 +246,7 @@ export default function ArticleDetail() {
         }]}>
           <Animated.Image 
             source={{ uri: thumb }} 
+            resizeMode="contain"
             style={[styles.heroImage, {
               transform: [
                 {
@@ -216,6 +318,21 @@ export default function ArticleDetail() {
                   let pCount = 0;
                   const newHtml = cleanHtml.replace(/<\/p>/g, (match) => {
                     pCount++;
+                    let injected = match;
+                    
+                    if (pCount === 4 && articleBanners.length > 0) {
+                      const banner = articleBanners[Math.floor(Math.random() * articleBanners.length)];
+                      const bannerHtml = `
+                        <div style="margin: 24px 0; text-align: center;">
+                          <a href="${banner.targetUrl || '#'}" style="text-decoration: none; display: block;">
+                            <img src="${banner.imageUrl}" style="width: 100%; border-radius: 8px; background-color: #e2e8f0;" />
+                            <div style="font-size: 10px; color: #94a3b8; text-align: right; margin-top: 4px; padding-right: 4px;">IKLAN SPONSOR</div>
+                          </a>
+                        </div>
+                      `;
+                      injected = `${injected}${bannerHtml}`;
+                    }
+
                     if (pCount === 2) {
                       const bacaJugaHtml = `
                         <div style="margin: 32px 0; background-color: ${isDarkMode ? '#1e293b' : '#0f172a'}; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); border-left: 4px solid #3b82f6;">
@@ -243,9 +360,9 @@ export default function ArticleDetail() {
                           `).join('')}
                         </div>
                       `;
-                      return `${match}${bacaJugaHtml}`;
+                      injected = `${injected}${bacaJugaHtml}`;
                     }
-                    return match;
+                    return injected;
                   });
                   return `<div style="text-align: left;">${newHtml}</div>`;
                 })() }}
@@ -254,6 +371,8 @@ export default function ArticleDetail() {
                     onPress: (_, href) => {
                       if (href.startsWith('/article/')) {
                         router.push(href as any);
+                      } else {
+                        Linking.openURL(href).catch(e => console.log('Error opening link:', e));
                       }
                     }
                   }
@@ -297,7 +416,7 @@ export default function ArticleDetail() {
 
             {/* Kolom Komentar */}
             <View style={[styles.commentSection, dyn.borderB]}>
-              <Text style={[styles.commentHeader, dyn.textMain]}>Komentar (0)</Text>
+              <Text style={[styles.commentHeader, dyn.textMain]}>Komentar ({comments.length})</Text>
               
               <View style={styles.commentInputContainer}>
                 <View style={[styles.commentAvatar, dyn.commentAvatar]}>
@@ -312,16 +431,42 @@ export default function ArticleDetail() {
                     onChangeText={setCommentText}
                     multiline
                   />
-                  <TouchableOpacity style={styles.commentSubmitBtn} onPress={() => {}}>
-                    <Ionicons name="send" size={16} color={commentText.trim().length > 0 ? '#3b82f6' : '#cbd5e1'} />
+                  <TouchableOpacity style={styles.commentSubmitBtn} onPress={submitComment} disabled={submittingComment}>
+                    <Ionicons name="send" size={16} color={commentText.trim().length > 0 && !submittingComment ? '#3b82f6' : '#cbd5e1'} />
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <View style={[styles.emptyCommentState, dyn.emptyComment]}>
-                <Ionicons name="chatbubbles-outline" size={32} color={isDarkMode ? '#334155' : '#e2e8f0'} />
-                <Text style={[styles.emptyCommentText, dyn.textMuted]}>Belum ada komentar. Jadilah yang pertama memberikan tanggapan!</Text>
-              </View>
+              {comments.length === 0 ? (
+                <View style={[styles.emptyCommentState, dyn.emptyComment]}>
+                  <Ionicons name="chatbubbles-outline" size={32} color={isDarkMode ? '#334155' : '#e2e8f0'} />
+                  <Text style={[styles.emptyCommentText, dyn.textMuted]}>Belum ada komentar. Jadilah yang pertama memberikan tanggapan!</Text>
+                </View>
+              ) : (
+                <View style={{ gap: 16 }}>
+                  {comments.map((c, i) => {
+                    let cDate = 'Baru saja';
+                    if (c.createdAt) {
+                      const d = typeof c.createdAt.toDate === 'function' ? c.createdAt.toDate() : new Date(c.createdAt);
+                      cDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                    }
+                    return (
+                      <View key={c.id || i} style={{ flexDirection: 'row', gap: 12 }}>
+                        <View style={[styles.commentAvatar, dyn.commentAvatar, { width: 32, height: 32, borderRadius: 16 }]}>
+                          <Ionicons name="person" size={14} color="#94a3b8" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <Text style={[styles.authorName, dyn.textMain, { fontSize: 13, marginBottom: 0 }]}>{c.authorName}</Text>
+                            <Text style={[styles.date, dyn.textMuted, { fontSize: 11 }]}>{cDate}</Text>
+                          </View>
+                          <Text style={[dyn.textMain, { fontSize: 13, lineHeight: 20 }]}>{c.content}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
             {/* Berita Terkait Bawah */}
@@ -389,11 +534,11 @@ export default function ArticleDetail() {
         </View>
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity style={[styles.bookmarkButton, dyn.headerBtn]}>
+          <TouchableOpacity style={[styles.bookmarkButton, dyn.headerBtn]} onPress={handleShare}>
             <Ionicons name="share-social-outline" size={22} color={dyn.textMain.color} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.bookmarkButton, dyn.headerBtn]}>
-            <Ionicons name="bookmark-outline" size={22} color={dyn.textMain.color} />
+          <TouchableOpacity style={[styles.bookmarkButton, dyn.headerBtn]} onPress={toggleBookmark}>
+            <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={dyn.textMain.color} />
           </TouchableOpacity>
         </View>
       </View>
@@ -468,14 +613,15 @@ const styles = StyleSheet.create({
   },
   heroContainer: {
     width: '100%',
-    height: 350, 
+    aspectRatio: 4 / 3, 
+    backgroundColor: '#000',
   },
   heroImage: {
     width: '100%',
     height: '100%',
   },
   heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     backgroundColor: 'rgba(0,0,0,0.2)', 
   },
   imageCaptionTextOutside: {

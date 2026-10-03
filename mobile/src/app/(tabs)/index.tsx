@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions } from 'react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, getDoc, collection, query, orderBy, limit, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, limit, getDocs, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -20,6 +20,36 @@ const HOT_TOPICS = [
   '#Otomotif'
 ];
 
+const mapArticle = (a: any) => {
+  let dateStr = 'Baru saja';
+  if (a.publishedAt) {
+    const dateObj = typeof a.publishedAt.toDate === 'function' ? a.publishedAt.toDate() : new Date(a.publishedAt);
+    dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  const hasVideo = !!(
+    a.videoUrl || 
+    a.youtubeUrl || 
+    a.video || 
+    (a.content && (
+      a.content.includes('<iframe') || 
+      a.content.includes('<video') || 
+      a.content.includes('youtube.com') || 
+      a.content.includes('youtu.be') ||
+      a.content.includes('20detik')
+    ))
+  );
+
+  return {
+    id: a.id,
+    title: a.title || 'Tanpa Judul',
+    date: dateStr,
+    image: a.coverImage || a.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80',
+    category: a.category || 'Berita',
+    slug: a.slug || a.id,
+    videoUrl: hasVideo
+  };
+};
+
 export default function Home() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
@@ -30,6 +60,38 @@ export default function Home() {
   });
   const [rawArticles, setRawArticles] = useState<any[]>([]);
   const [hotTopics, setHotTopics] = useState<string[]>(HOT_TOPICS);
+  const [refreshing, setRefreshing] = useState(false);
+  const [banners, setBanners] = useState<any[]>([]);
+
+  const headerBanners = banners.filter(b => b.slot === 'header');
+  const feedBanners = banners.filter(b => b.slot === 'sidebar');
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const docRef = doc(db, 'settings', 'site');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) setSiteSettings(snap.data() as any);
+      
+      const q = query(collection(db, 'categories'), orderBy('order', 'asc'));
+      const snapCat = await getDocs(q);
+      const data = snapCat.docs
+        .map(d => ({ id: d.id, ...d.data() } as any))
+        .filter(cat => cat.active !== false)
+        .map(cat => ({ name: cat.name, slug: cat.slug }));
+      setCategories([{ name: 'Semua', slug: '' }, ...data]);
+      
+      const qBanners = query(collection(db, 'banners'), where('status', '==', 'active'));
+      const snapBanners = await getDocs(qBanners);
+      setBanners(snapBanners.docs.map(d => ({ id: d.id, ...d.data() })));
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -64,7 +126,7 @@ export default function Home() {
         const q = query(
           collection(db, 'articles'), 
           orderBy('publishedAt', 'desc'), 
-          limit(200)
+          limit(50)
         );
         unsubscribeArticles = onSnapshot(q, (snapshot) => {
           const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -126,8 +188,19 @@ export default function Home() {
       }
     };
 
+    const fetchBanners = async () => {
+      try {
+        const qBanners = query(collection(db, 'banners'), where('status', '==', 'active'));
+        const snapBanners = await getDocs(qBanners);
+        setBanners(snapBanners.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        console.error('Error fetching banners:', e);
+      }
+    };
+
     fetchSettings();
     fetchCategories();
+    fetchBanners();
     fetchArticlesRealtime();
 
     return () => {
@@ -135,68 +208,46 @@ export default function Home() {
     };
   }, []);
 
-  const mapArticle = (a: any) => {
-    let dateStr = 'Baru saja';
-    if (a.publishedAt) {
-      const dateObj = typeof a.publishedAt.toDate === 'function' ? a.publishedAt.toDate() : new Date(a.publishedAt);
-      dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  const {
+    BERITA_TERKINI,
+    FEATURED_ARTICLE,
+    RELATED_ARTICLES,
+    BERITA_LIST,
+    BERITA_PILIHAN,
+    LATEST_NEWS
+  } = useMemo(() => {
+    const mapped = rawArticles.map(mapArticle);
+    
+    let terkini = mapped.filter(a => !!a.videoUrl).slice(0, 5);
+    if (terkini.length < 5) {
+      const remainingCount = 5 - terkini.length;
+      const nonVideoArticles = mapped.filter(a => !a.videoUrl).slice(0, remainingCount);
+      terkini = [...terkini, ...nonVideoArticles];
     }
-    const hasVideo = !!(
-      a.videoUrl || 
-      a.youtubeUrl || 
-      a.video || 
-      (a.content && (
-        a.content.includes('<iframe') || 
-        a.content.includes('<video') || 
-        a.content.includes('youtube.com') || 
-        a.content.includes('youtu.be') ||
-        a.content.includes('20detik')
-      ))
-    );
-
+    
+    const usedIds = new Set(terkini.map(a => a.id));
+    const available = mapped.filter(a => !usedIds.has(a.id));
+    
+    const featured = available[0];
+    const related = available.slice(1, 3);
+    const list = available.slice(3, 8);
+    
+    const headlines = rawArticles.filter(a => a.isHeadline).map(mapArticle);
+    const pilihan = headlines.length >= 5 
+      ? headlines.slice(0, 5) 
+      : mapped.slice(13, 18);
+    
+    const latest = available.slice(8, 28); // Kurangi beban render list bawah
+    
     return {
-      id: a.id,
-      title: a.title || 'Tanpa Judul',
-      date: dateStr,
-      image: a.coverImage || a.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80',
-      category: a.category || 'Berita',
-      slug: a.slug || a.id,
-      videoUrl: hasVideo
+      BERITA_TERKINI: terkini,
+      FEATURED_ARTICLE: featured,
+      RELATED_ARTICLES: related,
+      BERITA_LIST: list,
+      BERITA_PILIHAN: pilihan,
+      LATEST_NEWS: latest
     };
-  };
-
-  const mappedArticles = rawArticles.map(mapArticle);
-  
-  // 1. KORSEL ATAS: Ambil 5 berita terbaru yang memiliki video
-  let BERITA_TERKINI = mappedArticles.filter(a => !!a.videoUrl).slice(0, 5);
-  if (BERITA_TERKINI.length < 5) {
-    const remainingCount = 5 - BERITA_TERKINI.length;
-    const nonVideoArticles = mappedArticles.filter(a => !a.videoUrl).slice(0, remainingCount);
-    BERITA_TERKINI = [...BERITA_TERKINI, ...nonVideoArticles];
-  }
-  
-  // Simpan ID yang sudah terpakai di korsel atas agar tidak ganda
-  const usedIds = new Set(BERITA_TERKINI.map(a => a.id));
-  
-  // 2. ARTIKEL SISA: Filter artikel yang belum terpakai
-  const availableArticles = mappedArticles.filter(a => !usedIds.has(a.id));
-  
-  // 3. ARTIKEL UTAMA & TERKAIT
-  const FEATURED_ARTICLE = availableArticles[0];
-  const RELATED_ARTICLES = availableArticles.slice(1, 3);
-  
-  // 4. DAFTAR BERITA STANDAR (Di bawah berita terkait, tampilkan 5 saja)
-  const BERITA_LIST = availableArticles.slice(3, 8);
-  
-  // 5. BERITA PILIHAN (Dilewatkan / Biarkan seperti semula sesuai request)
-  const headlines = rawArticles.filter(a => a.isHeadline).map(mapArticle);
-  const BERITA_PILIHAN = headlines.length >= 5 
-
-    ? headlines.slice(0, 5) 
-    : mappedArticles.slice(13, 18);
-  
-  // 6. DAFTAR BERITA TERBARU DI BAWAH PILIHAN (Melengkapi sisa 50)
-  const LATEST_NEWS = availableArticles.slice(8, 50);
+  }, [rawArticles]);
 
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -250,7 +301,7 @@ export default function Home() {
           <Text style={[styles.logoText, dyn.textMain]}>
             {siteSettings.siteName?.split(' ')[0]?.toLowerCase()}
             {siteSettings.siteName?.split(' ').length > 1 && (
-              <Text style={styles.logoTextBlue}>
+              <Text style={styles.logoTextOrange}>
                 {siteSettings.siteName?.split(' ').slice(1).join('').toLowerCase()}
               </Text>
             )}
@@ -281,7 +332,18 @@ export default function Home() {
         </ScrollView>
       </View>
 
-      <ScrollView style={[styles.container, dyn.bg]} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={[styles.container, dyn.bg]} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={['#1b61d1']} 
+            tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+          />
+        }
+      >
         
         {/* TOPIK HANGAT */}
         <View style={[styles.hotTopicContainer, dyn.card, dyn.borderBottom]}>
@@ -297,6 +359,18 @@ export default function Home() {
             ))}
           </ScrollView>
         </View>
+
+        {/* HEADER BANNER */}
+        {headerBanners.length > 0 && (
+          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+            {headerBanners.map(b => (
+              <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: 10 }}>
+                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 90, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
+                <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>SPONSOR</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* KORUSEL BERITA TERKINI (Versi Mungil) */}
         <FlatList
@@ -332,27 +406,31 @@ export default function Home() {
         {/* ARTIKEL UTAMA (FEATURED) */}
         {FEATURED_ARTICLE && (
           <View style={styles.featuredContainer}>
-            <TouchableOpacity onPress={() => router.push(`/article/${FEATURED_ARTICLE.id}`)} activeOpacity={0.9} style={[styles.featuredCard, dyn.card]}>
-              <View style={styles.featuredImageContainer}>
-                <Image source={{ uri: FEATURED_ARTICLE.image }} style={styles.featuredImage} />
-                <View style={styles.featuredOverlay}>
-                  <Text style={styles.featuredTitle}>{FEATURED_ARTICLE.title}</Text>
-                  <Text style={styles.featuredAuthor}>{FEATURED_ARTICLE.category?.toUpperCase() || 'REDAKSI'} | {FEATURED_ARTICLE.date}</Text>
+            <View style={[styles.featuredCard, dyn.card]}>
+              <TouchableOpacity onPress={() => router.push(`/article/${FEATURED_ARTICLE.id}`)} activeOpacity={0.9}>
+                <View style={styles.featuredImageContainer}>
+                  <Image source={{ uri: FEATURED_ARTICLE.image }} style={styles.featuredImage} />
+                  <View style={styles.featuredOverlay}>
+                    <Text style={styles.featuredTitle}>{FEATURED_ARTICLE.title}</Text>
+                    <Text style={styles.featuredAuthor}>{FEATURED_ARTICLE.category?.toUpperCase() || 'REDAKSI'} | {FEATURED_ARTICLE.date}</Text>
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
               {RELATED_ARTICLES.length > 0 && (
                 <View style={styles.relatedBox}>
                   <Text style={styles.relatedTitle}>TERKAIT</Text>
                   <View style={styles.relatedList}>
                     {RELATED_ARTICLES.map(related => (
-                      <Text key={`related-${related.id}`} style={styles.relatedItem} numberOfLines={2}>
-                        • {related.title}
-                      </Text>
+                      <TouchableOpacity key={`related-${related.id}`} style={{ flex: 1, marginRight: 8 }} onPress={() => router.push(`/article/${related.id}`)}>
+                        <Text style={[styles.relatedItem, { marginRight: 0 }]} numberOfLines={2}>
+                          • {related.title}
+                        </Text>
+                      </TouchableOpacity>
                     ))}
                   </View>
                 </View>
               )}
-            </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -375,6 +453,18 @@ export default function Home() {
             </View>
           ))}
         </View>
+
+        {/* FEED BANNER (Diterjemahkan dari Sidebar Web) */}
+        {feedBanners.length > 0 && (
+          <View style={{ paddingHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+            {feedBanners.map(b => (
+              <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: 10 }}>
+                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 120, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
+                <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>IKLAN SPONSOR</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* SECTION SEPERTI PALING ATAS (Korusel Mungil) */}
         <View style={styles.bottomSectionHeader}>
@@ -467,8 +557,8 @@ const styles = StyleSheet.create({
     fontWeight: '900', // Tambah tebal agar seimbang dengan ukuran baru
     color: '#000',
   },
-  logoTextBlue: {
-    color: '#3b82f6',
+  logoTextOrange: {
+    color: '#FF6B00',
   },
   headerIcons: {
     flexDirection: 'row',
