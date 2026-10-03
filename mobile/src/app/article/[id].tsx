@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, getDoc, collection, query, orderBy, limit, getDocs, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, limit, getDocs, where, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,6 +30,48 @@ export default function ArticleDetail() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [articleBanners, setArticleBanners] = useState<any[]>([]);
+  const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
+
+  const handleReaction = async (reactionId: string) => {
+    if (!article?.id) return;
+    
+    const isCurrentlySelected = selectedReaction === reactionId;
+    const oldReaction = selectedReaction;
+    
+    // Optimistic Update Local State
+    setSelectedReaction(isCurrentlySelected ? null : reactionId);
+    let updatedReactions = { ...(article.reactions || {}) };
+    
+    if (oldReaction && oldReaction !== reactionId) {
+      updatedReactions[oldReaction] = Math.max(0, (updatedReactions[oldReaction] || 0) - 1);
+    }
+    
+    if (isCurrentlySelected) {
+      updatedReactions[reactionId] = Math.max(0, (updatedReactions[reactionId] || 0) - 1);
+    } else {
+      updatedReactions[reactionId] = (updatedReactions[reactionId] || 0) + 1;
+    }
+    setArticle({ ...article, reactions: updatedReactions });
+
+    // Update Firestore
+    try {
+      const docRef = doc(db, 'articles', article.id);
+      const updates: any = {};
+      if (oldReaction && oldReaction !== reactionId) {
+        updates[`reactions.${oldReaction}`] = increment(-1);
+      }
+      if (isCurrentlySelected) {
+        updates[`reactions.${reactionId}`] = increment(-1);
+      } else {
+        updates[`reactions.${reactionId}`] = increment(1);
+      }
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(docRef, updates);
+      }
+    } catch (e) {
+      console.log('Error updating reaction:', e);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -221,7 +263,7 @@ export default function ArticleDetail() {
 
   return (
     <View style={[styles.container, dyn.bg]}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor="transparent" translucent />
       
       <Animated.ScrollView 
         showsVerticalScrollIndicator={false} 
@@ -232,46 +274,11 @@ export default function ArticleDetail() {
           { useNativeDriver: true }
         )}
       >
-        {/* Gambar Hero dengan Parallax */}
-        <Animated.View style={[styles.heroContainer, {
-          transform: [
-            {
-              translateY: scrollY.interpolate({
-                inputRange: [-100, 0, 350],
-                outputRange: [-50, 0, 175],
-                extrapolate: 'clamp',
-              })
-            }
-          ]
-        }]}>
-          <Animated.Image 
-            source={{ uri: thumb }} 
-            resizeMode="contain"
-            style={[styles.heroImage, {
-              transform: [
-                {
-                  scale: scrollY.interpolate({
-                    inputRange: [-100, 0],
-                    outputRange: [1.3, 1],
-                    extrapolateRight: 'clamp',
-                  })
-                }
-              ]
-            }]} 
-          />
-          <View style={styles.heroOverlay} />
-        </Animated.View>
-        <View style={[styles.contentContainer, dyn.bg]}>
-          {article.imageCaption ? (
-            <Text style={[styles.imageCaptionTextOutside, dyn.textMuted]}>{article.imageCaption}</Text>
-          ) : null}
-
+        {/* Judul dan Meta di atas Gambar */}
+        <View style={{ paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 120 : 130, paddingBottom: 16 }}>
           <Text style={[styles.title, dyn.textMain]}>{article.title}</Text>
-          <View style={styles.metaRow}>
+          <View style={[styles.metaRow, { marginBottom: 0 }]}>
             <View style={styles.authorContainer}>
-              <View style={[styles.authorAvatar, dyn.commentAvatar]}>
-                <Text style={styles.authorInitial}>{(article.author?.name || 'R')[0].toUpperCase()}</Text>
-              </View>
               <View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={[styles.authorName, dyn.textMain]}>{article.author?.name || 'Redaksi'}</Text>
@@ -283,6 +290,42 @@ export default function ArticleDetail() {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* Gambar Artikel dengan Efek Parallax */}
+        <Animated.View style={[styles.heroContainer, {
+          zIndex: -1,
+          transform: [
+            {
+              translateY: scrollY.interpolate({
+                inputRange: [-100, 0, 400],
+                outputRange: [-50, 0, 200],
+                extrapolate: 'clamp',
+              })
+            }
+          ]
+        }]}>
+          <Animated.Image 
+            source={{ uri: thumb }} 
+            resizeMode="cover"
+            style={[styles.heroImage, {
+              transform: [
+                {
+                  scale: scrollY.interpolate({
+                    inputRange: [-100, 0],
+                    outputRange: [1.2, 1],
+                    extrapolateRight: 'clamp',
+                  })
+                }
+              ]
+            }]} 
+          />
+        </Animated.View>
+
+        <View style={[styles.contentContainer, dyn.bg]}>
+          {article.imageCaption ? (
+            <Text style={[styles.imageCaptionTextOutside, dyn.textMuted]}>{article.imageCaption}</Text>
+          ) : null}
 
           <View style={[styles.excerptContainer, dyn.excerpt]}>
             {(article.excerpt || article.summary || article.seoDescription || article.description) ? (
@@ -309,58 +352,74 @@ export default function ArticleDetail() {
                 }}
                 source={{ html: (() => {
                   const html = article.content;
-                  if (!html || relatedArticles.length === 0) return html;
+                  if (!html) return html;
+                  
+                  // Bersihkan HTML sesuai dengan panduan Ultimate Fix
                   const cleanHtml = html
                     .replace(/justify/gi, 'left')
                     .replace(/&nbsp;/g, ' ')
                     .replace(/\u00A0/g, ' ')
+                    .replace(/color\s*:\s*[^;"']+;?/gi, '') // Hapus inline color bawaan editor (agar bisa beradaptasi ke dark mode)
                     .replace(/\[B\]/g, `<strong style="color: #3b82f6;">BEDAIN NEWS</strong> — `);
+                    
+                  // Jika tidak ada related articles, kita langsung bungkus saja
+                  if (relatedArticles.length === 0) {
+                    return `<div style="text-align: left;">${cleanHtml}</div>`;
+                  }
+                  
                   let pCount = 0;
                   const newHtml = cleanHtml.replace(/<\/p>/g, (match) => {
                     pCount++;
                     let injected = match;
                     
+                    // IKLAN SPONSOR: Muncul HANYA di alinea 4 (1 kali saja di tengah artikel)
                     if (pCount === 4 && articleBanners.length > 0) {
                       const banner = articleBanners[Math.floor(Math.random() * articleBanners.length)];
                       const bannerHtml = `
-                        <div style="margin: 24px 0; text-align: center;">
+                        <div style="margin: 24px -20px; text-align: left;">
                           <a href="${banner.targetUrl || '#'}" style="text-decoration: none; display: block;">
-                            <img src="${banner.imageUrl}" style="width: 100%; border-radius: 8px; background-color: #e2e8f0;" />
-                            <div style="font-size: 10px; color: #94a3b8; text-align: right; margin-top: 4px; padding-right: 4px;">IKLAN SPONSOR</div>
+                            <img src="${banner.imageUrl}" style="width: 100%; background-color: #e2e8f0;" />
+                            <div style="font-size: 10px; color: #94a3b8; text-align: left; margin-top: 4px; padding-left: 20px;">IKLAN SPONSOR</div>
                           </a>
                         </div>
                       `;
                       injected = `${injected}${bannerHtml}`;
                     }
 
-                    if (pCount === 2) {
-                      const bacaJugaHtml = `
-                        <div style="margin: 32px 0; background-color: ${isDarkMode ? '#1e293b' : '#0f172a'}; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); border-left: 4px solid #3b82f6;">
-                          <div style="display: flex; flex-direction: row; align-items: center; margin-bottom: 20px;">
-                            <span style="background-color: #3b82f6; color: #ffffff; font-size: 10px; font-weight: 900; letter-spacing: 2px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;">
-                              BACA JUGA
-                            </span>
-                          </div>
-                          ${relatedArticles.slice(0, 3).map((item, index, arr) => `
-                            <div style="margin-bottom: ${index === arr.length - 1 ? '0' : '16px'}; border-bottom: ${index === arr.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.1)'}; padding-bottom: ${index === arr.length - 1 ? '0' : '16px'};">
-                              <a href="/article/${item.id}" style="text-decoration: none; display: flex; flex-direction: row; align-items: center;">
-                                <div style="flex: 1; padding-right: 16px;">
-                                  <span style="display: flex; color: ${isDarkMode ? '#94a3b8' : '#cbd5e1'}; font-size: 10px; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;">
-                                    ${item.category || 'BERITA'}
-                                  </span>
-                                  <span style="display: flex; color: ${isDarkMode ? '#f8fafc' : '#ffffff'}; font-weight: 700; font-size: 16px; line-height: 24px;">
-                                    ${item.title}
-                                  </span>
-                                </div>
-                                <div style="width: 32px; height: 32px; border-radius: 16px; background-color: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">
-                                  <span style="color: #3b82f6; font-weight: 900; font-size: 16px;">→</span>
-                                </div>
-                              </a>
+                    // BACA JUGA: Muncul di alinea 2, 8, 14... (selang 6 alinea)
+                    if (pCount >= 2 && (pCount - 2) % 6 === 0) {
+                      // Ambil 3 artikel berbeda untuk setiap kemunculan
+                      const groupIndex = Math.floor((pCount - 2) / 6);
+                      const startIndex = groupIndex * 3;
+                      const articlesToShow = relatedArticles.slice(startIndex, startIndex + 3);
+                      
+                      if (articlesToShow.length > 0) {
+                        const bacaJugaHtml = `
+                          <div style="margin: 24px -20px; background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'}; padding: 16px 20px; border-left: 4px solid #3b82f6;">
+                            <div style="display: flex; flex-direction: row; align-items: center; margin-bottom: 12px;">
+                              <span class="baca-juga-label">BACA JUGA</span>
                             </div>
-                          `).join('')}
-                        </div>
-                      `;
-                      injected = `${injected}${bacaJugaHtml}`;
+                            ${articlesToShow.map((item, index, arr) => `
+                              <div style="margin-bottom: ${index === arr.length - 1 ? '0' : '12px'}; border-bottom: ${index === arr.length - 1 ? 'none' : `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`}; padding-bottom: ${index === arr.length - 1 ? '0' : '12px'};">
+                                <div style="display: flex; flex-direction: row; align-items: center;">
+                                  <div style="flex: 1; padding-right: 12px;">
+                                    <span class="baca-juga-cat">
+                                      ${item.category || 'BERITA'}
+                                    </span>
+                                    <a href="/article/${item.id}" class="baca-juga-title">
+                                      ${item.title}
+                                    </a>
+                                  </div>
+                                  <a href="/article/${item.id}" class="baca-juga-arrow" style="background-color: ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};">
+                                    →
+                                  </a>
+                                </div>
+                              </div>
+                            `).join('')}
+                          </div>
+                        `;
+                        injected = `${injected}${bacaJugaHtml}`;
+                      }
                     }
                     return injected;
                   });
@@ -369,8 +428,10 @@ export default function ArticleDetail() {
                 renderersProps={{
                   a: {
                     onPress: (_, href) => {
-                      if (href.startsWith('/article/')) {
-                        router.push(href as any);
+                      if (href.includes('/article/')) {
+                        const parts = href.split('/article/');
+                        const targetId = parts[parts.length - 1].replace(/\/$/, '');
+                        router.push({ pathname: '/article/[id]', params: { id: targetId } });
                       } else {
                         Linking.openURL(href).catch(e => console.log('Error opening link:', e));
                       }
@@ -389,9 +450,128 @@ export default function ArticleDetail() {
                   img: { borderRadius: 8, marginVertical: 8 },
                   li: { fontSize: 15, lineHeight: 24, color: colors.text, marginBottom: 6, textAlign: 'left' },
                 }}
+                classesStyles={{
+                  'baca-juga-label': { 
+                    color: '#3b82f6', 
+                    fontSize: 12, 
+                    fontWeight: '900', 
+                    letterSpacing: 2, 
+                    textTransform: 'uppercase' 
+                  },
+                  'baca-juga-title': { 
+                    color: '#3b82f6', 
+                    textDecorationLine: 'none', 
+                    fontWeight: '700', 
+                    fontSize: 14, 
+                    lineHeight: 20 
+                  },
+                  'baca-juga-cat': { 
+                    display: 'flex', 
+                    color: isDarkMode ? '#94a3b8' : '#64748b', 
+                    fontSize: 10, 
+                    fontWeight: '700', 
+                    marginBottom: 4, 
+                    textTransform: 'uppercase', 
+                    letterSpacing: 1 
+                  },
+                  'baca-juga-arrow': { 
+                    color: '#3b82f6',
+                    textDecorationLine: 'none', 
+                    width: 32, 
+                    height: 32, 
+                    borderRadius: 16, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontWeight: '900', 
+                    fontSize: 15 
+                  }
+                }}
               />
             ) : (
               <Text style={styles.fallbackText}>Konten berita tidak tersedia.</Text>
+            )}
+
+            {/* Nama Kontributor / Penulis di Akhir Artikel */}
+            <View style={{ marginTop: 24, paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="pencil" size={16} color={isDarkMode ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+                <Text style={{ fontWeight: '700', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Kontributor: </Text>
+                {article.author?.name || 'Redaksi'}
+              </Text>
+            </View>
+
+            {/* REAKSI PEMBACA */}
+            <View style={{ marginTop: 16, marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: dyn.textMain.color, marginBottom: 10, textAlign: 'center' }}>
+                Bagaimana reaksi Anda?
+              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                {[
+                  { id: 'like', emoji: '👍', label: 'Suka' },
+                  { id: 'love', emoji: '❤️', label: 'Keren' },
+                  { id: 'surprised', emoji: '😲', label: 'Kaget' },
+                  { id: 'sad', emoji: '😢', label: 'Sedih' },
+                  { id: 'angry', emoji: '😡', label: 'Marah' },
+                ].map((reaction) => {
+                  const isSelected = selectedReaction === reaction.id;
+                  const count = article?.reactions?.[reaction.id] || 0;
+                  return (
+                    <TouchableOpacity
+                      key={reaction.id}
+                      activeOpacity={0.7}
+                      onPress={() => handleReaction(reaction.id)}
+                      style={{
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isSelected ? (isDarkMode ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff') : (isDarkMode ? '#1e293b' : '#f8fafc'),
+                        borderWidth: 1,
+                        borderColor: isSelected ? '#3b82f6' : (isDarkMode ? '#334155' : '#e2e8f0'),
+                        borderRadius: 10,
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        minWidth: 55,
+                      }}
+                    >
+                      <Text style={{ fontSize: 20, marginBottom: 2 }}>{reaction.emoji}</Text>
+                      <Text style={{ 
+                        fontSize: 10, 
+                        fontWeight: isSelected ? '700' : '500', 
+                        color: isSelected ? '#3b82f6' : (isDarkMode ? '#94a3b8' : '#64748b') 
+                      }}>
+                        {reaction.label} {count > 0 ? `(${count})` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* IKLAN SPONSOR BAWAH ARTIKEL */}
+            {articleBanners.length > 0 && (
+              <View style={{ marginTop: 24, marginBottom: 8 }}>
+                {(() => {
+                  // Pilih banner kedua jika ada, jika tidak pakai yang pertama
+                  const banner = articleBanners.length > 1 ? articleBanners[1] : articleBanners[0];
+                  return (
+                    <TouchableOpacity 
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        if (banner.targetUrl) {
+                          Linking.openURL(banner.targetUrl).catch(e => console.log('Error opening link:', e));
+                        }
+                      }}
+                    >
+                      <Image 
+                        source={{ uri: banner.imageUrl }} 
+                        style={{ width: '100%', height: Math.min(width * 0.4, 200), backgroundColor: '#e2e8f0', borderRadius: 8 }} 
+                        resizeMode="cover"
+                      />
+                      <Text style={{ fontSize: 10, color: '#94a3b8', marginTop: 8, textAlign: 'center' }}>IKLAN SPONSOR</Text>
+                    </TouchableOpacity>
+                  );
+                })()}
+              </View>
             )}
 
             {/* Topik / Label Terkait */}
@@ -513,32 +693,32 @@ export default function ArticleDetail() {
         </View>
       </Animated.ScrollView>
 
-      {/* Header Mengambang */}
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, dyn.headerBtn]}>
+      {/* Header Solid */}
+      <View style={[styles.header, dyn.card, { borderBottomWidth: 1 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={28} color={dyn.textMain.color} />
           </TouchableOpacity>
           
-          <View style={[styles.headerCapsule, dyn.headerBtn]}>
+          <View style={styles.headerCapsule}>
             {siteSettings.logoUrl ? (
-              <Image source={{ uri: siteSettings.logoUrl }} style={{ width: 22, height: 22, marginRight: 8, borderRadius: 11 }} resizeMode="contain" />
+              <Image source={{ uri: siteSettings.logoUrl }} style={{ width: 38, height: 38, marginRight: 8, borderRadius: 19 }} resizeMode="contain" />
             ) : null}
-            <Text style={{ fontSize: 16, fontWeight: '900', color: dyn.textMain.color }}>
+            <Text style={[{ fontSize: 22, fontWeight: '900' }, dyn.textMain]}>
               {siteSettings.siteName?.split(' ')[0]?.toLowerCase()}
               {siteSettings.siteName?.split(' ').length > 1 && (
-                <Text style={{ color: '#3b82f6' }}>{siteSettings.siteName.split(' ').slice(1).join('').toLowerCase()}</Text>
+                <Text style={{ color: '#1b61d1' }}>{siteSettings.siteName.split(' ').slice(1).join('').toLowerCase()}</Text>
               )}
             </Text>
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity style={[styles.bookmarkButton, dyn.headerBtn]} onPress={handleShare}>
-            <Ionicons name="share-social-outline" size={22} color={dyn.textMain.color} />
+        <View style={{ flexDirection: 'row', gap: 4 }}>
+          <TouchableOpacity style={styles.bookmarkButton} onPress={handleShare}>
+            <Ionicons name="share-social-outline" size={24} color={dyn.textMain.color} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.bookmarkButton, dyn.headerBtn]} onPress={toggleBookmark}>
-            <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={dyn.textMain.color} />
+          <TouchableOpacity style={styles.bookmarkButton} onPress={toggleBookmark}>
+            <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={24} color={dyn.textMain.color} />
           </TouchableOpacity>
         </View>
       </View>
@@ -564,65 +744,42 @@ const styles = StyleSheet.create({
   },
   header: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 40 : 50,
+    top: 0,
     left: 0,
     right: 0,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 40) + 10 : 50,
+    paddingBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    paddingHorizontal: 12,
     zIndex: 10,
   },
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   headerCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 24,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingHorizontal: 4,
   },
   bookmarkButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   heroContainer: {
     width: '100%',
-    aspectRatio: 4 / 3, 
-    backgroundColor: '#000',
+    aspectRatio: 16 / 9, 
+    backgroundColor: '#f1f5f9',
   },
   heroImage: {
     width: '100%',
     height: '100%',
-  },
-  heroOverlay: {
-    ...(StyleSheet.absoluteFill as any),
-    backgroundColor: 'rgba(0,0,0,0.2)', 
   },
   imageCaptionTextOutside: {
     color: '#64748b',
@@ -633,11 +790,8 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    marginTop: -40, 
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingTop: 16,
   },
   categoryBadge: {
     alignSelf: 'flex-start',
@@ -656,7 +810,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
     color: '#0f172a',
-    lineHeight: 32,
+    lineHeight: 30,
+    letterSpacing: -0.5,
     marginBottom: 16,
   },
   excerptContainer: {

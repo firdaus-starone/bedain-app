@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, Platform, StatusBar } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -84,6 +84,7 @@ export default function BookmarksScreen() {
 
   return (
     <View style={[styles.container, dyn.container]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={dyn.header.backgroundColor} />
       {/* Header Modal */}
       <View style={[styles.header, dyn.header]}>
         <Text style={[styles.headerTitle, dyn.headerTitle]}>Bookmark & Tersimpan</Text>
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 24) + 16,
   },
   headerTitle: {
     fontSize: 18,

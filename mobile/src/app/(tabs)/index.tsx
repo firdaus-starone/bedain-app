@@ -287,7 +287,12 @@ export default function Home() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, dyn.bg]}>
+    <SafeAreaView style={[styles.safeArea, dyn.bg]} edges={Platform.OS === 'android' ? ['right', 'bottom', 'left'] : undefined}>
+      <StatusBar 
+        barStyle={isDarkMode ? "light-content" : "dark-content"} 
+        backgroundColor={isDarkMode ? colors.card : "#ffffff"}
+        translucent={false}
+      />
       {/* HEADER UTAMA */}
       <View style={[styles.headerContainer, dyn.card]}>
         <View style={styles.logoContainer}>
@@ -352,7 +357,11 @@ export default function Home() {
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hotTopicScroll}>
             {hotTopics.map((topic, index) => (
-              <TouchableOpacity key={index} style={styles.hotTopicItem}>
+              <TouchableOpacity 
+                key={index} 
+                style={styles.hotTopicItem}
+                onPress={() => router.push({ pathname: '/search', params: { q: topic.replace('#', '') } })}
+              >
                 <Ionicons name="trending-up" size={16} color="#1b61d1" style={{ marginRight: 4 }} />
                 <Text style={[styles.hotTopicText, dyn.hotTopicText]}>{topic}</Text>
               </TouchableOpacity>
@@ -365,7 +374,7 @@ export default function Home() {
           <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
             {headerBanners.map(b => (
               <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: 10 }}>
-                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 90, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
+                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 60, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
                 <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>SPONSOR</Text>
               </TouchableOpacity>
             ))}
@@ -382,7 +391,7 @@ export default function Home() {
           contentContainerStyle={styles.terkiniScroll}
           ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => router.push('/video')} style={styles.terkiniCard} activeOpacity={0.9}>
+            <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} style={styles.terkiniCard} activeOpacity={0.9}>
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
                 <View style={styles.terkiniOverlay}>
                   <View style={[styles.terkiniBadge, { backgroundColor: item.videoUrl ? 'red' : '#3b82f6' }]}>
@@ -411,7 +420,7 @@ export default function Home() {
                 <View style={styles.featuredImageContainer}>
                   <Image source={{ uri: FEATURED_ARTICLE.image }} style={styles.featuredImage} />
                   <View style={styles.featuredOverlay}>
-                    <Text style={styles.featuredTitle}>{FEATURED_ARTICLE.title}</Text>
+                    <Text style={styles.featuredTitle} numberOfLines={3}>{FEATURED_ARTICLE.title}</Text>
                     <Text style={styles.featuredAuthor}>{FEATURED_ARTICLE.category?.toUpperCase() || 'REDAKSI'} | {FEATURED_ARTICLE.date}</Text>
                   </View>
                 </View>
@@ -459,7 +468,7 @@ export default function Home() {
           <View style={{ paddingHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
             {feedBanners.map(b => (
               <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: 10 }}>
-                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 120, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
+                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 90, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
                 <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>IKLAN SPONSOR</Text>
               </TouchableOpacity>
             ))}
@@ -530,7 +539,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
-    paddingTop: Platform.OS === 'android' ? 8 : 0, // Diangkat sedikit ke atas
   },
   container: {
     flex: 1,
@@ -541,7 +549,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 2, // Mengangkat header lebih dekat ke atas
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 12,
     paddingBottom: 10,
     backgroundColor: '#ffffff',
   },
@@ -558,7 +566,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   logoTextOrange: {
-    color: '#FF6B00',
+    color: '#1b61d1',
   },
   headerIcons: {
     flexDirection: 'row',
@@ -584,7 +592,7 @@ const styles = StyleSheet.create({
   categoryText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '400',
   },
   categoryItem: {
   },
@@ -592,21 +600,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
   hotTopicLabel: {
     backgroundColor: '#1b61d1',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 10,
     borderTopRightRadius: 4,
     borderBottomRightRadius: 4,
   },
   hotTopicLabelText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   hotTopicScroll: {
@@ -618,7 +626,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hotTopicText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#475569',
     fontWeight: '500',
   },
@@ -698,9 +706,10 @@ const styles = StyleSheet.create({
   },
   featuredTitle: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: 'bold',
-    marginBottom: 6,
+    marginBottom: 4,
+    lineHeight: 22,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,

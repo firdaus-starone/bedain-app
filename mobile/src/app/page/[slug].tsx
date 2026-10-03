@@ -4,7 +4,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import RenderHtml from 'react-native-render-html';
+import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
+
+const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 export default function StaticPage() {
   const { slug } = useLocalSearchParams();
@@ -64,6 +66,7 @@ export default function StaticPage() {
               <Text style={styles.pageTitle}>{pageData.title}</Text>
               <RenderHtml
                 contentWidth={width - 72}
+                systemFonts={systemFonts}
                 baseStyle={{ 
                   textAlign: 'left',
                   fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif'

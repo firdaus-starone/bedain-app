@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, StatusBar, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, StatusBar, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -21,7 +21,6 @@ export default function HotScreen() {
           fetched.push({ id: doc.id, ...doc.data() });
         });
         if(fetched.length > 0) setArticles(fetched);
-        // Fallback to recent if views sort fails/is empty
         else {
           const qFall = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(10));
           const snapFall = await getDocs(qFall);
@@ -30,9 +29,7 @@ export default function HotScreen() {
           setArticles(fFall);
         }
       } catch (e) {
-        // Handle error (often requires Firestore index creation for complex queries)
         console.error(e);
-        // Silent fallback
         const qFall = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(10));
         const snapFall = await getDocs(qFall);
         const fFall: any[] = [];
@@ -47,26 +44,52 @@ export default function HotScreen() {
     bg: { backgroundColor: colors.background },
     header: { borderBottomColor: colors.border },
     headerTitle: { color: colors.text },
-    rankNumber: { color: isDarkMode ? '#334155' : '#f1f5f9' },
-    title: { color: colors.text }
+    card: { backgroundColor: colors.card, borderColor: colors.border },
+    title: { color: colors.text },
+    date: { color: colors.textSecondary }
   };
 
   return (
     <SafeAreaView style={[styles.safeArea, dyn.bg]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <View style={[styles.header, dyn.header]}>
-        <Ionicons name="flame" size={28} color="#ef4444" />
-        <Text style={[styles.headerTitle, dyn.headerTitle]}>Sedang Hangat</Text>
+        <View style={styles.headerIconContainer}>
+          <Ionicons name="flame" size={24} color="#ffffff" />
+        </View>
+        <View>
+          <Text style={[styles.headerTitle, dyn.headerTitle]}>Sedang Hangat</Text>
+          <Text style={styles.headerSubtitle}>Berita paling banyak dibaca saat ini</Text>
+        </View>
       </View>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}>
-        {articles.map((item, index) => (
-          <TouchableOpacity key={item.id} style={styles.card} onPress={() => router.push(`/article/${item.id}`)}>
-            <Text style={[styles.rankNumber, dyn.rankNumber]}>#{index + 1}</Text>
-            <View style={styles.cardContent}>
-              <Text style={styles.category}>{item.category?.toUpperCase() || 'BERITA TERBARU'}</Text>
-              <Text style={[styles.title, dyn.title]} numberOfLines={3}>{item.title}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}>
+        {articles.map((item, index) => {
+          const isTop3 = index < 3;
+          const rankColor = index === 0 ? '#fbbf24' : index === 1 ? '#94a3b8' : index === 2 ? '#b45309' : (isDarkMode ? '#334155' : '#cbd5e1');
+          
+          let dateStr = 'Baru saja';
+          if (item.publishedAt) {
+            const dateObj = typeof item.publishedAt.toDate === 'function' ? item.publishedAt.toDate() : new Date(item.publishedAt);
+            dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+          }
+
+          return (
+            <TouchableOpacity key={item.id} style={[styles.card, dyn.card]} onPress={() => router.push(`/article/${item.id}`)} activeOpacity={0.8}>
+              <View style={styles.rankContainer}>
+                <Text style={[styles.rankNumber, { color: rankColor, fontSize: isTop3 ? 32 : 24 }]}>{index + 1}</Text>
+              </View>
+              
+              <View style={styles.cardContent}>
+                <Text style={styles.category}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                <Text style={[styles.title, dyn.title]} numberOfLines={3}>{item.title}</Text>
+                <Text style={[styles.dateText, dyn.date]}>{dateStr}</Text>
+              </View>
+
+              {(item.coverImage || item.imageUrl) && (
+                <Image source={{ uri: item.coverImage || item.imageUrl }} style={styles.thumbnail} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );
@@ -75,11 +98,16 @@ export default function HotScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#ffffff', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  headerTitle: { fontSize: 22, fontWeight: '900', color: '#0f172a', marginLeft: 10 },
-  card: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  rankNumber: { fontSize: 28, fontWeight: '900', color: '#f1f5f9', width: 60, fontStyle: 'italic', letterSpacing: -1.5 },
-  cardContent: { flex: 1, paddingLeft: 8 },
-  category: { color: '#ef4444', fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
-  title: { fontSize: 14, fontWeight: '700', color: '#1e293b', lineHeight: 20 }
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  headerIconContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a' },
+  headerSubtitle: { fontSize: 11, color: '#64748b', fontWeight: '500', marginTop: 2 },
+  card: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, padding: 8, borderRadius: 12, borderWidth: 1, backgroundColor: '#ffffff', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
+  rankContainer: { width: 35, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
+  rankNumber: { fontWeight: '900', fontStyle: 'italic', letterSpacing: -1.5 },
+  cardContent: { flex: 1, paddingHorizontal: 6 },
+  category: { color: '#ef4444', fontSize: 9, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
+  title: { fontSize: 13, fontWeight: '700', color: '#1e293b', lineHeight: 18, marginBottom: 6 },
+  dateText: { fontSize: 10, fontWeight: '500' },
+  thumbnail: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#e2e8f0', marginLeft: 6 }
 });

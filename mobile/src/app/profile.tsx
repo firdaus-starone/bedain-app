@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Alert, ActivityIndicator, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -73,6 +73,7 @@ export default function ProfileModal() {
 
   return (
     <View style={[styles.container, dyn.container]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={dyn.header.backgroundColor} />
       {/* Header Modal */}
       <View style={[styles.header, dyn.header]}>
         <Text style={[styles.headerTitle, dyn.headerTitle]}>Menu Profil</Text>
@@ -141,7 +142,7 @@ export default function ProfileModal() {
             />
           </View>
           
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleFeatureNotReady('Notifikasi')}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/notifications' as any)}>
             <View style={[styles.menuIconBox, dyn.menuIconBoxGray]}>
               <Ionicons name="notifications-outline" size={20} color={isDarkMode ? "#cbd5e1" : "#475569"} />
             </View>
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    paddingTop: Platform.OS === 'ios' ? 16 : 24,
+    paddingTop: Platform.OS === 'ios' ? 16 : (StatusBar.currentHeight || 24) + 16,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',

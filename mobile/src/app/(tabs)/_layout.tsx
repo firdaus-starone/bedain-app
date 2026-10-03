@@ -2,9 +2,29 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, StyleSheet, Platform, Image } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export default function Layout() {
   const { isDarkMode, colors } = useTheme();
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'site');
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.logoUrl) setLogoUrl(data.logoUrl);
+        }
+      } catch (e) {
+        console.error("Gagal menarik logo:", e);
+      }
+    };
+    fetchLogo();
+  }, []);
 
   return (
     <Tabs
@@ -47,25 +67,21 @@ export default function Layout() {
         name="index"
         options={{
           title: 'Beranda',
-          tabBarLabel: () => null, 
-          tabBarIcon: ({ color, focused }) => (
-            <View style={styles.centerButtonContainer}>
-              <View style={[styles.centerButton, { backgroundColor: colors.card, borderColor: isDarkMode ? '#1e293b' : '#f8f9fa' }, focused && { borderColor: isDarkMode ? '#3b82f6' : '#e0e7ff' }]}>
-                <Image 
-                  source={require('../../../assets/images/logo-bundar.png')} 
-                  style={{ width: '100%', height: '100%', borderRadius: 28 }} 
-                  resizeMode="cover"
-                />
-              </View>
-              <Text style={{ 
-                fontSize: 10, 
-                fontWeight: '700', 
-                color: focused ? (isDarkMode ? '#60a5fa' : '#1b61d1') : '#64748b',
-                marginTop: 4 
-              }}>
-                Beranda
-              </Text>
-            </View>
+          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>Beranda</Text>,
+          tabBarIcon: ({ focused }) => (
+            logoUrl ? (
+              <Image 
+                source={{ uri: logoUrl }} 
+                style={{ width: 26, height: 26, borderRadius: 13, opacity: focused ? 1 : 0.5 }} 
+                resizeMode="cover"
+              />
+            ) : (
+              <Image 
+                source={require('../../../assets/images/logo-bundar.png')} 
+                style={{ width: 26, height: 26, borderRadius: 13, opacity: focused ? 1 : 0.5 }} 
+                resizeMode="cover"
+              />
+            )
           ),
         }}
       />
@@ -92,28 +108,15 @@ export default function Layout() {
           headerShown: false
         }}
       />
+      <Tabs.Screen
+        name="region/[name]"
+        options={{
+          href: null,
+          headerShown: false
+        }}
+      />
     </Tabs>
   );
 }
 
-const styles = StyleSheet.create({
-  centerButtonContainer: {
-    position: 'absolute',
-    top: -24, 
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#1b61d1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
-  }
-});
+const styles = StyleSheet.create({});

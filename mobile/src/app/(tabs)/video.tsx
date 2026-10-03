@@ -1,12 +1,11 @@
-import { View, Text, StyleSheet, FlatList, Dimensions, Image, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, Image, TouchableOpacity, StatusBar, BackHandler, AppState } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import YoutubePlayer from 'react-native-youtube-iframe';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -21,7 +20,7 @@ const getArticleVideoId = (article: any) => {
   return getYouTubeId(article.videoUrl) || getYouTubeId(article.youtubeUrl) || getYouTubeId(article.video) || getYouTubeId(article.content);
 };
 
-const VideoItem = ({ item, index, activeIndex, width, containerHeight, router }: any) => {
+const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, isScreenFocused }: any) => {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [showTitleBlocker, setShowTitleBlocker] = useState(true);
   
@@ -41,7 +40,7 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router }:
   const ytId = getArticleVideoId(item);
   const coverUri = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : (item.coverImage || item.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80');
   
-  const isActive = index === activeIndex;
+  const isActive = index === activeIndex && isScreenFocused;
 
   useEffect(() => {
     if (!isActive) {
@@ -52,13 +51,11 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router }:
 
   useEffect(() => {
     if (isVideoReady) {
-      // Hapus penutup judul 3.5 detik setelah video mulai berputar (mengikuti waktu fade-out judul bawaan YouTube)
       const timer = setTimeout(() => setShowTitleBlocker(false), 3500);
       return () => clearTimeout(timer);
     }
   }, [isVideoReady]);
 
-  // Deteksi cerdas jika video adalah YouTube Shorts (Vertikal)
   let isShort = [item.videoUrl, item.youtubeUrl, item.video].some(u => typeof u === 'string' && u.includes('/shorts/'));
   
   if (!isShort && typeof item.video === 'string') {
@@ -69,12 +66,7 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router }:
     }
   }
 
-  // SOLUSI DEWA: Kita buang library react-native-youtube-iframe karena ia memiliki bug CSS 
-  // yang memaksa semua video menjadi 16:9 (membuat video portrait jadi kecil di tengah).
-  // Sebagai gantinya, kita membuat mesin YouTube Iframe API kita sendiri dengan tinggi 100vh!
-  
-  const topOffset = 60; // Ruang agar tidak menabrak "Video Pilihan" di atas
-  const playerHeight = containerHeight - topOffset;
+  const playerHeight = containerHeight;
   const playerWidth = width;
 
   const customYoutubeHtml = ytId ? `
@@ -144,7 +136,7 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router }:
     <View style={{ width, height: containerHeight, backgroundColor: '#000', overflow: 'hidden' }}>
       {(isActive && ytId && customYoutubeHtml) && (
         <WebView
-          style={{ position: 'absolute', top: topOffset, left: 0, width: playerWidth, height: playerHeight, backgroundColor: '#000' }}
+          style={{ position: 'absolute', top: 0, left: 0, width: playerWidth, height: playerHeight, backgroundColor: '#000' }}
           source={{ html: customYoutubeHtml, baseUrl: 'https://lonelycpp.github.io' }}
           javaScriptEnabled={true}
           allowsInlineMediaPlayback={true}
@@ -164,12 +156,8 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router }:
         />
       )}
 
-
-
       <View style={styles.overlay}>
-        {/* Info Container dihapus sesuai permintaan agar tidak menumpuk dengan teks di dalam video */}
         <View style={styles.infoContainer} pointerEvents="none" />
-
         <View style={styles.actionContainer}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleLike} activeOpacity={0.7}>
             <View style={styles.iconCircle}>
@@ -196,11 +184,39 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router }:
 
 export default function VideoScreen() {
   const router = useRouter();
+  const [isFocused, setIsFocused] = useState(true);
+  const [appState, setAppState] = useState(AppState.currentState);
   const [articles, setArticles] = useState<any[]>([]);
   const [containerHeight, setContainerHeight] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Fungsi untuk mendeteksi item yang sedang tampil di layar
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      setAppState(nextAppState);
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      
+      const onBackPress = () => {
+        router.replace('/');
+        return true; 
+      };
+      
+      const backSubscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      
+      return () => {
+        setIsFocused(false);
+        backSubscription.remove();
+      };
+    }, [router])
+  );
+
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
       setActiveIndex(viewableItems[0].index);
@@ -214,7 +230,6 @@ export default function VideoScreen() {
   useEffect(() => {
     const fetchVids = async () => {
       const isValidVideo = (data: any) => {
-        // Harus benar-benar memiliki tautan video (bukan sekadar kategori)
         if (getArticleVideoId(data)) return true;
         if (typeof data.videoUrl === 'string' && data.videoUrl.includes('http')) return true;
         if (typeof data.youtubeUrl === 'string' && data.youtubeUrl.includes('http')) return true;
@@ -223,7 +238,6 @@ export default function VideoScreen() {
       };
 
       try {
-        // Tarik 300 artikel terbaru, saring murni secara lokal untuk menghindari error index
         const q = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(300));
         const snapshot = await getDocs(q);
         const fetched: any[] = [];
@@ -252,6 +266,7 @@ export default function VideoScreen() {
         width={width} 
         containerHeight={containerHeight} 
         router={router} 
+        isScreenFocused={isFocused && appState === 'active'}
       />
     );
   };
@@ -260,9 +275,8 @@ export default function VideoScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       
-      {/* Top Header GLOBAL di atas FlatList */}
       <View style={styles.topHeader}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.replace('/')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.topHeaderText}>Video Pilihan</Text>
@@ -308,16 +322,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   topHeader: {
-    position: 'absolute',
-    top: 10,
-    left: 0,
-    right: 0,
-    paddingBottom: 15,
+    paddingVertical: 15,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    backgroundColor: '#000',
     zIndex: 100,
   },
   backBtn: {

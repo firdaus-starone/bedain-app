@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, where, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -78,10 +78,11 @@ export default function CategoriesModal() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
   const [categories, setCategories] = useState<{ id: string, name: string, slug: string, color: string, icon: string }[]>([]);
+  const [regions, setRegions] = useState<{ id: string, name: string, color: string, icon: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCats = async () => {
+    const fetchCatsAndRegions = async () => {
       try {
         const q = query(collection(db, 'categories'), orderBy('order', 'asc'));
         const snap = await getDocs(q);
@@ -96,13 +97,43 @@ export default function CategoriesModal() {
             icon: getIconForSlug(cat.slug)
           }));
         setCategories(data);
+
+        const qArt = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(200));
+        const snapArt = await getDocs(qArt);
+        const uniqueLocations = new Map<string, string>(); // Menyimpan <lowercaseName, DisplayName>
+        
+        const toTitleCase = (str: string) => {
+          return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        };
+
+        snapArt.forEach(doc => {
+          const artData = doc.data();
+          let rawLoc = artData.location || artData.lokasi || artData.region;
+          if (rawLoc && typeof rawLoc === 'string') {
+            const cleanLoc = rawLoc.trim();
+            const lowerLoc = cleanLoc.toLowerCase();
+            if (lowerLoc && !uniqueLocations.has(lowerLoc)) {
+              // Simpan versi bersih yang dikapitalisasi awal (Title Case)
+              uniqueLocations.set(lowerLoc, toTitleCase(cleanLoc));
+            }
+          }
+        });
+
+        const regData = Array.from(uniqueLocations.values()).map((displayLoc, i) => ({
+          id: `reg-${i}`,
+          name: displayLoc,
+          color: '#ef4444',
+          icon: 'map-outline'
+        })).sort((a, b) => a.name.localeCompare(b.name));
+        setRegions(regData);
+
       } catch (error) {
         console.error("Error fetching categories:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchCats();
+    fetchCatsAndRegions();
   }, []);
 
   const handleSelectCategory = (categorySlug: string) => {
@@ -131,20 +162,48 @@ export default function CategoriesModal() {
         {loading ? (
           <ActivityIndicator size="large" color="#1b61d1" style={{ marginTop: 40 }} />
         ) : (
-          <View style={styles.gridContainer}>
-            {categories.map((cat, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={[styles.categoryCard, dyn.card]} 
-                onPress={() => handleSelectCategory(cat.slug)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.iconContainer, { backgroundColor: `${cat.color}15` }]}>
-                  <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+          <View>
+            <View style={styles.sectionHeaderWrap}>
+              <Text style={[styles.sectionHeading, { color: colors.text }]}>Topik Utama</Text>
+            </View>
+            <View style={styles.gridContainer}>
+              {categories.map((cat, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={[styles.categoryCard, dyn.card]} 
+                  onPress={() => handleSelectCategory(cat.slug)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.iconContainer, { backgroundColor: `${cat.color}15` }]}>
+                    <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+                  </View>
+                  <Text style={[styles.categoryName, dyn.categoryName]}>{cat.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {regions.length > 0 && (
+              <>
+                <View style={styles.sectionHeaderWrap}>
+                  <Text style={[styles.sectionHeading, { color: colors.text }]}>Region</Text>
                 </View>
-                <Text style={[styles.categoryName, dyn.categoryName]}>{cat.name}</Text>
-              </TouchableOpacity>
-            ))}
+                <View style={styles.gridContainer}>
+                  {regions.map((reg, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={[styles.categoryCard, dyn.card]} 
+                      onPress={() => router.push(`/region/${encodeURIComponent(reg.name)}`)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.iconContainer, { backgroundColor: `${reg.color}15` }]}>
+                        <Ionicons name={reg.icon as any} size={22} color={reg.color} />
+                      </View>
+                      <Text style={[styles.categoryName, dyn.categoryName]}>{reg.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
           </View>
         )}
         <View style={{ height: 40 }} />
@@ -190,6 +249,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     columnGap: '2.6%',
     rowGap: 16,
+    paddingBottom: 16,
+  },
+  sectionHeaderWrap: {
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  sectionHeading: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   categoryCard: {
     width: '23%',
@@ -215,7 +283,7 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     color: '#1e293b',
     textAlign: 'center',
   }

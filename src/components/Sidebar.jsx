@@ -6,6 +6,7 @@ import AdUnit from './AdUnit';
 import AdBanner from './AdBanner';
 import RedaksiWidget from './RedaksiWidget';
 import LocalNewsWidget from './LocalNewsWidget';
+import PopularCommentsWidget from './PopularCommentsWidget';
 import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useI18n } from '../hooks/useI18n';
@@ -215,8 +216,8 @@ const Sidebar = () => {
         <div style={{ position: 'sticky', top: '188px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Monetisasi: Sponsor Sidebar & Rectangle Ad */}
           <AdBanner slot="sidebar" />
-          <AdUnit format="rectangle" />
           <RedaksiWidget />
+          <AdUnit format="rectangle" />
           <LocalNewsWidget />
 
       <div className="sidebar-widget">
@@ -296,6 +297,8 @@ const Sidebar = () => {
               )}
             </div>
           )}
+
+      <PopularCommentsWidget />
 
       <div className="sidebar-widget newsletter-widget" style={{ textAlign: 'center', background: 'linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary))', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px 20px' }}>
         <div style={{ width: '48px', height: '48px', background: 'rgba(230,57,70,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>

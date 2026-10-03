@@ -3,13 +3,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 
 export default function SearchScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { isDarkMode, colors } = useTheme();
-  const [queryText, setQueryText] = useState('');
+  const [queryText, setQueryText] = useState((params.q as string) || '');
   const [popularArticles, setPopularArticles] = useState<any[]>([]);
   const [redaksiArticles, setRedaksiArticles] = useState<any[]>([]);
   const [allArticles, setAllArticles] = useState<any[]>([]);

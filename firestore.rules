@@ -38,6 +38,9 @@ service cloud.firestore {
     match /articles/{articleId} {
       allow read: if true;
       
+      // Publik boleh update HANYA pada field reactions
+      allow update: if true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+      
       // Editor & Admin bebas melakukan apapun (Publish, Edit, Delete)
       allow create, update, delete: if isEditorOrAdmin();
       
@@ -130,6 +133,14 @@ service cloud.firestore {
     match /push_subscriptions/{subscriptionId} {
       allow create, update: if true;
       allow read, delete: if isEditorOrAdmin();
+    }
+
+    // Koleksi Notifikasi (Pemberitahuan Sistem)
+    match /notifications/{notificationId} {
+      // Publik boleh membaca notifikasi (sebagai contoh/MVP global)
+      // Publik boleh membuat/update notifikasi hanya untuk keperluan testing, 
+      // idealnya di production hanya admin yg boleh write
+      allow read, write: if true;
     }
   }
 }

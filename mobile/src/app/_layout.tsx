@@ -45,7 +45,7 @@ function RootLayoutContent() {
     <>
       <StatusBar 
         barStyle={isDarkMode ? "light-content" : "dark-content"} 
-        backgroundColor={colors.card}
+        backgroundColor={isDarkMode ? colors.card : "#ffffff"}
       />
       <Stack 
         screenOptions={{ 

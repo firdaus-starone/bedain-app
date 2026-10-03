@@ -1,7 +1,10 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Alert, Image, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function SubmitScreen() {
   const { isDarkMode, colors } = useTheme();
@@ -12,6 +15,47 @@ export default function SubmitScreen() {
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
   const [isAgreed, setIsAgreed] = useState(false);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoadingCats, setIsLoadingCats] = useState(true);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const q = query(collection(db, 'categories'), orderBy('order', 'asc'));
+        const snap = await getDocs(q);
+        const cats = snap.docs
+          .map(d => d.data())
+          .filter(cat => cat.active !== false)
+          .map(cat => cat.name);
+          
+        setCategories(cats);
+        if (cats.length > 0) {
+          setCategory(cats[0]);
+        }
+      } catch (error) {
+        console.log('Error fetching categories:', error);
+      } finally {
+        setIsLoadingCats(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
 
   const dyn = {
     bg: { backgroundColor: colors.background },
@@ -26,10 +70,12 @@ export default function SubmitScreen() {
     toolBtn: { backgroundColor: colors.card, borderColor: colors.border },
     checkboxContainer: { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: colors.border },
     checkbox: { backgroundColor: colors.card, borderColor: isDarkMode ? '#475569' : '#cbd5e1' },
+    modalContent: { backgroundColor: colors.card, borderColor: colors.border },
   };
 
   return (
     <SafeAreaView style={[styles.safeArea, dyn.bg]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <ScrollView style={[styles.container, dyn.bg]} contentContainerStyle={styles.scrollContent}>
         
         {/* Header Hero */}
@@ -79,11 +125,15 @@ export default function SubmitScreen() {
           </View>
 
           <Text style={[styles.label, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Kategori Pilihan <Text style={styles.required}>*</Text></Text>
-          <View style={[styles.inputContainer, dyn.inputContainer]}>
-            <Ionicons name="pricetag-outline" size={18} color="#64748b" style={styles.inputIcon} />
-            <TextInput style={[styles.input, dyn.textMain]} placeholder="Opini" placeholderTextColor="#e2e8f0" value={category} onChangeText={setCategory} editable={false} />
-            <Ionicons name="chevron-down" size={18} color="#64748b" style={{ marginRight: 12 }} />
-          </View>
+          <TouchableOpacity 
+            style={[styles.inputContainer, dyn.inputContainer, { paddingVertical: 10, paddingHorizontal: 12 }]} 
+            onPress={() => setShowCategoryPicker(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pricetag-outline" size={18} color="#64748b" style={{ marginRight: 8 }} />
+            <Text style={[{ flex: 1, fontSize: 13 }, dyn.textMain]}>{category || 'Pilih Kategori...'}</Text>
+            <Ionicons name="chevron-down" size={18} color="#64748b" />
+          </TouchableOpacity>
 
           <Text style={[styles.label, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Ringkasan Singkat / Excerpt <Text style={styles.optional}>(Opsional)</Text></Text>
           <View style={[styles.inputContainer, dyn.inputContainer]}>
@@ -91,15 +141,26 @@ export default function SubmitScreen() {
           </View>
 
           <Text style={[styles.label, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Foto Utama / Sampul Tulisan <Text style={styles.optional}>(Maksimal 5MB - format JPG/PNG/WebP)</Text></Text>
-          <TouchableOpacity style={[styles.uploadBox, dyn.uploadBox]}>
-            <View style={styles.uploadIconWrap}>
-              <Ionicons name="image-outline" size={24} color="#ef4444" />
-            </View>
-            <Text style={[styles.uploadTitle, dyn.textMain]}>Klik untuk memilih atau unggah foto sampul</Text>
-            <Text style={[styles.uploadDesc, dyn.textMuted]}>Foto yang jernih dan menarik meningkatkan pembaca secara drastis</Text>
-            <View style={[styles.uploadBtn, dyn.uploadBtn]}>
-              <Text style={[styles.uploadBtnText, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Pilih File Gambar</Text>
-            </View>
+          <TouchableOpacity style={[styles.uploadBox, dyn.uploadBox, { overflow: 'hidden', padding: imageUri ? 0 : 20 }]} onPress={pickImage}>
+            {imageUri ? (
+              <>
+                <Image source={{ uri: imageUri }} style={{ width: '100%', height: 200, resizeMode: 'cover' }} />
+                <View style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 20 }}>
+                  <Ionicons name="pencil" size={16} color="#fff" />
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.uploadIconWrap}>
+                  <Ionicons name="image-outline" size={24} color="#ef4444" />
+                </View>
+                <Text style={[styles.uploadTitle, dyn.textMain]}>Klik untuk memilih atau unggah foto sampul</Text>
+                <Text style={[styles.uploadDesc, dyn.textMuted]}>Foto yang jernih dan menarik meningkatkan pembaca secara drastis</Text>
+                <View style={[styles.uploadBtn, dyn.uploadBtn]}>
+                  <Text style={[styles.uploadBtnText, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Pilih File Gambar</Text>
+                </View>
+              </>
+            )}
           </TouchableOpacity>
 
           <Text style={[styles.label, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Isi Tulisan <Text style={styles.required}>*</Text> <Text style={styles.optional}>({content.length} karakter)</Text></Text>
@@ -156,12 +217,68 @@ export default function SubmitScreen() {
         </View>
 
         {/* Submit Button */}
-        <TouchableOpacity style={[styles.submitMainBtn, !isAgreed && styles.submitMainBtnDisabled]} disabled={!isAgreed}>
+        <TouchableOpacity style={[styles.submitMainBtn, !isAgreed && styles.submitMainBtnDisabled]} disabled={!isAgreed} onPress={() => Alert.alert('Terima Kasih!', 'Tulisan Anda berhasil dikirim dan akan segera direviu oleh tim redaksi kami.')}>
           <Ionicons name="paper-plane" size={18} color="#ffffff" style={{ marginRight: 8 }} />
           <Text style={styles.submitMainBtnText}>Kirim Tulisan Sekarang</Text>
         </TouchableOpacity>
 
       </ScrollView>
+
+      {/* Category Picker Modal */}
+      <Modal
+        visible={showCategoryPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCategoryPicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowCategoryPicker(false)}
+        >
+          <View style={[styles.modalContent, dyn.modalContent]}>
+            <View style={[styles.modalHeader, dyn.borderB]}>
+              <Text style={[styles.modalTitle, dyn.textMain]}>Pilih Kategori</Text>
+              <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            
+            {isLoadingCats ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color="#3b82f6" />
+              </View>
+            ) : (
+              <ScrollView style={{ maxHeight: 300 }}>
+                {categories.map((cat, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.categoryOption, 
+                      dyn.borderB,
+                      category === cat && { backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)' }
+                    ]}
+                    onPress={() => {
+                      setCategory(cat);
+                      setShowCategoryPicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.categoryOptionText, 
+                      dyn.textMain,
+                      category === cat && { color: '#3b82f6', fontWeight: '700' }
+                    ]}>{cat}</Text>
+                    {category === cat && (
+                      <Ionicons name="checkmark" size={18} color="#3b82f6" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -222,5 +339,13 @@ const styles = StyleSheet.create({
   // Submit Main Btn
   submitMainBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ef4444', marginHorizontal: 20, marginTop: 20, paddingVertical: 14, borderRadius: 8 },
   submitMainBtnDisabled: { opacity: 0.5 },
-  submitMainBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' }
+  submitMainBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { width: '100%', borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
+  modalTitle: { fontSize: 16, fontWeight: '700' },
+  categoryOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
+  categoryOptionText: { fontSize: 14 }
 });
