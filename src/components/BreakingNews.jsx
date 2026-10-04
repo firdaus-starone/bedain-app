@@ -44,6 +44,7 @@ const BreakingNews = () => {
   const alertColor = 'var(--color-accent)';
   
   const [topics, setTopics] = useState(() => cachedTopicsMemory || []);
+  const [loading, setLoading] = useState(!cachedTopicsMemory);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fade, setFade] = useState('fade-in');
   const [currentTime, setCurrentTime] = useState('');
@@ -136,7 +137,10 @@ const BreakingNews = () => {
 
     fetchTopicsPromise = promise;
     promise.then((res) => {
-      if (isMounted && res) setTopics(res);
+      if (isMounted) {
+        if (res) setTopics(res);
+        setLoading(false);
+      }
       fetchTopicsPromise = null;
     });
 
@@ -185,8 +189,10 @@ const BreakingNews = () => {
                     <span>{item.text}</span>
                   ) : null}
                 </span>
-              )) : (
+              )) : loading ? (
                 <span className="breaking-text">{lang === 'zh' ? '加载热门话题...' : lang === 'en' ? 'Loading trending topics...' : 'Memuat topik hangat...'}</span>
+              ) : (
+                <span className="breaking-text">{lang === 'zh' ? '欢迎来到 BEDAIN NEWS' : lang === 'en' ? 'Welcome to BEDAIN NEWS' : 'Selamat datang di BEDAIN NEWS, Berita Berbeda Menginspirasi Semua.'}</span>
               )}
             </div>
           </div>

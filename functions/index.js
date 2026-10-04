@@ -427,3 +427,40 @@ exports.autoTranslateArticle = onDocumentWritten({
     await event.data.after.ref.update({ isTranslating: false });
   }
 });
+
+exports.syncCommentCounts = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const commentsSnap = await admin.firestore().collection('comments').where('status', '==', 'approved').get();
+    const counts = {};
+    commentsSnap.forEach(d => {
+      const c = d.data();
+      if (c.articleSlug) {
+        counts[c.articleSlug] = (counts[c.articleSlug] || 0) + 1;
+      }
+    });
+
+    let updated = 0;
+    const articlesSnap = await admin.firestore().collection('articles').get();
+    const batch = admin.firestore().batch();
+    
+    articlesSnap.forEach(d => {
+      const a = d.data();
+      if (a.slug) {
+        const actualCount = counts[a.slug] || 0;
+        if (a.commentCount !== actualCount) {
+          batch.update(d.ref, { commentCount: actualCount });
+          updated++;
+        }
+      }
+    });
+
+    if (updated > 0) {
+      await batch.commit();
+    }
+    
+    res.status(200).send(`Success: Updated ${updated} articles. Counts: ${JSON.stringify(counts)}`);
+  } catch (error) {
+    console.error("Error syncing comment counts:", error);
+    res.status(500).send("Error: " + error.message);
+  }
+});

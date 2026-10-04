@@ -7,6 +7,7 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs, where, addDoc,
 import { db } from '../../lib/firebase';
 import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
@@ -15,6 +16,7 @@ export default function ArticleDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const { user } = useAuth();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { width: contentWidth } = useWindowDimensions();
@@ -186,14 +188,21 @@ export default function ArticleDetail() {
   };
 
   const submitComment = async () => {
+    if (!user) {
+      Alert.alert('Belum Login', 'Silakan login terlebih dahulu untuk memberikan komentar.', [
+        { text: 'Batal', style: 'cancel' },
+        { text: 'Login', onPress: () => router.push('/login') }
+      ]);
+      return;
+    }
     if (!commentText.trim() || submittingComment || !article) return;
     setSubmittingComment(true);
     try {
       await addDoc(collection(db, 'comments'), {
         articleSlug: article.slug || article.id,
         articleTitle: article.title || '',
-        authorName: 'Pembaca Mobile',
-        authorEmail: '',
+        authorName: user.displayName || 'Pembaca',
+        authorEmail: user.email || '',
         content: commentText.trim(),
         status: 'pending',
         reported: false,

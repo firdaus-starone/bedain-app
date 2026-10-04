@@ -42,6 +42,7 @@ const ArticleDetail = () => {
   const [isClient, setIsClient] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
+  const [realCommentCount, setRealCommentCount] = useState(0);
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [recommendedArticles, setRecommendedArticles] = useState([]);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
@@ -315,6 +316,24 @@ const ArticleDetail = () => {
     };
     fetchRecommended();
   }, [article?.id, article?.title]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const fetchCommentCount = async () => {
+      try {
+        const q = query(
+          collection(db, 'comments'),
+          where('articleSlug', '==', slug),
+          where('status', '==', 'approved')
+        );
+        const snap = await getDocs(q);
+        setRealCommentCount(snap.size);
+      } catch (e) {
+        console.error("Error fetching comment count:", e);
+      }
+    };
+    fetchCommentCount();
+  }, [slug]);
 
   useEffect(() => {
     let ticking = false;
@@ -1025,9 +1044,15 @@ const ArticleDetail = () => {
                     <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
                     <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
                   </button>
-                  <button className="share-icon-btn" onClick={() => setShowCommentModal(true)} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                  <button className="share-icon-btn" onClick={() => {
+                      const el = document.getElementById('comment-section-anchor');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      else setShowCommentModal(true);
+                    }} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
                     <MessageSquare size={18} />
-                    <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{article?.commentCount || 0}</span>
+                    <div style={{ position: 'absolute', top: '0px', right: '2px', background: 'var(--color-accent)', color: '#fff', fontSize: '9px', fontWeight: 'bold', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--color-bg-primary)', padding: '0 4px' }}>
+                      {realCommentCount}
+                    </div>
                   </button>
                   <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
@@ -1736,7 +1761,9 @@ const ArticleDetail = () => {
       {article && (
         <div style={{ background: 'var(--color-bg-secondary)', borderTop: '1px solid var(--color-border)', marginTop: '12px' }}>
           <div className="container" style={{ maxWidth: '860px', margin: '0 auto', padding: '24px 16px' }}>
+          <div id="comment-section-anchor">
             <CommentSection articleSlug={slug} articleTitle={article?.title} />
+          </div>
           </div>
         </div>
       )}

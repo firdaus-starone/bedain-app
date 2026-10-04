@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useI18n } from '../hooks/useI18n';
+import { ThumbsUp, MessageSquare } from 'lucide-react';
 
 const LatestNews = ({ articles, loading }) => {
   const { t, lang } = useI18n();
@@ -90,7 +91,12 @@ const LatestNews = ({ articles, loading }) => {
             />
             <div className="recap-overlay">
               <h2 className="recap-title">{getDisplayTitle(mainArticle)}</h2>
-              <div className="recap-meta">{getMetaText(mainArticle)}</div>
+              <div className="recap-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span>{getMetaText(mainArticle)}</span>
+                <span>•</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><ThumbsUp size={12}/> {mainArticle.original?.reactions?.like || mainArticle.reactions?.like || 0}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><MessageSquare size={12}/> {mainArticle.original?.commentCount || mainArticle.commentCount || 0}</span>
+              </div>
             </div>
           </div>
         </Link>

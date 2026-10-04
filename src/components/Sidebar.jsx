@@ -10,6 +10,7 @@ import PopularCommentsWidget from './PopularCommentsWidget';
 import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useI18n } from '../hooks/useI18n';
+import { ThumbsUp, MessageSquare } from 'lucide-react';
 
 // Global memory cache across mounts for Sidebar
 let cachedSidebarMemory = null;
@@ -96,25 +97,40 @@ const Sidebar = () => {
               return p <= now; 
           });
 
-        // Sort by publishedAt to find the most recent opinion
+        // Sort by publishedAt 
         const sortedByDate = [...articles].sort((a, b) => {
             const dateA = a.publishedAt?.toDate ? a.publishedAt.toDate().getTime() : new Date(a.publishedAt||Date.now()).getTime();
             const dateB = b.publishedAt?.toDate ? b.publishedAt.toDate().getTime() : new Date(b.publishedAt||Date.now()).getTime();
             return dateB - dateA;
         });
 
-        let opinion = sortedByDate.find(a => 
-          a.category && a.category.toLowerCase().includes('opini')
-        );
-        
-        // Use a fallback if no opinion is found in the latest 50 articles
-        if (!opinion) {
-            opinion = {
-                title: 'Transformasi Digital: Mengapa Harus Sekarang?',
-                slug: '#',
-                author: { name: 'Pakar IT' },
-                img: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80'
-            };
+        // Fetch Opini explicitly to avoid being cut off by the 100 limit of trending articles
+        let opinion = null;
+        try {
+          const opiniQuery = query(
+            collection(db, 'articles'),
+            where('category', 'in', ['Opini', 'Kolom', 'Tajuk', 'Editorial', 'opini', 'kolom'])
+          );
+          const opiniSnap = await getDocs(opiniQuery);
+          const opiniDocs = opiniSnap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(a => {
+              if (a.status !== 'published') return false;
+              const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now());
+              return p <= now;
+            })
+            .sort((a, b) => {
+              const dateA = a.publishedAt?.toDate ? a.publishedAt.toDate().getTime() : new Date(a.publishedAt||Date.now()).getTime();
+              const dateB = b.publishedAt?.toDate ? b.publishedAt.toDate().getTime() : new Date(b.publishedAt||Date.now()).getTime();
+              return dateB - dateA;
+            });
+          opinion = opiniDocs.length > 0 ? opiniDocs[0] : null;
+        } catch (e) {
+          console.error('Error fetching opini explicitly:', e);
+          // Fallback to checking within the 100 latest articles if explicit query fails
+          opinion = sortedByDate.find(a => 
+            a.category && (a.category.toLowerCase().includes('opini') || a.category.toLowerCase().includes('kolom') || a.category.toLowerCase().includes('tajuk') || a.category.toLowerCase().includes('editorial'))
+          );
         }
 
         const sortedByViews = [...articles]
@@ -243,7 +259,12 @@ const Sidebar = () => {
                     <span className="trending-views" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{item.category || 'Berita'}</span>
                       <span style={{ color: 'var(--color-text-secondary)', opacity: 0.5 }}>|</span>
-                      <span>{formatTimeAgo(item.publishedAt)}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span>{formatTimeAgo(item.publishedAt)}</span>
+                        <span>•</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><ThumbsUp size={10}/> {item.reactions?.like || 0}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><MessageSquare size={10}/> {item.commentCount || 0}</span>
+                      </span>
                     </span>
                   </div>
                 </div>

@@ -46,11 +46,28 @@ const AdminComments = () => {
     }
   };
 
-  const updateStatus = async (id, status) => {
+  const updateStatus = async (id, status, oldStatus, articleSlug) => {
     setActionLoading(prev => ({ ...prev, [id]: true }));
     try {
       await updateDoc(doc(db, 'comments', id), { status });
       setComments(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+      
+      // Update article commentCount
+      if (articleSlug && status !== oldStatus) {
+        const artQ = query(collection(db, 'articles'), where('slug', '==', articleSlug));
+        const snap = await getDocs(artQ);
+        if (!snap.empty) {
+          const artDoc = snap.docs[0];
+          let increment = 0;
+          if (status === 'approved' && oldStatus !== 'approved') increment = 1;
+          else if (status !== 'approved' && oldStatus === 'approved') increment = -1;
+          
+          if (increment !== 0) {
+            const currentCount = artDoc.data().commentCount || 0;
+            await updateDoc(artDoc.ref, { commentCount: Math.max(0, currentCount + increment) });
+          }
+        }
+      }
     } catch (err) {
       console.error('Error updating comment:', err);
     } finally {
@@ -58,12 +75,22 @@ const AdminComments = () => {
     }
   };
 
-  const deleteComment = async (id) => {
+  const deleteComment = async (id, oldStatus, articleSlug) => {
     if (!window.confirm('Hapus komentar ini secara permanen?')) return;
     setActionLoading(prev => ({ ...prev, [id]: true }));
     try {
       await deleteDoc(doc(db, 'comments', id));
       setComments(prev => prev.filter(c => c.id !== id));
+      
+      if (oldStatus === 'approved' && articleSlug) {
+        const artQ = query(collection(db, 'articles'), where('slug', '==', articleSlug));
+        const snap = await getDocs(artQ);
+        if (!snap.empty) {
+          const artDoc = snap.docs[0];
+          const currentCount = artDoc.data().commentCount || 0;
+          await updateDoc(artDoc.ref, { commentCount: Math.max(0, currentCount - 1) });
+        }
+      }
     } catch (err) {
       console.error('Error deleting comment:', err);
     } finally {
@@ -184,10 +211,21 @@ const AdminComments = () => {
                       <strong style={{ color: 'var(--admin-text-primary)', fontSize: '14px' }}>{c.authorName}</strong>
                       {c.authorEmail && <span style={{ color: 'var(--admin-text-secondary)', fontSize: '12px' }}>{c.authorEmail}</span>}
                       {statusBadge(c.status)}
+                      {c.parentId && (
+                        <span style={{ background: 'rgba(14, 165, 233, 0.15)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.3)', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          Balasan
+                        </span>
+                      )}
                     </div>
 
                     {/* Comment Content */}
                     <p style={{ color: 'var(--admin-text-secondary)', fontSize: '14px', lineHeight: 1.6, margin: '0 0 10px 42px', padding: '12px', background: 'var(--admin-hover-bg)', borderRadius: '8px', borderLeft: '3px solid var(--admin-border)' }}>
+                      {c.parentId && (
+                        <span style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', fontStyle: 'italic' }}>
+                          <MessageSquare size={10} style={{ display: 'inline', marginRight: '4px' }} />
+                          Merespons {comments.find(p => p.id === c.parentId)?.authorName || 'Komentar Utama'}
+                        </span>
+                      )}
                       {c.content}
                     </p>
 
@@ -212,7 +250,7 @@ const AdminComments = () => {
                   <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
                     {c.status !== 'approved' && (
                       <button
-                        onClick={() => updateStatus(c.id, 'approved')}
+                        onClick={() => updateStatus(c.id, 'approved', c.status, c.articleSlug)}
                         disabled={actionLoading[c.id]}
                         title="Setujui komentar"
                         style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', opacity: actionLoading[c.id] ? 0.5 : 1 }}
@@ -222,7 +260,7 @@ const AdminComments = () => {
                     )}
                     {c.status !== 'rejected' && (
                       <button
-                        onClick={() => updateStatus(c.id, 'rejected')}
+                        onClick={() => updateStatus(c.id, 'rejected', c.status, c.articleSlug)}
                         disabled={actionLoading[c.id]}
                         title="Tolak komentar"
                         style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', opacity: actionLoading[c.id] ? 0.5 : 1 }}
@@ -231,7 +269,7 @@ const AdminComments = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => deleteComment(c.id)}
+                      onClick={() => deleteComment(c.id, c.status, c.articleSlug)}
                       disabled={actionLoading[c.id]}
                       title="Hapus permanen"
                       style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', opacity: actionLoading[c.id] ? 0.5 : 1 }}

@@ -6,6 +6,7 @@ import LazyImage from './LazyImage';
 import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from './VideoBadge';
 import { useI18n } from '../hooks/useI18n';
+import { ThumbsUp, MessageSquare } from 'lucide-react';
 
 const HeadlineGrid = ({ articles, loading }) => {
   const { t, lang } = useI18n();
@@ -183,8 +184,11 @@ const HeadlineGrid = ({ articles, loading }) => {
                   </div>
 
                   {/* Date below title box */}
-                  <div className="story-date-text">
-                    📅 {dateText}
+                  <div className="story-date-text" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span>📅 {dateText}</span>
+                    <span>•</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><ThumbsUp size={12}/> {item.reactions?.like || 0}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><MessageSquare size={12}/> {item.commentCount || 0}</span>
                   </div>
                 </article>
               </Link>

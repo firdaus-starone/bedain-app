@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar, useColorScheme, Alert } from 'react-native';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import { AuthProvider } from '../context/AuthContext';
 import * as Updates from 'expo-updates';
 
 function RootLayoutContent() {
@@ -64,6 +65,7 @@ function RootLayoutContent() {
         <Stack.Screen name="page/[slug]" options={{ presentation: 'card' }} />
         <Stack.Screen name="search" options={{ presentation: 'card' }} />
         <Stack.Screen name="bookmarks" options={{ presentation: 'card' }} />
+        <Stack.Screen name="login" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );
@@ -72,7 +74,9 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <RootLayoutContent />
+      <AuthProvider>
+        <RootLayoutContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

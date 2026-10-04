@@ -24,6 +24,9 @@ const SearchPage = () => {
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('Semua');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'popular'
 
+  const [dbCategories, setDbCategories] = useState([]);
+  const [dynamicTrendingTags, setDynamicTrendingTags] = useState([]);
+
   // Load More State
   const [displayCount, setDisplayCount] = useState(20);
   const observerTarget = React.useRef(null);
@@ -55,8 +58,48 @@ const SearchPage = () => {
         setLoading(false);
       }
     };
+
+    const fetchCategories = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'categories'));
+        const cats = snap.docs.map(doc => doc.data().name).filter(Boolean);
+        setDbCategories(cats);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+
     fetchAllArticles();
+    fetchCategories();
   }, []);
+
+  // Compute trending tags dynamically based on frequency in all articles
+  useEffect(() => {
+    if (articles.length === 0) return;
+    const tagCounts = {};
+    articles.forEach(a => {
+      if (Array.isArray(a.tags)) {
+        a.tags.forEach(t => {
+          if (t && typeof t === 'string') {
+            const cleanTag = t.trim();
+            if (cleanTag) {
+              tagCounts[cleanTag] = (tagCounts[cleanTag] || 0) + 1;
+            }
+          }
+        });
+      }
+    });
+    
+    // Sort tags by frequency and pick top 6
+    const sortedTags = Object.entries(tagCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(entry => entry[0])
+      .slice(0, 6);
+    
+    if (sortedTags.length > 0) {
+      setDynamicTrendingTags(sortedTags);
+    }
+  }, [articles]);
 
   const searchResults = useMemo(() => {
     const q = queryParam.trim().toLowerCase();
@@ -142,8 +185,8 @@ const SearchPage = () => {
     return new Date(dateObj).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
-  const trendingTags = ['AI & Teknologi', 'Finansial Digital', 'Berita Viral', 'Politik Nasional', 'Video 20Detik', 'Gaya Hidup & Wellness'];
-  const categoryTabs = ['Semua', 'Nasional', 'Bisnis & Finansial', 'Teknologi & AI', 'Hiburan & Pop', 'Gaya Hidup'];
+  const trendingTags = dynamicTrendingTags.length > 0 ? dynamicTrendingTags : ['Terkini', 'Viral', 'Terpopuler', 'Nasional', 'Gaya Hidup'];
+  const categoryTabs = dbCategories.length > 0 ? ['Semua', ...dbCategories] : ['Semua', 'Nasional', 'Bisnis & Finansial', 'Teknologi & AI', 'Hiburan & Pop', 'Gaya Hidup'];
 
   return (
     <div className="app-container">

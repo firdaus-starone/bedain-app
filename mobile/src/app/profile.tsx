@@ -4,12 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
+import { db, auth } from '../lib/firebase';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProfileModal() {
   const router = useRouter();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [pages, setPages] = useState<{ id: string, title: string, slug: string }[]>([]);
   const [loadingPages, setLoadingPages] = useState(true);
 
@@ -48,6 +51,19 @@ export default function ProfileModal() {
     } else {
       router.push(`/page/${slug}`);
     }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert('Logout', 'Yakin ingin keluar?', [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Ya, Keluar', onPress: async () => {
+        try {
+          await signOut(auth);
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+      }, style: 'destructive' }
+    ]);
   };
 
   const dyn = {
@@ -89,12 +105,18 @@ export default function ProfileModal() {
             <Ionicons name="person" size={32} color="#ffffff" />
           </View>
           <View style={styles.userInfo}>
-            <Text style={[styles.userName, dyn.userName]}>Pembaca Setia</Text>
-            <Text style={[styles.userEmail, dyn.userEmail]}>Belum login</Text>
+            <Text style={[styles.userName, dyn.userName]}>{user ? user.displayName || 'Pengguna' : 'Pembaca Setia'}</Text>
+            <Text style={[styles.userEmail, dyn.userEmail]}>{user ? user.email : 'Belum login'}</Text>
           </View>
-          <TouchableOpacity style={styles.loginBtn} onPress={() => handleFeatureNotReady('Login')}>
-            <Text style={styles.loginBtnText}>Login</Text>
-          </TouchableOpacity>
+          {user ? (
+            <TouchableOpacity style={[styles.loginBtn, { backgroundColor: '#ef4444' }]} onPress={handleLogout}>
+              <Text style={styles.loginBtnText}>Logout</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.loginBtn} onPress={() => router.push('/login')}>
+              <Text style={styles.loginBtnText}>Login</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Menu Items */}
