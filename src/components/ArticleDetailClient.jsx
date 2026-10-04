@@ -504,30 +504,47 @@ const ArticleDetail = () => {
 
     synth.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(fullText);
-    utterance.lang = 'id-ID';
-    utterance.rate = ttsRate;
-    const selectedVoice = availableVoices[ttsVoiceIndex];
-    if (selectedVoice && (selectedVoice.lang.toLowerCase().includes('id') || selectedVoice.name.toLowerCase().includes('indonesia'))) {
-      utterance.voice = selectedVoice;
-    }
+    // Workaround untuk bug Web Speech API di Chrome (terhenti setelah 15 detik/teks terlalu panjang)
+    // 1. Pecah teks menjadi kalimat-kalimat (chunks)
+    const sentences = fullText.match(/[^.!?]+[.!?]+/g) || [fullText];
+    
+    // 2. Simpan referensi utterance di window agar tidak terkena Garbage Collection (GC)
+    window._ttsUtterances = [];
 
-    utterance.onstart = () => {
-      setIsPlayingTTS(true);
-      setTtsPaused(false);
-    };
+    sentences.forEach((sentence, index) => {
+      const utterance = new SpeechSynthesisUtterance(sentence.trim());
+      utterance.lang = 'id-ID';
+      utterance.rate = ttsRate;
+      const selectedVoice = availableVoices[ttsVoiceIndex];
+      if (selectedVoice && (selectedVoice.lang.toLowerCase().includes('id') || selectedVoice.name.toLowerCase().includes('indonesia'))) {
+        utterance.voice = selectedVoice;
+      }
 
-    utterance.onend = () => {
-      setIsPlayingTTS(false);
-      setTtsPaused(false);
-    };
+      window._ttsUtterances.push(utterance);
 
-    utterance.onerror = () => {
-      setIsPlayingTTS(false);
-      setTtsPaused(false);
-    };
+      if (index === 0) {
+        utterance.onstart = () => {
+          setIsPlayingTTS(true);
+          setTtsPaused(false);
+        };
+      }
 
-    synth.speak(utterance);
+      if (index === sentences.length - 1) {
+        utterance.onend = () => {
+          setIsPlayingTTS(false);
+          setTtsPaused(false);
+          window._ttsUtterances = [];
+        };
+      }
+
+      utterance.onerror = (e) => {
+        console.error("TTS Error:", e);
+        setIsPlayingTTS(false);
+        setTtsPaused(false);
+      };
+
+      synth.speak(utterance);
+    });
   };
 
   const handleStopTTS = () => {
