@@ -506,13 +506,20 @@ const ArticleDetail = () => {
 
     // Workaround untuk bug Web Speech API di Chrome (terhenti setelah 15 detik/teks terlalu panjang)
     // 1. Pecah teks menjadi kalimat-kalimat (chunks)
-    const sentences = fullText.match(/[^.!?]+[.!?]+/g) || [fullText];
-    
-    // 2. Simpan referensi utterance di window agar tidak terkena Garbage Collection (GC)
-    window._ttsUtterances = [];
+    const sentences = (fullText.match(/[^.!?]+[.!?]+/g) || [fullText]).map(s => s.trim()).filter(Boolean);
+    if (sentences.length === 0) return;
 
-    sentences.forEach((sentence, index) => {
-      const utterance = new SpeechSynthesisUtterance(sentence.trim());
+    window._ttsCancelled = false;
+    let currentIndex = 0;
+
+    const playNext = () => {
+      if (window._ttsCancelled || currentIndex >= sentences.length) {
+        setIsPlayingTTS(false);
+        setTtsPaused(false);
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(sentences[currentIndex]);
       utterance.lang = 'id-ID';
       utterance.rate = ttsRate;
       const selectedVoice = availableVoices[ttsVoiceIndex];
@@ -520,31 +527,33 @@ const ArticleDetail = () => {
         utterance.voice = selectedVoice;
       }
 
-      window._ttsUtterances.push(utterance);
+      // 2. Simpan referensi utterance di window agar tidak terkena Garbage Collection (GC)
+      window._currentUtterance = utterance;
 
-      if (index === 0) {
-        utterance.onstart = () => {
+      utterance.onstart = () => {
+        if (currentIndex === 0) {
           setIsPlayingTTS(true);
           setTtsPaused(false);
-        };
-      }
+        }
+      };
 
-      if (index === sentences.length - 1) {
-        utterance.onend = () => {
-          setIsPlayingTTS(false);
-          setTtsPaused(false);
-          window._ttsUtterances = [];
-        };
-      }
+      utterance.onend = () => {
+        if (window._ttsCancelled) return;
+        currentIndex++;
+        playNext();
+      };
 
       utterance.onerror = (e) => {
-        console.error("TTS Error:", e);
+        if (e.error === 'canceled' || e.error === 'interrupted' || window._ttsCancelled) return;
+        console.error("TTS Error on chunk", currentIndex, e);
         setIsPlayingTTS(false);
         setTtsPaused(false);
       };
 
       synth.speak(utterance);
-    });
+    };
+
+    playNext();
   };
 
   const handleStopTTS = () => {
@@ -557,6 +566,7 @@ const ArticleDetail = () => {
       return;
     }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window._ttsCancelled = true;
       window.speechSynthesis.cancel();
       setIsPlayingTTS(false);
       setTtsPaused(false);
