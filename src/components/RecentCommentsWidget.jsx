@@ -105,7 +105,40 @@ const RecentCommentsWidget = () => {
               </Link>
             ))}
             
-            <Link href="/" style={{ display: 'block', textAlign: 'center', padding: '10px', marginTop: '10px', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', border: '1px solid var(--color-border)' }}>
+            <Link 
+              href="/" 
+              onClick={(e) => {
+                if (typeof window !== 'undefined' && window.location.pathname === '/') {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              style={{ 
+                display: 'block', 
+                textAlign: 'center', 
+                padding: '10px', 
+                marginTop: '10px', 
+                background: 'var(--color-bg-secondary)', 
+                color: 'var(--color-text-primary)', 
+                borderRadius: '8px', 
+                fontSize: '0.85rem', 
+                fontWeight: 600, 
+                textDecoration: 'none', 
+                border: '1px solid var(--color-border)',
+                transition: 'all 0.2s',
+                cursor: 'pointer'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'var(--color-accent)';
+                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.border = '1px solid var(--color-accent)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'var(--color-bg-secondary)';
+                e.currentTarget.style.color = 'var(--color-text-primary)';
+                e.currentTarget.style.border = '1px solid var(--color-border)';
+              }}
+            >
               Lihat Topik Lainnya
             </Link>
           </>
