@@ -62,6 +62,7 @@ export default function Home() {
   const [hotTopics, setHotTopics] = useState<string[]>(HOT_TOPICS);
   const [refreshing, setRefreshing] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
+  const [recentComments, setRecentComments] = useState<any[]>([]);
 
   const headerBanners = banners.filter(b => b.slot === 'header');
   const feedBanners = banners.filter(b => b.slot === 'sidebar');
@@ -85,6 +86,21 @@ export default function Home() {
       const snapBanners = await getDocs(qBanners);
       setBanners(snapBanners.docs.map(d => ({ id: d.id, ...d.data() })));
       
+      const qComments = query(collection(db, 'comments'), orderBy('createdAt', 'desc'), limit(50));
+      const snapComments = await getDocs(qComments);
+      const allComments = snapComments.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const validComments = allComments.filter((c: any) => c.status === 'approved');
+      const uniqueArts: any[] = [];
+      const slugs = new Set();
+      for (const c of validComments) {
+        if (!slugs.has(c.articleSlug)) {
+          slugs.add(c.articleSlug);
+          uniqueArts.push({ articleSlug: c.articleSlug, articleTitle: c.articleTitle || 'Artikel Tanpa Judul', latestComment: c });
+          if (uniqueArts.length === 2) break;
+        }
+      }
+      setRecentComments(uniqueArts);
+
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch(e) {
       console.error(e);
@@ -198,9 +214,31 @@ export default function Home() {
       }
     };
 
+    const fetchComments = async () => {
+      try {
+        const q = query(collection(db, 'comments'), orderBy('createdAt', 'desc'), limit(50));
+        const snap = await getDocs(q);
+        const allComments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const validComments = allComments.filter((c: any) => c.status === 'approved');
+        const uniqueArts: any[] = [];
+        const slugs = new Set();
+        for (const c of validComments) {
+          if (!slugs.has(c.articleSlug)) {
+            slugs.add(c.articleSlug);
+            uniqueArts.push({ articleSlug: c.articleSlug, articleTitle: c.articleTitle || 'Artikel Tanpa Judul', latestComment: c });
+            if (uniqueArts.length === 2) break;
+          }
+        }
+        setRecentComments(uniqueArts);
+      } catch (e) {
+        console.error('Error fetching comments:', e);
+      }
+    };
+
     fetchSettings();
     fetchCategories();
     fetchBanners();
+    fetchComments();
     fetchArticlesRealtime();
 
     return () => {
@@ -216,20 +254,20 @@ export default function Home() {
     BERITA_PILIHAN,
     LATEST_NEWS
   } = useMemo(() => {
-    const mapped = rawArticles.map(mapArticle);
+    const headlines = rawArticles.filter(a => a.isHeadline).map(mapArticle);
+    const nonHeadlines = rawArticles.filter(a => !a.isHeadline).map(mapArticle);
     
     // Berita Pilihan (Editor's Choice)
-    const headlines = rawArticles.filter(a => a.isHeadline).map(mapArticle);
     const pilihan = headlines.length >= 5 
       ? headlines.slice(0, 5) 
-      : mapped.slice(15, 20); // Fallback
+      : nonHeadlines.slice(15, 20); // Fallback
 
-    // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish)
-    const terkini = mapped.slice(0, 5);
-    const featured = mapped[5];
-    const related = mapped.slice(6, 8);
-    const list = mapped.slice(8, 13);
-    const latest = mapped.slice(13, 28);
+    // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish) (Eksklusif non-pilihan)
+    const terkini = nonHeadlines.slice(0, 5);
+    const featured = nonHeadlines[5];
+    const related = nonHeadlines.slice(6, 8);
+    const list = nonHeadlines.slice(8, 13);
+    const latest = nonHeadlines.slice(13, 28);
     
     return {
       BERITA_TERKINI: terkini || [],
@@ -521,6 +559,49 @@ export default function Home() {
             }
           })}
         </View>
+
+        {/* SECTION KOMENTAR TERBARU */}
+        {recentComments.length > 0 && (
+          <View style={{ paddingHorizontal: 16, marginTop: 10, paddingBottom: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+              <Ionicons name="chatbubbles-outline" size={20} color="#1b61d1" />
+              <Text style={[styles.bottomSectionTitle, dyn.textMain, { marginBottom: 0 }]}>Komentar Terbaru</Text>
+            </View>
+            <View style={{ backgroundColor: dyn.mixedCardBg.backgroundColor, borderRadius: 12, padding: 16 }}>
+              {recentComments.map((article, index) => (
+                <TouchableOpacity
+                  key={article.articleSlug}
+                  onPress={() => router.push(`/article/${article.articleSlug}`)}
+                  style={{
+                    marginBottom: index < recentComments.length - 1 ? 16 : 0,
+                    borderBottomWidth: index < recentComments.length - 1 ? 1 : 0,
+                    borderBottomColor: dyn.borderBottom.borderBottomColor,
+                    paddingBottom: index < recentComments.length - 1 ? 16 : 0,
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: 'bold', color: dyn.textMain.color, marginBottom: 8, lineHeight: 18 }} numberOfLines={2}>
+                    {article.articleTitle}
+                  </Text>
+                  
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 }}>
+                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#1b61d1', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
+                        {(article.latestComment.authorName || 'A').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: dyn.textMain.color }}>
+                      {article.latestComment.authorName || 'Anonim'}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: dyn.textMuted.color, lineHeight: 18, fontStyle: 'italic' }} numberOfLines={2}>
+                    "{article.latestComment.content}"
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Ruang kosong di bawah untuk Bottom Navigation bar nanti */}
         <View style={{ height: 160 }} />

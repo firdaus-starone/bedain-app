@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform,
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
 import { useTheme } from '../context/ThemeContext';
@@ -18,6 +18,7 @@ export default function ProfileModal() {
     email: user?.email || 'Belum login',
     photoURL: user?.photoURL || null
   });
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [pages, setPages] = useState<{ id: string, title: string, slug: string }[]>([]);
   const [loadingPages, setLoadingPages] = useState(true);
 
@@ -38,12 +39,24 @@ export default function ProfileModal() {
             photoURL: auth.currentUser?.photoURL || null
           });
         });
+
+        const fetchRole = async () => {
+          try {
+            const userRef = doc(db, 'users', auth.currentUser!.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              setUserRole(userSnap.data().role || 'reader');
+            }
+          } catch(e) {}
+        };
+        fetchRole();
       } else {
         setCurrentUserData({
           displayName: 'Pembaca Setia',
           email: 'Belum login',
           photoURL: null
         });
+        setUserRole(null);
       }
     }, [user])
   );
@@ -156,6 +169,19 @@ export default function ProfileModal() {
         </View>
 
         {/* Menu Items */}
+        {(userRole === 'admin' || userRole === 'editor') && (
+          <View style={[styles.menuSection, dyn.menuSection]}>
+            <Text style={[styles.sectionTitle, dyn.sectionTitle]}>Akses Khusus</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/admin')}>
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+                <Ionicons name="settings-outline" size={20} color="#ef4444" />
+              </View>
+              <Text style={[styles.menuText, dyn.menuText]}>Dashboard Admin</Text>
+              <Ionicons name="open-outline" size={20} color={dyn.chevron} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={[styles.menuSection, dyn.menuSection]}>
           <Text style={[styles.sectionTitle, dyn.sectionTitle]}>Akun & Aktivitas</Text>
           

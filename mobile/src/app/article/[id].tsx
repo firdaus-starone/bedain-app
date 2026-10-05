@@ -99,10 +99,25 @@ export default function ArticleDetail() {
     
     const fetchArticle = async () => {
       try {
-        const docRef = doc(db, 'articles', id as string);
+        let articleData = null;
+        let actualId = id as string;
+
+        const docRef = doc(db, 'articles', actualId);
         const docSnap = await getDoc(docRef);
+        
         if (docSnap.exists()) {
-          const articleData = { id: docSnap.id, ...docSnap.data() };
+          articleData = { id: docSnap.id, ...docSnap.data() };
+        } else {
+          // Fallback to searching by slug
+          const qSlug = query(collection(db, 'articles'), where('slug', '==', actualId), limit(1));
+          const slugSnap = await getDocs(qSlug);
+          if (!slugSnap.empty) {
+            articleData = { id: slugSnap.docs[0].id, ...slugSnap.docs[0].data() };
+            actualId = slugSnap.docs[0].id;
+          }
+        }
+
+        if (articleData) {
           setArticle(articleData);
           
           // Fetch Comments
@@ -128,7 +143,7 @@ export default function ArticleDetail() {
             const stored = await AsyncStorage.getItem('bookmarks');
             if (stored) {
               const list = JSON.parse(stored);
-              setIsBookmarked(list.some((b: any) => b.id === docSnap.id));
+              setIsBookmarked(list.some((b: any) => b.id === actualId));
             }
           } catch (e) {}
         }
