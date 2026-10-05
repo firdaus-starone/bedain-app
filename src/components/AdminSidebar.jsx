@@ -171,6 +171,10 @@ const AdminSidebar = () => {
                 )}
               </Link>
 
+              <Link onClick={handleNavClick} href="/admin/readers" className={`admin-nav-item ${isActive('/admin/readers') ? 'active' : ''}`}>
+                <Users size={18} className="admin-nav-icon" /> Manajemen Pembaca
+              </Link>
+
               <Link onClick={handleNavClick} href="/admin/comments" className={`admin-nav-item ${isActive('/admin/comments') ? 'active' : ''}`} style={{ position: 'relative' }}>
                 <MessageSquare size={18} className="admin-nav-icon" /> Moderasi Komentar
                 {pendingComments > 0 && (

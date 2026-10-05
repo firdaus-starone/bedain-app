@@ -5,7 +5,8 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 import { useTheme } from '../context/ThemeContext';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -45,6 +46,14 @@ export default function LoginScreen() {
         await updateProfile(userCredential.user, {
           displayName: name
         });
+        
+        // Simpan data pembaca baru ke Firestore
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          email: email.toLowerCase(),
+          name: name.trim(),
+          role: 'reader',
+          createdAt: new Date().toISOString()
+        });
       }
       router.back();
     } catch (error: any) {
@@ -62,7 +71,17 @@ export default function LoginScreen() {
       
       setLoading(true);
       signInWithCredential(auth, credential)
-        .then(() => {
+        .then(async (userCredential) => {
+          const userRef = doc(db, 'users', userCredential.user.uid);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              email: userCredential.user.email,
+              name: userCredential.user.displayName || 'Pembaca',
+              role: 'reader',
+              createdAt: new Date().toISOString()
+            });
+          }
           router.back();
         })
         .catch((error) => {

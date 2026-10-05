@@ -33,6 +33,15 @@ export default function ArticleDetail() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [articleBanners, setArticleBanners] = useState<any[]>([]);
   const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{id: string, name: string} | null>(null);
+  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
+
+  const toggleReplies = (commentId: string) => {
+    setExpandedReplies(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
 
   const handleReaction = async (reactionId: string) => {
     if (!article?.id) return;
@@ -207,9 +216,12 @@ export default function ArticleDetail() {
         status: 'pending',
         reported: false,
         createdAt: serverTimestamp(),
+        parentId: replyingTo ? replyingTo.id : null,
       });
       setCommentText('');
-      Alert.alert('Komentar Terkirim', 'Komentar Anda berhasil dikirim dan menunggu moderasi oleh tim redaksi.');
+      const wasReplying = replyingTo;
+      setReplyingTo(null);
+      Alert.alert(wasReplying ? 'Balasan Terkirim' : 'Komentar Terkirim', wasReplying ? 'Balasan Anda berhasil dikirim dan menunggu moderasi.' : 'Komentar Anda berhasil dikirim dan menunggu moderasi oleh tim redaksi.');
     } catch (err) {
       console.error(err);
       Alert.alert('Gagal', 'Gagal mengirim komentar. Coba lagi.');
@@ -607,22 +619,32 @@ export default function ArticleDetail() {
             <View style={[styles.commentSection, dyn.borderB]}>
               <Text style={[styles.commentHeader, dyn.textMain]}>Komentar ({comments.length})</Text>
               
-              <View style={styles.commentInputContainer}>
-                <View style={[styles.commentAvatar, dyn.commentAvatar]}>
-                  <Ionicons name="person" size={16} color="#94a3b8" />
-                </View>
-                <View style={[styles.commentInputWrapper, dyn.commentInputWrapper]}>
-                  <TextInput
-                    style={[styles.commentInput, dyn.textMain]}
-                    placeholder="Tulis komentar..."
-                    placeholderTextColor="#94a3b8"
-                    value={commentText}
-                    onChangeText={setCommentText}
-                    multiline
-                  />
-                  <TouchableOpacity style={styles.commentSubmitBtn} onPress={submitComment} disabled={submittingComment}>
-                    <Ionicons name="send" size={16} color={commentText.trim().length > 0 && !submittingComment ? '#3b82f6' : '#cbd5e1'} />
-                  </TouchableOpacity>
+              <View style={[styles.commentInputContainer, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                {replyingTo && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', borderRadius: 8, alignSelf: 'flex-start' }}>
+                    <Text style={{ fontSize: 12, color: dyn.textMain.color }}>Membalas <Text style={{ fontWeight: '700' }}>{replyingTo.name}</Text></Text>
+                    <TouchableOpacity onPress={() => setReplyingTo(null)} style={{ marginLeft: 12 }}>
+                      <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', width: '100%' }}>
+                  <View style={[styles.commentAvatar, dyn.commentAvatar]}>
+                    <Ionicons name="person" size={16} color="#94a3b8" />
+                  </View>
+                  <View style={[styles.commentInputWrapper, dyn.commentInputWrapper, { flex: 1, marginLeft: 12 }]}>
+                    <TextInput
+                      style={[styles.commentInput, dyn.textMain]}
+                      placeholder={replyingTo ? "Tulis balasan..." : "Tulis komentar..."}
+                      placeholderTextColor="#94a3b8"
+                      value={commentText}
+                      onChangeText={setCommentText}
+                      multiline
+                    />
+                    <TouchableOpacity style={styles.commentSubmitBtn} onPress={submitComment} disabled={submittingComment}>
+                      <Ionicons name="send" size={16} color={commentText.trim().length > 0 && !submittingComment ? '#3b82f6' : '#cbd5e1'} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
@@ -633,24 +655,79 @@ export default function ArticleDetail() {
                 </View>
               ) : (
                 <View style={{ gap: 16 }}>
-                  {comments.map((c, i) => {
+                  {comments.filter(c => !c.parentId).map((c, i) => {
                     let cDate = 'Baru saja';
                     if (c.createdAt) {
                       const d = typeof c.createdAt.toDate === 'function' ? c.createdAt.toDate() : new Date(c.createdAt);
                       cDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                     }
+                    
+                    const replies = comments
+                      .filter(r => r.parentId === c.id)
+                      .sort((a, b) => {
+                        const ta = a.createdAt?.seconds || 0;
+                        const tb = b.createdAt?.seconds || 0;
+                        return ta - tb;
+                      });
+
                     return (
-                      <View key={c.id || i} style={{ flexDirection: 'row', gap: 12 }}>
-                        <View style={[styles.commentAvatar, dyn.commentAvatar, { width: 32, height: 32, borderRadius: 16 }]}>
-                          <Ionicons name="person" size={14} color="#94a3b8" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <Text style={[styles.authorName, dyn.textMain, { fontSize: 13, marginBottom: 0 }]}>{c.authorName}</Text>
-                            <Text style={[styles.date, dyn.textMuted, { fontSize: 11 }]}>{cDate}</Text>
+                      <View key={c.id || i} style={{ flexDirection: 'column', gap: 8 }}>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                          <View style={[styles.commentAvatar, dyn.commentAvatar, { width: 32, height: 32, borderRadius: 16 }]}>
+                            <Ionicons name="person" size={14} color="#94a3b8" />
                           </View>
-                          <Text style={[dyn.textMain, { fontSize: 13, lineHeight: 20 }]}>{c.content}</Text>
+                          <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                              <Text style={[styles.authorName, dyn.textMain, { fontSize: 13, marginBottom: 0 }]}>{c.authorName}</Text>
+                              <Text style={[styles.date, dyn.textMuted, { fontSize: 11 }]}>{cDate}</Text>
+                            </View>
+                            <Text style={[dyn.textMain, { fontSize: 13, lineHeight: 20 }]}>{c.content}</Text>
+                            
+                            <TouchableOpacity onPress={() => setReplyingTo({ id: c.id, name: c.authorName })} style={{ marginTop: 6, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Ionicons name="arrow-undo-outline" size={14} color="#3b82f6" />
+                              <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>Balas</Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
+                        
+                        {replies.length > 0 && (
+                          <View style={{ marginLeft: 32, marginTop: 4 }}>
+                            {!expandedReplies[c.id] ? (
+                              <TouchableOpacity onPress={() => toggleReplies(c.id)} style={{ paddingVertical: 8, flexDirection: 'row', alignItems: 'center' }}>
+                                <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>Lihat {replies.length} balasan...</Text>
+                              </TouchableOpacity>
+                            ) : (
+                              <>
+                                <View style={{ paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: isDarkMode ? '#334155' : '#e2e8f0', gap: 12, marginTop: 4 }}>
+                                  {replies.map(r => {
+                                    let rDate = 'Baru saja';
+                                    if (r.createdAt) {
+                                      const rd = typeof r.createdAt.toDate === 'function' ? r.createdAt.toDate() : new Date(r.createdAt);
+                                      rDate = rd.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                                    }
+                                    return (
+                                      <View key={r.id} style={{ flexDirection: 'row', gap: 10 }}>
+                                        <View style={[styles.commentAvatar, dyn.commentAvatar, { width: 24, height: 24, borderRadius: 12 }]}>
+                                          <Ionicons name="person" size={12} color="#94a3b8" />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                                            <Text style={[styles.authorName, dyn.textMain, { fontSize: 12, marginBottom: 0 }]}>{r.authorName}</Text>
+                                            <Text style={[styles.date, dyn.textMuted, { fontSize: 10 }]}>{rDate}</Text>
+                                          </View>
+                                          <Text style={[dyn.textMain, { fontSize: 12.5, lineHeight: 18 }]}>{r.content}</Text>
+                                        </View>
+                                      </View>
+                                    );
+                                  })}
+                                </View>
+                                <TouchableOpacity onPress={() => toggleReplies(c.id)} style={{ paddingVertical: 8, marginTop: 4, paddingLeft: 12, flexDirection: 'row', alignItems: 'center' }}>
+                                  <Text style={{ color: dyn.textMuted.color, fontSize: 12, fontWeight: '600' }}>Sembunyikan balasan</Text>
+                                </TouchableOpacity>
+                              </>
+                            )}
+                          </View>
+                        )}
                       </View>
                     );
                   })}

@@ -123,7 +123,7 @@ export default function ProfileModal() {
         <View style={[styles.menuSection, dyn.menuSection]}>
           <Text style={[styles.sectionTitle, dyn.sectionTitle]}>Akun & Aktivitas</Text>
           
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleFeatureNotReady('Profil Saya')}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/my-profile' as any)}>
             <View style={[styles.menuIconBox, dyn.menuIconBox]}>
               <Ionicons name="person-outline" size={20} color="#1b61d1" />
             </View>

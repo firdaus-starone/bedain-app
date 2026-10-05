@@ -71,7 +71,9 @@ const AdminUsers = () => {
       let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
       if (userRole === 'admin') {
-        data = data.filter(user => user.role !== 'superadmin');
+        data = data.filter(user => user.role !== 'superadmin' && user.role !== 'reader');
+      } else {
+        data = data.filter(user => user.role !== 'reader');
       }
       
       setUsers(data);

@@ -3,8 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { MessageSquare, Send, User, Clock, X, Reply } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const CommentSection = ({ articleSlug, articleTitle }) => {
+  const { currentUser, userRole } = useAuth();
+  const isStaff = currentUser && ['superadmin', 'editor', 'reporter'].includes(userRole);
+
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(true);
   
@@ -92,7 +96,7 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
         authorName: form.name.trim(),
         authorEmail: form.email.trim(),
         content: form.content.trim(),
-        status: 'pending',
+        status: isStaff ? 'approved' : 'pending',
         reported: false,
         createdAt: serverTimestamp(),
         parentId: null
@@ -100,6 +104,11 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
       setSubmitted(true);
       setLastSubmit(Date.now());
       setForm({ name: '', email: '', content: '' });
+      if (isStaff) {
+        // Refresh komentar agar yang baru masuk langsung muncul
+        const q = query(collection(db, 'comments'), where('articleSlug', '==', articleSlug), where('status', '==', 'approved'), orderBy('createdAt', 'desc'));
+        getDocs(q).then(snap => setComments(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+      }
     } catch (err) {
       console.error('Error submitting comment:', err);
       setError('Gagal mengirim komentar. Coba lagi.');
@@ -128,15 +137,19 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
         authorName: replyForm.name.trim(),
         authorEmail: replyForm.email.trim(),
         content: replyForm.content.trim(),
-        status: 'pending',
+        status: isStaff ? 'approved' : 'pending',
         reported: false,
         createdAt: serverTimestamp(),
         parentId: parentId
       });
-      alert('Balasan Anda sedang menunggu moderasi.');
+      alert(isStaff ? 'Balasan berhasil dipublikasikan!' : 'Balasan Anda sedang menunggu moderasi.');
       setReplyingTo(null);
       setLastSubmit(Date.now());
       setReplyForm({ name: '', email: '', content: '' });
+      if (isStaff) {
+        const q = query(collection(db, 'comments'), where('articleSlug', '==', articleSlug), where('status', '==', 'approved'), orderBy('createdAt', 'desc'));
+        getDocs(q).then(snap => setComments(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+      }
     } catch (err) {
       console.error('Error submitting reply:', err);
       alert('Gagal mengirim balasan. Coba lagi.');
@@ -283,9 +296,9 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
                     <div className="comment-success">
                       <div className="comment-success-icon">✅</div>
                       <h4>Komentar Diterima!</h4>
-                      <p>Komentar Anda sedang menunggu moderasi. Terima kasih telah berpartisipasi.</p>
-                      <button onClick={() => setSubmitted(false)} className="comment-send-again-btn">
-                        Tulis Komentar Lagi
+                      <p>{isStaff ? 'Komentar Anda telah berhasil dipublikasikan.' : 'Komentar Anda sedang menunggu moderasi. Terima kasih telah berpartisipasi.'}</p>
+                      <button onClick={() => { setSubmitted(false); if (isStaff) setIsOpen(false); }} className="comment-send-again-btn">
+                        {isStaff ? 'Tutup' : 'Tulis Komentar Lagi'}
                       </button>
                     </div>
                   ) : (
@@ -330,9 +343,11 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
                         <Send size={16} />
                         {submitting ? 'Mengirim...' : 'Kirim Komentar'}
                       </button>
-                      <p className="comment-moderation-note">
-                        💡 Komentar akan ditampilkan setelah disetujui oleh tim redaksi.
-                      </p>
+                      {!isStaff && (
+                        <p className="comment-moderation-note">
+                          💡 Komentar akan ditampilkan setelah disetujui oleh tim redaksi.
+                        </p>
+                      )}
                     </form>
                   )}
                 </div>

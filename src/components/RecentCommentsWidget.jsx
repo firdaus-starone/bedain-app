@@ -15,15 +15,32 @@ const RecentCommentsWidget = () => {
       try {
         const q = query(
           collection(db, 'comments'),
-          where('status', '==', 'approved'),
           orderBy('createdAt', 'desc'),
-          limit(5)
+          limit(50)
         );
         const snap = await getDocs(q);
-        const comments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Filter out non-approved comments in memory to avoid missing Firestore index errors
+        const allComments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const comments = allComments.filter(c => c.status === 'approved');
+
+        const uniqueArticles = [];
+        const seenSlugs = new Set();
+        
+        for (const comment of comments) {
+          if (!seenSlugs.has(comment.articleSlug)) {
+            seenSlugs.add(comment.articleSlug);
+            uniqueArticles.push({
+              articleSlug: comment.articleSlug,
+              articleTitle: comment.articleTitle || 'Artikel Tanpa Judul',
+              latestComment: comment
+            });
+            if (uniqueArticles.length === 2) break;
+          }
+        }
 
         if (isMounted) {
-          setRecentComments(comments);
+          setRecentComments(uniqueArticles);
           setLoading(false);
         }
       } catch (err) {
@@ -39,8 +56,17 @@ const RecentCommentsWidget = () => {
     };
   }, []);
 
-  if (loading) return null;
-  if (recentComments.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="sidebar-widget recent-comments-widget" style={{ marginBottom: '24px' }}>
+        <h3 className="widget-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <MessageCircle size={18} color="var(--color-accent)" />
+          Komentar Terbaru
+        </h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>Memuat komentar...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="sidebar-widget recent-comments-widget" style={{ marginBottom: '24px' }}>
@@ -49,28 +75,41 @@ const RecentCommentsWidget = () => {
         Komentar Terbaru
       </h3>
       <div className="trending-list">
-        {recentComments.map((comment, index) => (
-          <Link key={comment.id} href={`/article/${comment.articleSlug}#comments`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-            <div className="trending-item" style={{ cursor: 'pointer', padding: '12px 0', borderBottom: index < recentComments.length - 1 ? '1px solid var(--color-border)' : 'none', flexDirection: 'column', alignItems: 'flex-start' }}>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--color-bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold' }}>
-                  {(comment.authorName || 'A').charAt(0).toUpperCase()}
+        {recentComments.length === 0 ? (
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', padding: '10px 0', fontStyle: 'italic' }}>
+            Belum ada diskusi terbaru.
+          </p>
+        ) : (
+          <>
+            {recentComments.map((article, index) => (
+              <Link key={article.articleSlug} href={`/article/${article.articleSlug}#comments`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                <div className="trending-item" style={{ cursor: 'pointer', padding: '12px 0', borderBottom: index < recentComments.length - 1 ? '1px solid var(--color-border)' : 'none', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {article.articleTitle}
+                  </h4>
+
+                  <div style={{ background: 'var(--color-bg-secondary)', padding: '10px 12px', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold' }}>
+                        {(article.latestComment.authorName || 'A').charAt(0).toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{article.latestComment.authorName || 'Anonim'}</span>
+                    </div>
+                    
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.4' }}>
+                      "{article.latestComment.content}"
+                    </p>
+                  </div>
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{comment.authorName || 'Anonim'}</span>
-              </div>
-              
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.4' }}>
-                "{comment.content}"
-              </p>
-              
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>di</span> 
-                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>{comment.articleTitle}</span>
-              </div>
-            </div>
-          </Link>
-        ))}
+              </Link>
+            ))}
+            
+            <Link href="/" style={{ display: 'block', textAlign: 'center', padding: '10px', marginTop: '10px', background: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', border: '1px solid var(--color-border)' }}>
+              Lihat Topik Lainnya
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
