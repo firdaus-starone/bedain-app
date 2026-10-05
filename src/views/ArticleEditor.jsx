@@ -1148,8 +1148,69 @@ Konten Asli: ${formData.content}`;
                 </div>
               )}
 
-              {/* Removed AI Writing Assistant Banner */}
-
+              {/* AI Writing Assistant Banner */}
+              <div 
+                onClick={() => setIsAIModalOpen(true)}
+                style={{ 
+                  background: 'linear-gradient(135deg, rgba(230,57,70,0.1) 0%, rgba(230,57,70,0.02) 100%)', 
+                  borderRadius: '16px', 
+                  border: '1px solid rgba(230, 57, 70, 0.2)', 
+                  padding: '16px 20px', 
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(230,57,70,0.15)';
+                  e.currentTarget.style.border = '1px solid rgba(230, 57, 70, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                  e.currentTarget.style.border = '1px solid rgba(230, 57, 70, 0.2)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{
+                    width: '44px', height: '44px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, var(--color-accent) 0%, #ff8a65 100%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff',
+                    boxShadow: '0 4px 12px rgba(230,57,70,0.3)'
+                  }}>
+                    <Sparkles size={22} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700, color: 'var(--admin-text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      ✨ Bedain AI Writing Assistant
+                      <span style={{ background: 'linear-gradient(135deg, var(--color-accent), #ff8a65)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '11px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(230,57,70,0.2)' }}>PRO</span>
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--admin-text-secondary)', lineHeight: 1.4 }}>
+                      Asisten cerdas untuk memperbaiki tata bahasa (PUEBI), merapikan paragraf, cek plagiasi, dan membuat judul menarik.
+                    </p>
+                  </div>
+                </div>
+                <div style={{
+                  background: 'var(--admin-bg)',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  color: 'var(--admin-text-primary)',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  border: '1px solid var(--admin-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  Buka AI →
+                </div>
+              </div>
               <div style={{ background: 'var(--admin-card-bg)', borderRadius: '16px', border: '1px solid var(--admin-card-border)', overflow: 'hidden' }}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--admin-card-border)' }}>
                   <textarea 
