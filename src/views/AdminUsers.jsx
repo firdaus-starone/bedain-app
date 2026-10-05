@@ -284,6 +284,8 @@ const AdminUsers = () => {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
+  const filteredUsers = users.filter(user => filterRole === 'all' || (user.role || 'reporter').toLowerCase() === filterRole);
+
   return (
     <div className="admin-layout">
       
@@ -301,7 +303,7 @@ const AdminUsers = () => {
         <div className="admin-content">
           <div className="admin-table-container">
             <div className="admin-table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <h2>Daftar Pengguna / Wartawan</h2>
+              <h2>Daftar Jurnalis & Redaksi (Total: {filteredUsers.length})</h2>
               <button 
                 onClick={() => setShowAddModal(true)}
                 className="admin-btn admin-btn-primary"
@@ -353,7 +355,7 @@ const AdminUsers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.filter(user => filterRole === 'all' || (user.role || 'reporter').toLowerCase() === filterRole).map(user => (
+                  {filteredUsers.map(user => (
                     <tr key={user.id}>
                       <td className="admin-table-title">
                         <div style={{ fontWeight: 600, color: 'var(--admin-text-primary)', marginBottom: '3px' }}>

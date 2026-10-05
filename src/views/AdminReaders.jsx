@@ -91,7 +91,7 @@ const AdminReaders = () => {
         <div className="admin-content">
           <div className="admin-table-container">
             <div className="admin-table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <h2>Daftar Pembaca Terdaftar</h2>
+              <h2>Daftar Pembaca Terdaftar (Total: {filteredUsers.length})</h2>
               <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                 <Search size={16} style={{ position: 'absolute', left: '10px', color: 'var(--admin-text-secondary)' }} />
                 <input 
