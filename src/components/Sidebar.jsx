@@ -7,6 +7,7 @@ import AdBanner from './AdBanner';
 import RedaksiWidget from './RedaksiWidget';
 import LocalNewsWidget from './LocalNewsWidget';
 import PopularCommentsWidget from './PopularCommentsWidget';
+import RecentCommentsWidget from './RecentCommentsWidget';
 import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useI18n } from '../hooks/useI18n';
@@ -319,6 +320,8 @@ const Sidebar = () => {
             </div>
           )}
 
+      <RecentCommentsWidget />
+      
       <PopularCommentsWidget />
 
       <div className="sidebar-widget newsletter-widget" style={{ textAlign: 'center', background: 'linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary))', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '24px 20px' }}>
