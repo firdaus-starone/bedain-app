@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Platform, StatusBar, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Platform, StatusBar, KeyboardAvoidingView, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { updateProfile } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, updateDoc } from 'firebase/firestore';
+import { auth, storage, db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -13,7 +17,62 @@ export default function MyProfileScreen() {
   const { user } = useAuth();
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setUploadingImage(true);
+        const originalUri = result.assets[0].uri;
+        
+        // Kompresi gambar: resize maks 500x500 dan kurangi kualitas
+        const manipResult = await ImageManipulator.manipulateAsync(
+          originalUri,
+          [{ resize: { width: 500 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        
+        const imageUri = manipResult.uri;
+        
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.onload = function() {
+            resolve(xhr.response);
+          };
+          xhr.onerror = function(e) {
+            console.error(e);
+            reject(new TypeError("Network request failed"));
+          };
+          xhr.responseType = "blob";
+          xhr.open("GET", imageUri, true);
+          xhr.send(null);
+        });
+        
+        const fileExtension = imageUri.split('.').pop() || 'jpg';
+        const storageRef = ref(storage, `profile_photos/${user?.uid}_${Date.now()}.${fileExtension}`);
+        
+        await uploadBytes(storageRef, blob);
+        const downloadUrl = await getDownloadURL(storageRef);
+        
+        setPhotoURL(downloadUrl);
+        Alert.alert('Sukses', 'Foto profil berhasil diunggah! Jangan lupa klik Simpan Perubahan.');
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Gagal', 'Terjadi kesalahan saat mengunggah gambar: ' + error.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -26,8 +85,19 @@ export default function MyProfileScreen() {
     try {
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, {
-          displayName: displayName.trim()
+          displayName: displayName.trim(),
+          photoURL: photoURL
         });
+        
+        try {
+          await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+            name: displayName.trim(),
+            photoURL: photoURL
+          });
+        } catch (e) {
+          console.warn('Could not update user doc:', e);
+        }
+        
         Alert.alert('Berhasil', 'Profil Anda berhasil diperbarui!');
         router.back();
       }
@@ -82,10 +152,26 @@ export default function MyProfileScreen() {
         ) : (
           <View style={[styles.card, dyn.card, styles.shadowCard, { marginTop: 20 }]}>
             <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={40} color="#ffffff" />
-              </View>
-              <Text style={styles.avatarLabel}>Foto Profil (Dari Google)</Text>
+              <TouchableOpacity onPress={handlePickImage} disabled={uploadingImage}>
+                <View style={styles.avatarWrapper}>
+                  <View style={styles.avatar}>
+                    {photoURL ? (
+                      <Image source={{ uri: photoURL }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+                    ) : (
+                      <Ionicons name="person" size={40} color="#ffffff" />
+                    )}
+                    {uploadingImage && (
+                      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 40, justifyContent: 'center', alignItems: 'center' }]}>
+                        <ActivityIndicator color="#fff" />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.editIconBadge}>
+                    <Ionicons name="camera" size={16} color="#ffffff" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.avatarLabel}>Ketuk untuk mengubah foto profil</Text>
             </View>
 
             <View style={styles.inputGroup}>
@@ -170,6 +256,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 12,
+  },
   avatar: {
     width: 80,
     height: 80,
@@ -177,7 +267,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#cbd5e1',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+  },
+  editIconBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#1b61d1',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   avatarLabel: {
     fontSize: 12,

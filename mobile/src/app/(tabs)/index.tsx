@@ -218,34 +218,26 @@ export default function Home() {
   } = useMemo(() => {
     const mapped = rawArticles.map(mapArticle);
     
-    let terkini = mapped.filter(a => !!a.videoUrl).slice(0, 5);
-    if (terkini.length < 5) {
-      const remainingCount = 5 - terkini.length;
-      const nonVideoArticles = mapped.filter(a => !a.videoUrl).slice(0, remainingCount);
-      terkini = [...terkini, ...nonVideoArticles];
-    }
-    
-    const usedIds = new Set(terkini.map(a => a.id));
-    const available = mapped.filter(a => !usedIds.has(a.id));
-    
-    const featured = available[0];
-    const related = available.slice(1, 3);
-    const list = available.slice(3, 8);
-    
+    // Berita Pilihan (Editor's Choice)
     const headlines = rawArticles.filter(a => a.isHeadline).map(mapArticle);
     const pilihan = headlines.length >= 5 
       ? headlines.slice(0, 5) 
-      : mapped.slice(13, 18);
-    
-    const latest = available.slice(8, 28); // Kurangi beban render list bawah
+      : mapped.slice(15, 20); // Fallback
+
+    // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish)
+    const terkini = mapped.slice(0, 5);
+    const featured = mapped[5];
+    const related = mapped.slice(6, 8);
+    const list = mapped.slice(8, 13);
+    const latest = mapped.slice(13, 28);
     
     return {
-      BERITA_TERKINI: terkini,
-      FEATURED_ARTICLE: featured,
-      RELATED_ARTICLES: related,
-      BERITA_LIST: list,
-      BERITA_PILIHAN: pilihan,
-      LATEST_NEWS: latest
+      BERITA_TERKINI: terkini || [],
+      FEATURED_ARTICLE: featured || null,
+      RELATED_ARTICLES: related || [],
+      BERITA_LIST: list || [],
+      BERITA_PILIHAN: pilihan || [],
+      LATEST_NEWS: latest || []
     };
   }, [rawArticles]);
 
@@ -444,6 +436,9 @@ export default function Home() {
         )}
 
         {/* --- DAFTAR BERITA STANDAR (List) --- */}
+        <View style={styles.bottomSectionHeader}>
+          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Terbaru</Text>
+        </View>
         <View style={styles.listContainer}>
           {BERITA_LIST.map((item, index) => (
             <View key={item.id}>
@@ -498,6 +493,9 @@ export default function Home() {
         </ScrollView>
         
         {/* SECTION BERITA TERBARU (MIXED LAYOUT) */}
+        <View style={styles.bottomSectionHeader}>
+          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Lebih Banyak Berita</Text>
+        </View>
         <View style={styles.mixedListContainer}>
           {LATEST_NEWS.map((item, index) => {
             if (index === 0) {

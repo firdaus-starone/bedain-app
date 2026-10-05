@@ -464,3 +464,76 @@ exports.syncCommentCounts = onRequest({ cors: true }, async (req, res) => {
     res.status(500).send("Error: " + error.message);
   }
 });
+
+// --- YOUTUBE AUTO-SYNC FUNCTION ---
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyDUG8LrO9U2zK8p5yWyOJ4zV40jkKImxXQ";
+const YOUTUBE_CHANNEL_ID = "UCK5yxkj0FAhvztdX5v9SHvw"; // Ganti dengan Channel ID BEDAINNEWS
+
+// Fungsi asisten yang melakukan sync
+async function doYouTubeSync() {
+  if (YOUTUBE_API_KEY === "YOUR_YOUTUBE_API_KEY" || YOUTUBE_CHANNEL_ID === "YOUR_CHANNEL_ID") {
+    console.log("YouTube API Key atau Channel ID belum diatur. Melewati sinkronisasi.");
+    return { success: false, message: "Kunci belum diatur" };
+  }
+
+  const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${YOUTUBE_CHANNEL_ID}&part=snippet,id&order=date&maxResults=10&type=video`;
+  const response = await axios.get(url);
+  const items = response.data.items || [];
+
+  if (items.length === 0) {
+    return { success: false, message: "Tidak ada video ditemukan" };
+  }
+
+  const batch = admin.firestore().batch();
+  const articlesRef = admin.firestore().collection("articles");
+
+  for (const item of items) {
+    const videoId = item.id.videoId;
+    if (!videoId) continue;
+    
+    const snippet = item.snippet;
+    const docRef = articlesRef.doc(`yt_${videoId}`);
+    
+    const videoData = {
+      title: snippet.title,
+      slug: `yt-${videoId}`,
+      content: snippet.description || "Video dari Bedain News",
+      excerpt: (snippet.description || "").substring(0, 160),
+      videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+      youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
+      coverImage: snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url || "",
+      publishedAt: admin.firestore.Timestamp.fromDate(new Date(snippet.publishedAt)),
+      author: 'Bedain News',
+      category: 'Video',
+      status: 'published',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      type: 'youtube'
+    };
+    
+    batch.set(docRef, videoData, { merge: true });
+  }
+
+  await batch.commit();
+  return { success: true, message: `Berhasil mensinkronisasi ${items.length} video` };
+}
+
+// Jadwal rutin 3 jam sekali
+exports.syncYouTubeVideos = onSchedule("0 */3 * * *", async (event) => {
+  try {
+    await doYouTubeSync();
+  } catch (error) {
+    console.error("Gagal mensinkronisasi video YouTube:", error.message);
+  }
+});
+
+// Endpoint HTTP untuk trigger paksa (Force Run manual)
+exports.forceSyncYouTube = onRequest({ cors: true }, async (req, res) => {
+  try {
+    const result = await doYouTubeSync();
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Gagal force sync:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+

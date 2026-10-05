@@ -11,6 +11,7 @@ import {
   Clock, ExternalLink, Newspaper, ArrowRight, BarChart2, MousePointerClick
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Users } from 'lucide-react';
 
 const TimeZoneCards = () => {
   const [time, setTime] = useState(new Date());
@@ -140,7 +141,8 @@ const AdminDashboard = () => {
     scheduled: 0,
     drafts: 0,
     headlines: 0,
-    totalViews: 0
+    totalViews: 0,
+    usersCount: 0
   });
   const [importing, setImporting] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -247,13 +249,22 @@ const AdminDashboard = () => {
       const headCount = data.filter(a => a.isHeadline).length;
       const viewsSum = data.reduce((sum, a) => sum + (a.views || 0), 0);
       
+      let totalUsers = 0;
+      try {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        totalUsers = usersSnap.docs.length;
+      } catch (e) {
+        console.error("Gagal menarik data pengguna:", e);
+      }
+      
       setStats({
         total: data.length,
         published: pubCount,
         scheduled: scheduledCount,
         drafts: draftCount,
         headlines: headCount,
-        totalViews: viewsSum
+        totalViews: viewsSum,
+        usersCount: totalUsers
       });
 
       const sortedByViews = [...data].sort((a, b) => (b.views || 0) - (a.views || 0));
@@ -434,6 +445,21 @@ const AdminDashboard = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#4ade80', fontWeight: 600 }}>
               <TrendingUp size={13} /> <span>Akumulasi views</span>
+            </div>
+          </div>
+
+          <div className="admin-stat-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div>
+                <span style={{ fontSize: '11px', color: '#0ea5e9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Akun</span>
+                <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--admin-text-primary)', marginTop: '4px' }}>{stats.usersCount}</div>
+              </div>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(14, 165, 233, 0.15)', border: '1px solid rgba(14, 165, 233, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0ea5e9' }}>
+                <Users size={20} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--admin-text-secondary)', fontWeight: 500 }}>
+              <span>Wartawan & Pembaca</span>
             </div>
           </div>
         </div>

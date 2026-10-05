@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Alert, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Alert, ActivityIndicator, StatusBar, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -13,8 +13,40 @@ export default function ProfileModal() {
   const router = useRouter();
   const { isDarkMode, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const [currentUserData, setCurrentUserData] = useState({
+    displayName: user?.displayName || 'Pengguna',
+    email: user?.email || 'Belum login',
+    photoURL: user?.photoURL || null
+  });
   const [pages, setPages] = useState<{ id: string, title: string, slug: string }[]>([]);
   const [loadingPages, setLoadingPages] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reload current user data from auth.currentUser to catch changes made in my-profile
+      if (auth.currentUser) {
+        auth.currentUser.reload().then(() => {
+          setCurrentUserData({
+            displayName: auth.currentUser?.displayName || 'Pengguna',
+            email: auth.currentUser?.email || 'Belum login',
+            photoURL: auth.currentUser?.photoURL || null
+          });
+        }).catch(() => {
+          setCurrentUserData({
+            displayName: auth.currentUser?.displayName || 'Pengguna',
+            email: auth.currentUser?.email || 'Belum login',
+            photoURL: auth.currentUser?.photoURL || null
+          });
+        });
+      } else {
+        setCurrentUserData({
+          displayName: 'Pembaca Setia',
+          email: 'Belum login',
+          photoURL: null
+        });
+      }
+    }, [user])
+  );
 
   useEffect(() => {
     const fetchPages = async () => {
@@ -102,11 +134,15 @@ export default function ProfileModal() {
         {/* User Info Card */}
         <View style={[styles.userCard, dyn.userCard]}>
           <View style={styles.userAvatar}>
-            <Ionicons name="person" size={32} color="#ffffff" />
+            {currentUserData.photoURL ? (
+              <Image source={{ uri: currentUserData.photoURL }} style={{ width: 56, height: 56, borderRadius: 28 }} />
+            ) : (
+              <Ionicons name="person" size={32} color="#ffffff" />
+            )}
           </View>
           <View style={styles.userInfo}>
-            <Text style={[styles.userName, dyn.userName]}>{user ? user.displayName || 'Pengguna' : 'Pembaca Setia'}</Text>
-            <Text style={[styles.userEmail, dyn.userEmail]}>{user ? user.email : 'Belum login'}</Text>
+            <Text style={[styles.userName, dyn.userName]}>{currentUserData.displayName}</Text>
+            <Text style={[styles.userEmail, dyn.userEmail]}>{currentUserData.email}</Text>
           </View>
           {user ? (
             <TouchableOpacity style={[styles.loginBtn, { backgroundColor: '#ef4444' }]} onPress={handleLogout}>

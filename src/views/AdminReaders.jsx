@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { collection, query, getDocs, doc, deleteDoc, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
-import { ShieldAlert, Trash2, Search } from 'lucide-react';
+import { ShieldAlert, Trash2, Search, User } from 'lucide-react';
 
 const AdminReaders = () => {
   const { userRole, loading: authLoading } = useAuth();
@@ -120,10 +120,21 @@ const AdminReaders = () => {
                   {filteredUsers.length > 0 ? filteredUsers.map(user => (
                     <tr key={user.id}>
                       <td className="admin-table-title">
-                        <div style={{ fontWeight: 600, color: 'var(--admin-text-primary)', marginBottom: '3px' }}>
-                          {user.name || (user.email ? user.email.split('@')[0] : 'Unknown')}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--admin-border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {user.photoURL ? (
+                              <img src={user.photoURL} alt={user.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <User size={20} color="var(--admin-text-secondary)" />
+                            )}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--admin-text-primary)', marginBottom: '3px' }}>
+                              {user.name || (user.email ? user.email.split('@')[0] : 'Unknown')}
+                            </div>
+                            <div style={{ fontSize: '12.5px', color: 'var(--admin-text-secondary)' }}>{user.email || 'No Email'}</div>
+                          </div>
                         </div>
-                        <div style={{ fontSize: '12.5px', color: 'var(--admin-text-secondary)' }}>{user.email || 'No Email'}</div>
                       </td>
                       <td>
                         <span style={{ color: 'var(--admin-text-secondary)', fontSize: '13px' }}>

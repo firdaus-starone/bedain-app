@@ -21,7 +21,12 @@
       ".git",
       "firebase-debug.log",
       "firebase-debug.*.log",
-      "functions"
+      "functions",
+      "mobile",
+      ".next",
+      ".firebase",
+      "zikIB8ko",
+      "*.aab"
     ]
   },
   "storage": {

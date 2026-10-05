@@ -176,19 +176,21 @@ const HeadlineGrid = ({ articles, loading }) => {
                     {badgeText}
                   </div>
 
-                  {/* Bottom White Title Box with Left Red Accent Bar */}
-                  <div className="story-title-box">
-                    <h3 className="story-title-text" title={displayTitle}>
-                      {displayTitle?.length > 45 ? displayTitle.substring(0, 45) + '...' : displayTitle}
-                    </h3>
-                  </div>
+                  <div style={{ position: 'absolute', bottom: '6px', left: 0, right: '6px', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {/* Bottom White Title Box with Left Red Accent Bar */}
+                    <div className="story-title-box" style={{ position: 'relative', bottom: 'auto', left: 'auto', right: 'auto' }}>
+                      <h3 className="story-title-text" title={displayTitle}>
+                        {displayTitle?.length > 45 ? displayTitle.substring(0, 45) + '...' : displayTitle}
+                      </h3>
+                    </div>
 
-                  {/* Date below title box */}
-                  <div className="story-date-text" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <span>📅 {dateText}</span>
-                    <span>•</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><ThumbsUp size={12}/> {item.reactions?.like || 0}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><MessageSquare size={12}/> {item.commentCount || 0}</span>
+                    {/* Date below title box */}
+                    <div className="story-date-text" style={{ position: 'relative', bottom: 'auto', left: '6px', right: 'auto', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span>📅 {dateText}</span>
+                      <span>•</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><ThumbsUp size={12}/> {item.reactions?.like || 0}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><MessageSquare size={12}/> {item.commentCount || 0}</span>
+                    </div>
                   </div>
                 </article>
               </Link>
