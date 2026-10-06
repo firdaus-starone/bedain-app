@@ -11,7 +11,7 @@ import {
   Cpu, TrendingUp, Sparkles, Film, Heart, Landmark, 
   Trophy, Car, Globe, Flame, Shield, Briefcase, 
   Utensils, Plane, Music, Newspaper, Info, FileText, Bell, PenTool, Send, Home, Clock, Zap, Bookmark, Trash2, X, Check,
-  Radio, PieChart, Target, Leaf, Award, Smartphone, Star, Lightbulb, Compass, MonitorPlay, Anchor, Activity, User
+  Radio, PieChart, Target, Leaf, Award, Smartphone, Star, Lightbulb, Compass, MonitorPlay, Anchor, Activity, User, Youtube
 } from 'lucide-react';
 import { getToken } from 'firebase/messaging';
 import { messaging } from '../lib/firebase';
@@ -427,6 +427,16 @@ const Navbar = () => {
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
+            </button>
+
+            {/* YouTube Video Link */}
+            <button
+              className="theme-toggle"
+              aria-label="Video YouTube"
+              onClick={() => router.push('/video')}
+              title="Tonton Video"
+            >
+              <Youtube size={20} color="#ff0000" />
             </button>
 
             {/* User Dropdown Menu */}
