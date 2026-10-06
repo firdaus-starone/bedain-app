@@ -19,6 +19,8 @@ export default function YouTubeWatchClient() {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [userReaction, setUserReaction] = useState(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -35,6 +37,12 @@ export default function YouTubeWatchClient() {
         
         const storedReact = localStorage.getItem(`reaction_${vData.id}`);
         if (storedReact) setUserReaction(storedReact);
+        
+        const storedBookmarks = JSON.parse(localStorage.getItem('bedain_bookmarks') || '[]');
+        setIsBookmarked(storedBookmarks.some(b => b.id === vData.id));
+        
+        const storedSub = localStorage.getItem('bedain_subscribed');
+        if (storedSub) setIsSubscribed(true);
         
         // Fetch related and comments only once on initial load
         if (relatedVideos.length === 0) {
@@ -59,8 +67,9 @@ export default function YouTubeWatchClient() {
             setRelatedVideos(related);
             
             const qComments = query(collection(db, 'comments'), where('articleId', '==', vData.id), orderBy('createdAt', 'desc'));
-            const commentsSnap = await getDocs(qComments);
-            setComments(commentsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+            onSnapshot(qComments, (commentsSnap) => {
+              setComments(commentsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+            });
           } catch (err) {
             console.error("Error fetching extra data:", err);
           } finally {
@@ -124,11 +133,64 @@ export default function YouTubeWatchClient() {
     
     setComments([{...commentData, id: 'temp', createdAt: new Date()} , ...comments]);
     setNewComment("");
-    
     await addDoc(collection(db, 'comments'), commentData);
     await updateDoc(doc(db, 'articles', video.id), {
       commentCount: increment(1)
     });
+  };
+
+  const toggleBookmark = () => {
+    if (!video) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('bedain_bookmarks') || '[]');
+      const existsIndex = stored.findIndex(b => b.id === video.id);
+      let updated;
+      
+      if (existsIndex >= 0) {
+        updated = stored.filter(b => b.id !== video.id);
+        setIsBookmarked(false);
+      } else {
+        const bookmarkData = {
+          id: video.id,
+          title: video.title,
+          slug: video.slug,
+          image: getArticleCardImage(video),
+          publishedAt: video.publishedAt?.toDate ? video.publishedAt.toDate().toISOString() : new Date().toISOString(),
+          category: video.category || 'Video'
+        };
+        updated = [bookmarkData, ...stored];
+        setIsBookmarked(true);
+      }
+      
+      localStorage.setItem('bedain_bookmarks', JSON.stringify(updated));
+      window.dispatchEvent(new Event('bookmarksUpdated'));
+    } catch (e) {
+      console.error('Error toggling bookmark:', e);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: video?.title || 'Bedain News Video',
+          url: url
+        });
+      } catch (err) {
+        console.error('Share failed:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Tautan disalin ke clipboard!');
+    }
+  };
+
+  const toggleSubscribe = () => {
+    const newVal = !isSubscribed;
+    setIsSubscribed(newVal);
+    if (newVal) localStorage.setItem('bedain_subscribed', 'true');
+    else localStorage.removeItem('bedain_subscribed');
   };
 
   if (loading) {
@@ -200,7 +262,16 @@ export default function YouTubeWatchClient() {
                   <h3 className="yt-channel-name">{video.authorName || video.author?.name || 'Bedain News'}</h3>
                   <p className="yt-channel-sub">{Math.floor(Math.random() * 100) + 10} rb subscriber</p>
                 </div>
-                <button className="yt-subscribe-btn">Subscribe</button>
+                <button 
+                  className="yt-subscribe-btn" 
+                  onClick={toggleSubscribe}
+                  style={{ 
+                    backgroundColor: isSubscribed ? '#3ea6ff' : '#f1f1f1', 
+                    color: isSubscribed ? '#000' : '#0f0f0f' 
+                  }}
+                >
+                  {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                </button>
               </div>
 
               <div className="yt-action-buttons">
@@ -215,11 +286,15 @@ export default function YouTubeWatchClient() {
                   </button>
                 </div>
                 
-                <button className="yt-action-btn yt-btn-rounded">
+                <button className="yt-action-btn yt-btn-rounded" onClick={handleShare}>
                   <Share2 size={20} /> Share
                 </button>
-                <button className="yt-action-btn yt-btn-rounded hide-mobile">
-                  <Bookmark size={20} /> Save
+                <button 
+                  className="yt-action-btn yt-btn-rounded hide-mobile" 
+                  onClick={toggleBookmark}
+                  style={{ color: isBookmarked ? '#3ea6ff' : '#f1f1f1' }}
+                >
+                  <Bookmark size={20} fill={isBookmarked ? 'currentColor' : 'none'} /> {isBookmarked ? 'Saved' : 'Save'}
                 </button>
                 <button className="yt-action-btn yt-btn-circle">
                   <MoreHorizontal size={20} />
