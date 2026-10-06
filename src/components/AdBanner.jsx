@@ -84,7 +84,7 @@ const AdBanner = ({ slot = 'article' }) => {
               <div
                 style={{
                   width: '100%',
-                  height: '140px',
+                  height: '190px',
                   backgroundImage: `url(${banner.imageUrl})`,
                   backgroundAttachment: 'fixed',
                   backgroundSize: 'cover',
