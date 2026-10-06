@@ -88,11 +88,20 @@ const StickySideAds = () => {
     
     const updatePosition = () => {
       const secondaryMenu = document.querySelector('.secondary-menu-wrapper');
+      const breakingNews = document.querySelector('.navbar-breaking-news');
+      
       let newTop = 280; // fallback
+      let maxBottom = 0;
       
       if (secondaryMenu) {
-        const rect = secondaryMenu.getBoundingClientRect();
-        newTop = Math.max(0, rect.bottom) + 45; // 45px extra spacing agar tombol close (-32px) tidak tertutup menu biru
+        maxBottom = Math.max(maxBottom, secondaryMenu.getBoundingClientRect().bottom);
+      }
+      if (breakingNews) {
+        maxBottom = Math.max(maxBottom, breakingNews.getBoundingClientRect().bottom);
+      }
+      
+      if (maxBottom > 0) {
+        newTop = maxBottom + 45; // 45px extra spacing agar tombol close (-32px) tidak tertutup menu
       }
       
       const ads = document.querySelectorAll('.sticky-ad');
