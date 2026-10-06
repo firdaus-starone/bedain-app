@@ -22,6 +22,11 @@ export default function YouTubeWatchClient() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
+  // Stabilize random subscriber count using useMemo to avoid hydration and re-render issues
+  const randomSubscribers = React.useMemo(() => {
+    return Math.floor(Math.random() * 100) + 10;
+  }, []);
+
   const hasFetchedExtra = useRef(false);
 
   useEffect(() => {
@@ -229,11 +234,6 @@ export default function YouTubeWatchClient() {
 
   const videoData = getArticleVideoData(video);
   const publishDate = video.publishedAt?.toDate ? video.publishedAt.toDate() : new Date(video.publishedAt || Date.now());
-
-  // Stabilize random subscriber count using useMemo to avoid hydration and re-render issues
-  const randomSubscribers = React.useMemo(() => {
-    return Math.floor(Math.random() * 100) + 10;
-  }, []);
 
   return (
     <div className="yt-layout-container app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
