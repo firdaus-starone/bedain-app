@@ -615,6 +615,9 @@ export default function YouTubeWatchClient() {
           padding: 12px;
           margin-top: 16px;
           transition: background-color 0.2s;
+          overflow: hidden;
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
         .yt-description-box:hover {
           background-color: rgba(255,255,255,0.2);
@@ -629,6 +632,11 @@ export default function YouTubeWatchClient() {
           font-size: 14px;
           line-height: 1.5;
           color: #f1f1f1;
+        }
+        .yt-desc-text * {
+          word-break: break-word !important;
+          white-space: normal !important;
+          max-width: 100% !important;
         }
         .yt-desc-text img {
           max-width: 100%;
