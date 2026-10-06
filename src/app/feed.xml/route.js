@@ -36,8 +36,13 @@ export async function GET() {
         const imageUrl = fields.imageUrl?.stringValue || '';
         const category = fields.category?.stringValue || 'Berita';
         
-        // Status filter (since we didn't filter in REST API to avoid composite index issues)
-        if (fields.status?.stringValue === 'draft') return;
+        // Status filter
+        const status = fields.status?.stringValue;
+        if (status === 'draft') return;
+        if (status === 'scheduled') {
+          const pubTime = new Date(publishedAt).getTime();
+          if (pubTime > new Date().getTime()) return;
+        }
 
         rssItems += `
     <item>

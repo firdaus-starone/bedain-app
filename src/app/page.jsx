@@ -9,7 +9,7 @@ async function getInitialArticles() {
         structuredQuery: {
           from: [{ collectionId: 'articles' }],
           orderBy: [{ field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }],
-          limit: 20
+          limit: 30
         }
       }),
       // Cache for 60 seconds. App Hosting will serve this static HTML for fast LCP
@@ -20,7 +20,7 @@ async function getInitialArticles() {
     const data = await res.json();
     
     if (data && data.length > 0) {
-      return data
+      const mappedArticles = data
         .filter(item => item.document) // runQuery returns empty objects if no match
         .map(item => {
           const doc = item.document;
@@ -38,7 +38,6 @@ async function getInitialArticles() {
             else if (val.doubleValue !== undefined) mapped[key] = parseFloat(val.doubleValue);
             else if (val.booleanValue !== undefined) mapped[key] = val.booleanValue;
             else if (val.timestampValue !== undefined) {
-              // useArticles expects a string date or something it can parse
               mapped[key] = val.timestampValue;
             } else if (val.arrayValue !== undefined) {
               mapped[key] = val.arrayValue.values ? val.arrayValue.values.map(v => v.stringValue || v.integerValue) : [];
@@ -46,6 +45,16 @@ async function getInitialArticles() {
           }
           return mapped;
         });
+
+      const now = new Date().getTime();
+      return mappedArticles.filter(article => {
+        if (article.status === 'draft') return false;
+        if (article.status === 'scheduled') {
+          const pubTime = new Date(article.publishedAt || article.scheduledAt).getTime();
+          if (pubTime > now) return false;
+        }
+        return true;
+      }).slice(0, 16);
     }
   } catch (error) {
     console.error('Error fetching initial articles:', error);

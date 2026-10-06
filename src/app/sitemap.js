@@ -10,7 +10,7 @@ export default async function sitemap() {
         structuredQuery: {
           from: [{ collectionId: 'articles' }],
           select: {
-            fields: [{ fieldPath: 'slug' }, { fieldPath: 'publishedAt' }, { fieldPath: 'createdAt' }]
+            fields: [{ fieldPath: 'slug' }, { fieldPath: 'publishedAt' }, { fieldPath: 'createdAt' }, { fieldPath: 'status' }]
           },
           // You can add a where clause if you only want published articles
           // where: {
@@ -27,6 +27,9 @@ export default async function sitemap() {
         .filter(item => item.document && item.document.fields && item.document.fields.slug)
         .map(item => {
           const fields = item.document.fields;
+          const status = fields.status?.stringValue;
+          if (status === 'draft') return null;
+          
           const slug = fields.slug.stringValue;
           // Fallback to current time if no date field is found
           let date = new Date().toISOString();
@@ -35,8 +38,15 @@ export default async function sitemap() {
           } else if (fields.createdAt && fields.createdAt.timestampValue) {
             date = fields.createdAt.timestampValue;
           }
+          
+          if (status === 'scheduled') {
+            const pubTime = new Date(date).getTime();
+            if (pubTime > new Date().getTime()) return null;
+          }
+
           return { slug, date };
-        });
+        })
+        .filter(Boolean);
     }
   } catch (err) {
     console.error("Error generating sitemap", err);
