@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, getDocs, limit, updateDoc, doc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { getArticleVideoData, getArticleCardImage } from '../lib/videoHelpers';
-import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, UserCircle, MessageCircle } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, UserCircle } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -21,7 +21,6 @@ export default function YouTubeWatchClient() {
   useEffect(() => {
     const fetchVideoData = async () => {
       try {
-        // Fetch current video
         const q = query(collection(db, 'articles'), where('slug', '==', slug), limit(1));
         const snap = await getDocs(q);
         
@@ -29,7 +28,6 @@ export default function YouTubeWatchClient() {
           const docData = snap.docs[0];
           const vData = { id: docData.id, ...docData.data() };
           
-          // Increment views
           if (vData.status === 'published') {
             await updateDoc(doc(db, 'articles', vData.id), {
               views: increment(1)
@@ -39,11 +37,9 @@ export default function YouTubeWatchClient() {
           
           setVideo(vData);
           
-          // Load reaction from local storage
           const storedReact = localStorage.getItem(`reaction_${vData.id}`);
           if (storedReact) setUserReaction(storedReact);
 
-          // Fetch related videos
           const qRelated = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(15));
           const relatedSnap = await getDocs(qRelated);
           const related = relatedSnap.docs
@@ -53,12 +49,9 @@ export default function YouTubeWatchClient() {
             
           setRelatedVideos(related);
           
-          // Fetch Comments
           const qComments = query(collection(db, 'comments'), where('articleId', '==', vData.id), orderBy('createdAt', 'desc'));
           const commentsSnap = await getDocs(qComments);
           setComments(commentsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        } else {
-          // Video not found by slug, fallback?
         }
       } catch (err) {
         console.error("Error fetching watch data:", err);
@@ -75,7 +68,6 @@ export default function YouTubeWatchClient() {
     const isLiked = userReaction === 'like';
     const newReact = isLiked ? null : 'like';
     
-    // Optimistic
     setVideo(prev => ({
       ...prev,
       reactions: {
@@ -119,17 +111,18 @@ export default function YouTubeWatchClient() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-[#0f0f0f]">
-        <div className="w-10 h-10 border-4 border-gray-300 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin"></div>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f0f0f' }}>
+        <div style={{ width: '40px', height: '40px', border: '4px solid #333', borderTopColor: '#3ea6ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   if (!video) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-gray-50 dark:bg-[#0f0f0f] text-gray-900 dark:text-white">
-        <h1 className="text-2xl font-bold mb-4">Video Tidak Ditemukan</h1>
-        <button onClick={() => router.push('/')} className="px-6 py-2 bg-blue-600 text-white rounded-full font-medium">Kembali ke Beranda</button>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f0f0f', color: '#fff' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Video Tidak Ditemukan</h1>
+        <button onClick={() => router.push('/')} style={{ padding: '10px 24px', backgroundColor: '#3ea6ff', color: '#0f0f0f', borderRadius: '24px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>Kembali ke Beranda</button>
       </div>
     );
   }
@@ -138,149 +131,127 @@ export default function YouTubeWatchClient() {
   const publishDate = video.publishedAt?.toDate ? video.publishedAt.toDate() : new Date(video.publishedAt || Date.now());
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] text-gray-900 dark:text-white">
-      {/* Top Navbar Placeholder - Next.js layout usually handles this, but for standalone full page feeling we keep it clean */}
-      
-      <div className="max-w-[1600px] mx-auto px-0 lg:px-6 pt-4 lg:pt-6 pb-20 flex flex-col lg:flex-row gap-6">
+    <div className="yt-layout-container">
+      <div className="yt-grid">
         
-        {/* LEFT COLUMN (Player & Info) */}
-        <div className="flex-1 w-full lg:max-w-[1000px] xl:max-w-[1200px]">
+        {/* LEFT COLUMN: Player & Info */}
+        <div className="yt-main-column">
           
-          {/* PLAYER */}
-          <div className="w-full bg-black aspect-video relative rounded-none lg:rounded-xl overflow-hidden shadow-sm">
+          <div className="yt-player-wrapper">
             {videoData && videoData.type === 'youtube' && (
               <iframe
                 src={`https://www.youtube.com/embed/${videoData.id}?autoplay=1&controls=1&rel=0&modestbranding=1`}
-                className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                className="yt-iframe"
               ></iframe>
             )}
             {videoData && videoData.type === 'tiktok' && (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-white relative">
-                 <img src={getArticleCardImage(video)} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm" />
-                 <a href={videoData.url} target="_blank" className="z-10 px-6 py-3 bg-[#fe2c55] rounded-lg font-bold flex items-center gap-2 hover:scale-105 transition">
-                   Buka di TikTok App
-                 </a>
+              <div className="yt-tiktok-fallback">
+                 <img src={getArticleCardImage(video)} className="yt-fallback-bg" />
+                 <a href={videoData.url} target="_blank" className="yt-tiktok-btn">Buka di TikTok App</a>
               </div>
             )}
             {videoData && videoData.type === 'facebook' && (
-              <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                 <iframe src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(videoData.url)}&show_text=false&width=auto`} className="w-full h-full border-0" scrolling="no" allowFullScreen={true} allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
-              </div>
-            )}
-            {!videoData && (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                Format video tidak didukung
+              <div className="yt-fb-fallback">
+                 <iframe src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(videoData.url)}&show_text=false&width=auto`} scrolling="no" allowFullScreen={true} allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" className="yt-iframe"></iframe>
               </div>
             )}
           </div>
 
-          {/* VIDEO INFO */}
-          <div className="px-4 lg:px-0 py-4">
-            <h1 className="text-xl lg:text-2xl font-bold leading-tight mb-2 break-words text-gray-900 dark:text-[#f1f1f1]">
-              {video.title}
-            </h1>
+          <div className="yt-video-info">
+            <h1 className="yt-video-title">{video.title}</h1>
             
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-3">
-              {/* Channel Info */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg overflow-hidden shrink-0">
+            <div className="yt-action-row">
+              <div className="yt-channel-info">
+                <div className="yt-channel-avatar">
                   {video.author?.name ? video.author.name.charAt(0).toUpperCase() : 'B'}
                 </div>
-                <div>
-                  <h3 className="font-bold text-[16px] text-gray-900 dark:text-[#f1f1f1] leading-tight">
-                    {video.authorName || video.author?.name || 'Bedain News'}
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-[#aaaaaa]">
-                    {Math.floor(Math.random() * 100) + 10} rb subscriber
-                  </p>
+                <div className="yt-channel-text">
+                  <h3 className="yt-channel-name">{video.authorName || video.author?.name || 'Bedain News'}</h3>
+                  <p className="yt-channel-sub">{Math.floor(Math.random() * 100) + 10} rb subscriber</p>
                 </div>
-                <button className="ml-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-full font-semibold text-sm hover:opacity-90 transition">
-                  Subscribe
-                </button>
+                <button className="yt-subscribe-btn">Subscribe</button>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-                <div className="flex items-center bg-gray-100 dark:bg-[#272727] rounded-full">
-                  <button onClick={handleLike} className="flex items-center gap-2 px-4 py-2 rounded-l-full hover:bg-gray-200 dark:hover:bg-[#3f3f3f] transition border-r border-gray-300 dark:border-[#3f3f3f]">
-                    <ThumbsUp size={20} fill={userReaction === 'like' ? 'currentColor' : 'none'} className={userReaction === 'like' ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-[#f1f1f1]'} />
-                    <span className="text-sm font-medium text-gray-900 dark:text-[#f1f1f1]">{video.reactions?.like || 0}</span>
+              <div className="yt-action-buttons">
+                <div className="yt-btn-group">
+                  <button onClick={handleLike} className="yt-action-btn yt-btn-left" style={{ color: userReaction === 'like' ? '#fff' : '#f1f1f1' }}>
+                    <ThumbsUp size={20} fill={userReaction === 'like' ? 'currentColor' : 'none'} />
+                    <span>{video.reactions?.like || 0}</span>
                   </button>
-                  <button className="px-4 py-2 rounded-r-full hover:bg-gray-200 dark:hover:bg-[#3f3f3f] transition">
-                    <ThumbsDown size={20} className="text-gray-700 dark:text-[#f1f1f1]" />
+                  <div className="yt-btn-divider"></div>
+                  <button className="yt-action-btn yt-btn-right">
+                    <ThumbsDown size={20} />
                   </button>
                 </div>
                 
-                <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-[#272727] hover:bg-gray-200 dark:hover:bg-[#3f3f3f] transition rounded-full text-gray-900 dark:text-[#f1f1f1] font-medium text-sm">
+                <button className="yt-action-btn yt-btn-rounded">
                   <Share2 size={20} /> Share
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-[#272727] hover:bg-gray-200 dark:hover:bg-[#3f3f3f] transition rounded-full text-gray-900 dark:text-[#f1f1f1] font-medium text-sm">
+                <button className="yt-action-btn yt-btn-rounded hide-mobile">
                   <Bookmark size={20} /> Save
                 </button>
-                <button className="p-2 bg-gray-100 dark:bg-[#272727] hover:bg-gray-200 dark:hover:bg-[#3f3f3f] transition rounded-full text-gray-900 dark:text-[#f1f1f1]">
+                <button className="yt-action-btn yt-btn-circle">
                   <MoreHorizontal size={20} />
                 </button>
               </div>
             </div>
 
-            {/* Description Box */}
-            <div className="mt-4 p-3 bg-gray-100 dark:bg-[#272727] rounded-xl hover:bg-gray-200 dark:hover:bg-[#3f3f3f] transition cursor-pointer">
-              <p className="text-sm font-semibold text-gray-900 dark:text-[#f1f1f1] mb-1">
+            <div className="yt-description-box">
+              <p className="yt-view-date">
                 {video.views || 0} x ditonton &nbsp;•&nbsp; {publishDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
               <div 
-                className="text-sm text-gray-800 dark:text-[#f1f1f1] line-clamp-3"
+                className="yt-desc-text"
                 dangerouslySetInnerHTML={{ __html: video.content || video.excerpt || 'Tidak ada deskripsi' }}
               />
             </div>
             
-            {/* Comments Section */}
-            <div className="mt-6 hidden lg:block">
-              <h2 className="text-xl font-bold mb-4">{comments.length} Komentar</h2>
+            <div className="yt-comments-section">
+              <h2 className="yt-comments-count">{comments.length} Komentar</h2>
               
-              <div className="flex gap-4 mb-6">
+              <div className="yt-comment-input-row">
                 {auth?.currentUser?.photoURL ? (
-                  <img src={auth.currentUser.photoURL} className="w-10 h-10 rounded-full" />
+                  <img src={auth.currentUser.photoURL} className="yt-comment-avatar" />
                 ) : (
-                  <UserCircle size={40} className="text-gray-400" />
+                  <UserCircle size={40} color="#aaa" className="yt-comment-avatar-icon" />
                 )}
-                <form onSubmit={submitComment} className="flex-1">
+                <form onSubmit={submitComment} className="yt-comment-form">
                   <input 
                     type="text" 
                     placeholder="Tambahkan komentar..." 
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white pb-1 focus:outline-none focus:border-gray-900 dark:focus:border-white transition placeholder-gray-500"
+                    className="yt-comment-input"
                   />
                   {newComment.trim() && (
-                    <div className="flex justify-end mt-2 gap-2">
-                      <button type="button" onClick={() => setNewComment("")} className="px-4 py-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#272727] rounded-full">Batal</button>
-                      <button type="submit" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full">Komentar</button>
+                    <div className="yt-comment-actions">
+                      <button type="button" onClick={() => setNewComment("")} className="yt-comment-cancel">Batal</button>
+                      <button type="submit" className="yt-comment-submit">Komentar</button>
                     </div>
                   )}
                 </form>
               </div>
               
-              <div className="flex flex-col gap-5">
+              <div className="yt-comments-list">
                 {comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-4">
+                  <div key={comment.id} className="yt-comment-item">
                     {comment.userAvatar ? (
-                      <img src={comment.userAvatar} className="w-10 h-10 rounded-full bg-gray-300 shrink-0" />
+                      <img src={comment.userAvatar} className="yt-comment-avatar" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold shrink-0">
+                      <div className="yt-comment-avatar-placeholder">
                         {(comment.userName || 'U').charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <div>
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-semibold text-sm">{comment.userName}</span>
-                        <span className="text-xs text-gray-500">
+                    <div className="yt-comment-body">
+                      <div className="yt-comment-header">
+                        <span className="yt-comment-author">{comment.userName}</span>
+                        <span className="yt-comment-time">
                           {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleDateString('id-ID') : 'Baru saja'}
                         </span>
                       </div>
-                      <p className="text-sm">{comment.text}</p>
+                      <p className="yt-comment-text">{comment.text}</p>
                     </div>
                   </div>
                 ))}
@@ -290,28 +261,22 @@ export default function YouTubeWatchClient() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (Related Videos) */}
-        <div className="flex-1 w-full lg:max-w-[400px] px-4 lg:px-0">
-          <div className="flex flex-col gap-3">
+        {/* RIGHT COLUMN: Related Videos */}
+        <div className="yt-side-column">
+          <div className="yt-related-list">
             {relatedVideos.map((relVid) => (
-              <Link href={`/watch/${relVid.slug || relVid.id}`} key={relVid.id} className="flex flex-row gap-2 group">
-                {/* Thumbnail */}
-                <div className="relative w-[160px] md:w-[168px] shrink-0 aspect-video rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800">
+              <Link href={`/watch/${relVid.slug || relVid.id}`} key={relVid.id} className="yt-related-item">
+                <div className="yt-related-thumb-wrapper">
                   <img 
                     src={getArticleCardImage(relVid)} 
                     alt={relVid.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    className="yt-related-thumb"
                   />
-                  <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                    0:00
-                  </div>
+                  <div className="yt-duration-badge">10:00</div>
                 </div>
-                {/* Meta */}
-                <div className="flex flex-col py-0.5 pr-2 flex-1">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-[#f1f1f1] line-clamp-2 leading-snug group-hover:text-blue-500 transition">
-                    {relVid.title}
-                  </h4>
-                  <div className="mt-1 text-[12px] text-gray-500 dark:text-[#aaaaaa] flex flex-col">
+                <div className="yt-related-info">
+                  <h4 className="yt-related-title">{relVid.title}</h4>
+                  <div className="yt-related-meta">
                     <span>{relVid.authorName || relVid.author?.name || 'Redaksi'}</span>
                     <span>{relVid.views || Math.floor(Math.random() * 50) + 1}k x ditonton • {relVid.publishedAt?.toDate ? relVid.publishedAt.toDate().toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) : 'Terbaru'}</span>
                   </div>
@@ -319,18 +284,451 @@ export default function YouTubeWatchClient() {
               </Link>
             ))}
           </div>
-          
-          {/* Mobile Comments (Below related videos on small screens) */}
-          <div className="mt-8 block lg:hidden">
-            <h2 className="text-lg font-bold mb-4">{comments.length} Komentar</h2>
-            {/* Simplified mobile comments view */}
-            <div className="bg-gray-100 dark:bg-[#272727] p-3 rounded-xl">
-               <p className="text-sm text-gray-500 dark:text-gray-400">Buka kolom komentar...</p>
-            </div>
-          </div>
         </div>
 
       </div>
+
+      <style jsx global>{`
+        /* Global override for watch page */
+        body {
+          background-color: #0f0f0f;
+          color: #f1f1f1;
+        }
+        .yt-layout-container {
+          background-color: #0f0f0f;
+          min-height: 100vh;
+          width: 100%;
+          color: #f1f1f1;
+          font-family: 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+          padding-top: 24px;
+          padding-bottom: 50px;
+        }
+        .yt-grid {
+          display: flex;
+          flex-direction: row;
+          max-width: 1600px;
+          margin: 0 auto;
+          padding: 0 24px;
+          gap: 24px;
+        }
+        .yt-main-column {
+          flex: 1;
+          min-width: 0; /* allows text truncation */
+        }
+        .yt-side-column {
+          width: 402px;
+          flex-shrink: 0;
+        }
+        
+        /* PLAYER */
+        .yt-player-wrapper {
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          background-color: #000;
+          border-radius: 12px;
+          overflow: hidden;
+          position: relative;
+        }
+        .yt-iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+        }
+        .yt-tiktok-fallback, .yt-fb-fallback {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        }
+        .yt-fallback-bg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0.3;
+          filter: blur(8px);
+        }
+        .yt-tiktok-btn {
+          z-index: 10;
+          padding: 12px 24px;
+          background-color: #fe2c55;
+          color: #fff;
+          font-weight: bold;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: transform 0.2s;
+        }
+        .yt-tiktok-btn:hover {
+          transform: scale(1.05);
+        }
+
+        /* INFO SECTION */
+        .yt-video-info {
+          padding: 16px 0;
+        }
+        .yt-video-title {
+          font-size: 20px;
+          font-weight: 700;
+          margin: 0 0 12px 0;
+          line-height: 1.4;
+          color: #f1f1f1;
+        }
+        
+        .yt-action-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        .yt-channel-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .yt-channel-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #3ea6ff, #9b51e0);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 18px;
+        }
+        .yt-channel-text {
+          display: flex;
+          flex-direction: column;
+        }
+        .yt-channel-name {
+          font-size: 16px;
+          font-weight: 700;
+          margin: 0;
+          color: #f1f1f1;
+        }
+        .yt-channel-sub {
+          font-size: 12px;
+          color: #aaa;
+          margin: 2px 0 0 0;
+        }
+        .yt-subscribe-btn {
+          background-color: #f1f1f1;
+          color: #0f0f0f;
+          border: none;
+          border-radius: 18px;
+          padding: 0 16px;
+          height: 36px;
+          font-size: 14px;
+          font-weight: 600;
+          margin-left: 12px;
+          cursor: pointer;
+        }
+        .yt-subscribe-btn:hover {
+          background-color: #d9d9d9;
+        }
+
+        .yt-action-buttons {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .yt-btn-group {
+          display: flex;
+          align-items: center;
+          background-color: rgba(255,255,255,0.1);
+          border-radius: 18px;
+          height: 36px;
+        }
+        .yt-action-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: none;
+          border: none;
+          color: #f1f1f1;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          height: 100%;
+          padding: 0 16px;
+        }
+        .yt-action-btn:hover {
+          background-color: rgba(255,255,255,0.2);
+        }
+        .yt-btn-left {
+          border-top-left-radius: 18px;
+          border-bottom-left-radius: 18px;
+        }
+        .yt-btn-right {
+          border-top-right-radius: 18px;
+          border-bottom-right-radius: 18px;
+          padding: 0 12px;
+        }
+        .yt-btn-divider {
+          width: 1px;
+          height: 24px;
+          background-color: rgba(255,255,255,0.2);
+        }
+        .yt-btn-rounded {
+          background-color: rgba(255,255,255,0.1);
+          border-radius: 18px;
+          height: 36px;
+          padding: 0 16px;
+        }
+        .yt-btn-circle {
+          background-color: rgba(255,255,255,0.1);
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          padding: 0;
+          justify-content: center;
+        }
+
+        /* DESC */
+        .yt-description-box {
+          background-color: rgba(255,255,255,0.1);
+          border-radius: 12px;
+          padding: 12px;
+          margin-top: 16px;
+          transition: background-color 0.2s;
+        }
+        .yt-description-box:hover {
+          background-color: rgba(255,255,255,0.2);
+        }
+        .yt-view-date {
+          font-size: 14px;
+          font-weight: 600;
+          margin: 0 0 8px 0;
+          color: #f1f1f1;
+        }
+        .yt-desc-text {
+          font-size: 14px;
+          line-height: 1.5;
+          color: #f1f1f1;
+        }
+        .yt-desc-text img {
+          max-width: 100%;
+          height: auto;
+          display: none; /* hide inline images in desc */
+        }
+
+        /* COMMENTS */
+        .yt-comments-section {
+          margin-top: 24px;
+        }
+        .yt-comments-count {
+          font-size: 20px;
+          font-weight: 700;
+          margin: 0 0 24px 0;
+        }
+        .yt-comment-input-row {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 32px;
+        }
+        .yt-comment-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+        .yt-comment-form {
+          flex: 1;
+        }
+        .yt-comment-input {
+          width: 100%;
+          background: transparent;
+          border: none;
+          border-bottom: 1px solid rgba(255,255,255,0.2);
+          color: #f1f1f1;
+          font-size: 14px;
+          padding: 4px 0 8px 0;
+          transition: border-bottom-color 0.2s;
+        }
+        .yt-comment-input:focus {
+          outline: none;
+          border-bottom-color: #f1f1f1;
+        }
+        .yt-comment-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .yt-comment-cancel {
+          background: transparent;
+          color: #f1f1f1;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 18px;
+          font-weight: 500;
+          cursor: pointer;
+        }
+        .yt-comment-cancel:hover {
+          background-color: rgba(255,255,255,0.1);
+        }
+        .yt-comment-submit {
+          background: #3ea6ff;
+          color: #0f0f0f;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 18px;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .yt-comments-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .yt-comment-item {
+          display: flex;
+          gap: 16px;
+        }
+        .yt-comment-avatar-placeholder {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background-color: #9b51e0;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+        }
+        .yt-comment-body {
+          flex: 1;
+        }
+        .yt-comment-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 4px;
+        }
+        .yt-comment-author {
+          font-size: 13px;
+          font-weight: 600;
+          color: #f1f1f1;
+        }
+        .yt-comment-time {
+          font-size: 12px;
+          color: #aaa;
+        }
+        .yt-comment-text {
+          font-size: 14px;
+          line-height: 1.5;
+          margin: 0;
+          color: #f1f1f1;
+        }
+
+        /* RELATED */
+        .yt-related-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .yt-related-item {
+          display: flex;
+          gap: 8px;
+          text-decoration: none;
+          color: inherit;
+        }
+        .yt-related-thumb-wrapper {
+          width: 168px;
+          height: 94px;
+          border-radius: 8px;
+          overflow: hidden;
+          position: relative;
+          flex-shrink: 0;
+          background-color: #222;
+        }
+        .yt-related-thumb {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.2s;
+        }
+        .yt-related-item:hover .yt-related-thumb {
+          transform: scale(1.05);
+        }
+        .yt-duration-badge {
+          position: absolute;
+          bottom: 4px;
+          right: 4px;
+          background-color: rgba(0,0,0,0.8);
+          color: white;
+          font-size: 12px;
+          font-weight: 500;
+          padding: 3px 4px;
+          border-radius: 4px;
+        }
+        .yt-related-info {
+          display: flex;
+          flex-direction: column;
+          padding-right: 12px;
+        }
+        .yt-related-title {
+          font-size: 14px;
+          font-weight: 600;
+          margin: 0 0 4px 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          line-height: 1.4;
+          color: #f1f1f1;
+        }
+        .yt-related-meta {
+          display: flex;
+          flex-direction: column;
+          font-size: 12px;
+          color: #aaa;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+          .yt-grid {
+            flex-direction: column;
+            padding: 0;
+          }
+          .yt-player-wrapper {
+            border-radius: 0;
+          }
+          .yt-side-column {
+            width: 100%;
+            padding: 0 16px;
+          }
+          .yt-video-info {
+            padding: 16px;
+          }
+          .yt-related-list {
+            padding-bottom: 24px;
+          }
+        }
+        @media (max-width: 600px) {
+          .yt-action-buttons {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 8px;
+          }
+          .yt-channel-info {
+            margin-bottom: 12px;
+          }
+          .hide-mobile {
+            display: none;
+          }
+          .yt-related-thumb-wrapper {
+            width: 160px;
+            height: 90px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
