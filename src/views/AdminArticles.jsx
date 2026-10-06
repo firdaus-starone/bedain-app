@@ -441,7 +441,25 @@ const AdminArticles = () => {
                         </td>
 
                         <td style={{ padding: '16px 20px', color: 'var(--admin-text-secondary)', fontSize: '13px' }}>
-                          {article.publishedAt?.toDate ? article.publishedAt.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : 'Hari ini'}
+                          {(() => {
+                            let dateObj = null;
+                            const ts = article.createdAt || article.publishedAt || article.updatedAt;
+                            if (ts && typeof ts.toDate === 'function') dateObj = ts.toDate();
+                            else if (ts && typeof ts === 'number') dateObj = new Date(ts);
+                            else if (ts && ts.seconds) dateObj = new Date(ts.seconds * 1000);
+                            else if (article.date) dateObj = new Date(article.date);
+                            
+                            if (!dateObj || isNaN(dateObj.getTime())) return 'Hari ini';
+                            
+                            const dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                            const timeStr = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <span style={{ fontWeight: 600, color: 'var(--admin-text-primary)' }}>{dateStr}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--admin-text-secondary)' }}>{timeStr} WIB</span>
+                              </div>
+                            );
+                          })()}
                         </td>
                         
                         <td style={{ padding: '16px 24px', textAlign: 'right' }}>
