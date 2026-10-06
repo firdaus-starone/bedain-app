@@ -208,7 +208,7 @@ export default function VideoFeedClient() {
 
             {/* Floating Info (Bottom Left) */}
             <div style={{ position: 'absolute', bottom: '90px', left: '16px', right: '70px', zIndex: 20, color: '#fff', pointerEvents: 'none' }}>
-              <Link href={`/article/${getSlug(article)}`} style={{ textDecoration: 'none', color: '#fff', pointerEvents: 'auto' }}>
+              <Link href={`/watch/${getSlug(article)}`} style={{ textDecoration: 'none', color: '#fff', pointerEvents: 'auto' }}>
                 <span style={{ display: 'inline-block', background: 'var(--color-accent)', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase' }}>
                   {article.category || 'Berita'}
                 </span>
@@ -236,7 +236,7 @@ export default function VideoFeedClient() {
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                 <button 
-                  onClick={() => router.push(`/article/${getSlug(article)}`)} 
+                  onClick={() => router.push(`/watch/${getSlug(article)}`)} 
                   style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', border: 'none', color: '#fff', padding: '12px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <MessageCircle size={26} />
