@@ -40,7 +40,7 @@ export default function YouTubeWatchClient() {
           const storedReact = localStorage.getItem(`reaction_${vData.id}`);
           if (storedReact) setUserReaction(storedReact);
 
-          const qRelated = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(15));
+          const qRelated = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(100));
           const relatedSnap = await getDocs(qRelated);
           const related = relatedSnap.docs
             .map(d => ({ id: d.id, ...d.data() }))
