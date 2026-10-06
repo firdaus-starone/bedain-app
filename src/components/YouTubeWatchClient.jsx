@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, getDocs, limit, updateDoc, doc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, limit, updateDoc, doc, increment, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { getArticleVideoData, getArticleCardImage } from '../lib/videoHelpers';
 import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, UserCircle } from 'lucide-react';
@@ -21,48 +21,61 @@ export default function YouTubeWatchClient() {
   const [userReaction, setUserReaction] = useState(null);
 
   useEffect(() => {
-    const fetchVideoData = async () => {
-      try {
-        const q = query(collection(db, 'articles'), where('slug', '==', slug), limit(1));
-        const snap = await getDocs(q);
+    if (!slug) return;
+    
+    setLoading(true);
+    const q = query(collection(db, 'articles'), where('slug', '==', slug), limit(1));
+    
+    const unsubscribe = onSnapshot(q, async (snap) => {
+      if (!snap.empty) {
+        const docData = snap.docs[0];
+        const vData = { id: docData.id, ...docData.data() };
         
-        if (!snap.empty) {
-          const docData = snap.docs[0];
-          const vData = { id: docData.id, ...docData.data() };
-          
-          if (vData.status === 'published') {
-            await updateDoc(doc(db, 'articles', vData.id), {
-              views: increment(1)
-            });
-            vData.views = (vData.views || 0) + 1;
-          }
-          
-          setVideo(vData);
-          
-          const storedReact = localStorage.getItem(`reaction_${vData.id}`);
-          if (storedReact) setUserReaction(storedReact);
-
-          const qRelated = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(100));
-          const relatedSnap = await getDocs(qRelated);
-          const related = relatedSnap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .filter(a => a.id !== vData.id && a.status === 'published' && getArticleVideoData(a))
-            .slice(0, 30);
+        setVideo(vData);
+        
+        const storedReact = localStorage.getItem(`reaction_${vData.id}`);
+        if (storedReact) setUserReaction(storedReact);
+        
+        // Fetch related and comments only once on initial load
+        if (relatedVideos.length === 0) {
+          try {
+            if (vData.status === 'published') {
+              try {
+                await updateDoc(doc(db, 'articles', vData.id), {
+                  views: increment(1)
+                });
+              } catch (err) {
+                console.error("Failed to increment views:", err);
+              }
+            }
             
-          setRelatedVideos(related);
-          
-          const qComments = query(collection(db, 'comments'), where('articleId', '==', vData.id), orderBy('createdAt', 'desc'));
-          const commentsSnap = await getDocs(qComments);
-          setComments(commentsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+            const qRelated = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(100));
+            const relatedSnap = await getDocs(qRelated);
+            const related = relatedSnap.docs
+              .map(d => ({ id: d.id, ...d.data() }))
+              .filter(a => a.id !== vData.id && a.status === 'published' && getArticleVideoData(a))
+              .slice(0, 30);
+              
+            setRelatedVideos(related);
+            
+            const qComments = query(collection(db, 'comments'), where('articleId', '==', vData.id), orderBy('createdAt', 'desc'));
+            const commentsSnap = await getDocs(qComments);
+            setComments(commentsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+          } catch (err) {
+            console.error("Error fetching extra data:", err);
+          } finally {
+            setLoading(false);
+          }
         }
-      } catch (err) {
-        console.error("Error fetching watch data:", err);
-      } finally {
+      } else {
         setLoading(false);
       }
-    };
-    
-    if (slug) fetchVideoData();
+    }, (error) => {
+      console.error("Error in video snapshot:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [slug]);
 
   const handleLike = async () => {
@@ -81,10 +94,17 @@ export default function YouTubeWatchClient() {
     
     if (newReact) localStorage.setItem(`reaction_${video.id}`, 'like');
     else localStorage.removeItem(`reaction_${video.id}`);
-    
-    await updateDoc(doc(db, 'articles', video.id), {
-      [`reactions.like`]: increment(isLiked ? -1 : 1)
-    });
+    try {
+      await updateDoc(doc(db, 'articles', video.id), {
+        [`reactions.like`]: increment(isLiked ? -1 : 1)
+      });
+    } catch (err) {
+      console.error("Error updating like:", err);
+      // Revert UI if failed
+      setUserReaction(isLiked ? 'like' : null);
+      if (isLiked) localStorage.setItem(`reaction_${video.id}`, 'like');
+      else localStorage.removeItem(`reaction_${video.id}`);
+    }
   };
 
   const submitComment = async (e) => {
