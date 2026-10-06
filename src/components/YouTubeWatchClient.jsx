@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, orderBy, getDocs, limit, updateDoc, doc, increment, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { getArticleVideoData, getArticleCardImage } from '../lib/videoHelpers';
@@ -21,6 +21,8 @@ export default function YouTubeWatchClient() {
   const [userReaction, setUserReaction] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const hasFetchedExtra = useRef(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -45,7 +47,8 @@ export default function YouTubeWatchClient() {
         if (storedSub) setIsSubscribed(true);
         
         // Fetch related and comments only once on initial load
-        if (relatedVideos.length === 0) {
+        if (!hasFetchedExtra.current) {
+          hasFetchedExtra.current = true;
           try {
             if (vData.status === 'published') {
               try {
@@ -75,6 +78,8 @@ export default function YouTubeWatchClient() {
           } finally {
             setLoading(false);
           }
+        } else {
+          setLoading(false);
         }
       } else {
         setLoading(false);
@@ -225,6 +230,11 @@ export default function YouTubeWatchClient() {
   const videoData = getArticleVideoData(video);
   const publishDate = video.publishedAt?.toDate ? video.publishedAt.toDate() : new Date(video.publishedAt || Date.now());
 
+  // Stabilize random subscriber count using useMemo to avoid hydration and re-render issues
+  const randomSubscribers = React.useMemo(() => {
+    return Math.floor(Math.random() * 100) + 10;
+  }, []);
+
   return (
     <div className="yt-layout-container app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
@@ -265,7 +275,7 @@ export default function YouTubeWatchClient() {
                 </div>
                 <div className="yt-channel-text">
                   <h3 className="yt-channel-name">{video.authorName || video.author?.name || 'Bedain News'}</h3>
-                  <p className="yt-channel-sub">{Math.floor(Math.random() * 100) + 10} rb subscriber</p>
+                  <p className="yt-channel-sub">{randomSubscribers} rb subscriber</p>
                 </div>
                 <button 
                   className="yt-subscribe-btn" 
