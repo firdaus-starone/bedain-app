@@ -136,20 +136,22 @@ export default function VideoFeedClient() {
   }
 
   return (
-    <div 
-      ref={containerRef}
-      onScroll={handleScroll}
-      style={{ 
-        height: '100dvh', 
-        width: '100vw', 
-        background: '#000', 
-        overflowY: 'scroll', 
-        scrollSnapType: 'y mandatory',
-        position: 'relative'
-      }}
-    >
+    <div style={{ background: '#000', width: '100vw', height: '100dvh', display: 'flex', justifyContent: 'center' }}>
+      <div 
+        ref={containerRef}
+        onScroll={handleScroll}
+        style={{ 
+          height: '100dvh', 
+          width: '100%',
+          maxWidth: '1080px',
+          background: '#000', 
+          overflowY: 'scroll', 
+          scrollSnapType: 'y mandatory',
+          position: 'relative'
+        }}
+      >
       {/* Top Bar (Back Button) */}
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '20px', paddingTop: 'max(20px, env(safe-area-inset-top, 40px))', zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, margin: '0 auto', maxWidth: '1080px', width: '100%', padding: '20px', paddingTop: 'max(20px, env(safe-area-inset-top, 40px))', zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
         <button 
           onClick={() => router.push('/')} 
           style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', padding: '10px', borderRadius: '50%', cursor: 'pointer', pointerEvents: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}
@@ -270,6 +272,7 @@ export default function VideoFeedClient() {
         }
       `}</style>
       <BottomNav />
+      </div>
     </div>
   );
 }
