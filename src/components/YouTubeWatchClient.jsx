@@ -45,7 +45,7 @@ export default function YouTubeWatchClient() {
           const related = relatedSnap.docs
             .map(d => ({ id: d.id, ...d.data() }))
             .filter(a => a.id !== vData.id && a.status === 'published' && getArticleVideoData(a))
-            .slice(0, 10);
+            .slice(0, 30);
             
           setRelatedVideos(related);
           
