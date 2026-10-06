@@ -187,10 +187,15 @@ export default function YouTubeWatchClient() {
   };
 
   const toggleSubscribe = () => {
-    const newVal = !isSubscribed;
-    setIsSubscribed(newVal);
-    if (newVal) localStorage.setItem('bedain_subscribed', 'true');
-    else localStorage.removeItem('bedain_subscribed');
+    if (!isSubscribed) {
+      // Buka tab baru ke channel YouTube Bedain News dengan pop-up konfirmasi subscribe
+      window.open('https://www.youtube.com/@bedainnews?sub_confirmation=1', '_blank');
+      setIsSubscribed(true);
+      localStorage.setItem('bedain_subscribed', 'true');
+    } else {
+      setIsSubscribed(false);
+      localStorage.removeItem('bedain_subscribed');
+    }
   };
 
   if (loading) {
