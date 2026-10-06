@@ -6,7 +6,7 @@ import { useI18n } from '../hooks/useI18n';
 import { X, Megaphone, ArrowRight } from 'lucide-react';
 import './StickySideAds.css';
 
-const AdBannerUI = ({ side, settings, onClose }) => {
+const AdBannerUI = ({ side, settings, onClose, dynamicTop }) => {
   const { t } = useI18n();
   const isLeft = side === 'left';
   const status = isLeft ? settings.stickyAdLeftStatus : settings.stickyAdRightStatus;
@@ -31,7 +31,7 @@ const AdBannerUI = ({ side, settings, onClose }) => {
   };
 
   const AdWrapper = ({ children }) => (
-    <div className={`sticky-ad ${side}-ad`}>
+    <div className={`sticky-ad ${side}-ad`} style={{ top: `${dynamicTop}px` }}>
       <button className="close-ad-btn" onClick={onClose} aria-label="Tutup">
         <X size={16} />
       </button>
@@ -82,6 +82,34 @@ const StickySideAds = () => {
   const [closedLeft, setClosedLeft] = useState(false);
   const [closedRight, setClosedRight] = useState(false);
   const pathname = usePathname();
+  const [dynamicTop, setDynamicTop] = useState(280);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      let headerBannerHeight = 0;
+      const headerBanner = document.querySelector('.sponsor-slot-header');
+      if (headerBanner) {
+        headerBannerHeight = headerBanner.offsetHeight;
+      }
+      
+      const scrollPos = window.scrollY;
+      // Fixed Navbars are roughly 130px tall (main + secondary menu)
+      const baseNavHeight = 130; 
+      // Add a 20px gap below the header banner
+      const maxTop = baseNavHeight + headerBannerHeight + 20; 
+      // Minimum top is 140px (10px below the sticky navbars)
+      const newTop = Math.max(baseNavHeight + 10, maxTop - scrollPos);
+      
+      setDynamicTop(newTop);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    // Give time for banner to render
+    setTimeout(handleScroll, 500); 
+    handleScroll();
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [pathname]);
 
   if (pathname.startsWith('/admin')) return null;
   if (loading) return null;
@@ -93,8 +121,8 @@ const StickySideAds = () => {
 
   return (
     <div className="sticky-ads-container">
-      {showLeft && <AdBannerUI side="left" settings={settings} onClose={() => setClosedLeft(true)} />}
-      {showRight && <AdBannerUI side="right" settings={settings} onClose={() => setClosedRight(true)} />}
+      {showLeft && <AdBannerUI side="left" settings={settings} onClose={() => setClosedLeft(true)} dynamicTop={dynamicTop} />}
+      {showRight && <AdBannerUI side="right" settings={settings} onClose={() => setClosedRight(true)} dynamicTop={dynamicTop} />}
     </div>
   );
 };

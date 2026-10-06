@@ -10,7 +10,6 @@
 
   .sticky-ad {
     position: fixed;
-    top: 220px; 
     width: 120px; /* Dikecilkan lagi agar muat di laptop 1024px - 1366px */
     z-index: 99; /* Dinaikkan z-index agar tidak tertutup elemen lain */
   }
