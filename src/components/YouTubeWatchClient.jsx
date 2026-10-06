@@ -134,20 +134,25 @@ export default function YouTubeWatchClient() {
     const commentData = {
       articleId: video.id,
       articleSlug: video.slug,
-      text: newComment,
+      content: newComment,
       userId: user?.uid || 'guest',
-      userName: user?.displayName || 'Pengguna Tanpa Nama',
+      authorName: user?.displayName || 'Pengguna Tanpa Nama',
       userAvatar: user?.photoURL || null,
       createdAt: serverTimestamp(),
-      status: 'approved'
+      status: 'pending'
     };
     
-    setComments([{...commentData, id: 'temp', createdAt: new Date()} , ...comments]);
     setNewComment("");
-    await addDoc(collection(db, 'comments'), commentData);
-    await updateDoc(doc(db, 'articles', video.id), {
-      commentCount: increment(1)
-    });
+    alert('Komentar terkirim! Menunggu persetujuan admin sebelum ditayangkan.');
+    try {
+      await addDoc(collection(db, 'comments'), commentData);
+      await updateDoc(doc(db, 'articles', video.id), {
+        commentCount: increment(1)
+      });
+    } catch (e) {
+      console.error("Gagal mengirim komentar:", e);
+      alert('Gagal mengirim komentar. Silakan coba lagi.');
+    }
   };
 
   const toggleBookmark = () => {
@@ -366,12 +371,12 @@ export default function YouTubeWatchClient() {
                     )}
                     <div className="yt-comment-body">
                       <div className="yt-comment-header">
-                        <span className="yt-comment-author">{comment.userName}</span>
+                        <span className="yt-comment-author">{comment.authorName || comment.userName}</span>
                         <span className="yt-comment-time">
                           {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleDateString('id-ID') : 'Baru saja'}
                         </span>
                       </div>
-                      <p className="yt-comment-text">{comment.text}</p>
+                      <p className="yt-comment-text">{comment.content || comment.text}</p>
                     </div>
                   </div>
                 ))}
