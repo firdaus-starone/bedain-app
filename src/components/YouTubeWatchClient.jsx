@@ -6,6 +6,8 @@ import { getArticleVideoData, getArticleCardImage } from '../lib/videoHelpers';
 import { ThumbsUp, ThumbsDown, Share2, Bookmark, MoreHorizontal, UserCircle } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 export default function YouTubeWatchClient() {
   const { slug } = useParams();
@@ -111,18 +113,24 @@ export default function YouTubeWatchClient() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f0f0f' }}>
-        <div style={{ width: '40px', height: '40px', border: '4px solid #333', borderTopColor: '#3ea6ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0f0f0f' }}>
+        <Navbar />
+        <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '40px', height: '40px', border: '4px solid #333', borderTopColor: '#3ea6ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+          <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+        </div>
       </div>
     );
   }
 
   if (!video) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f0f0f', color: '#fff' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Video Tidak Ditemukan</h1>
-        <button onClick={() => router.push('/')} style={{ padding: '10px 24px', backgroundColor: '#3ea6ff', color: '#0f0f0f', borderRadius: '24px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>Kembali ke Beranda</button>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0f0f0f', color: '#fff' }}>
+        <Navbar />
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Video Tidak Ditemukan</h1>
+          <button onClick={() => router.push('/')} style={{ padding: '10px 24px', backgroundColor: '#3ea6ff', color: '#0f0f0f', borderRadius: '24px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>Kembali ke Beranda</button>
+        </div>
       </div>
     );
   }
@@ -131,8 +139,9 @@ export default function YouTubeWatchClient() {
   const publishDate = video.publishedAt?.toDate ? video.publishedAt.toDate() : new Date(video.publishedAt || Date.now());
 
   return (
-    <div className="yt-layout-container">
-      <div className="yt-grid">
+    <div className="yt-layout-container app-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar />
+      <div className="yt-grid" style={{ flex: 1, paddingTop: '24px' }}>
         
         {/* LEFT COLUMN: Player & Info */}
         <div className="yt-main-column">
@@ -729,6 +738,7 @@ export default function YouTubeWatchClient() {
           }
         }
       `}</style>
+      <Footer />
     </div>
   );
 }
