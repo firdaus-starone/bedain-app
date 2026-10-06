@@ -87,16 +87,13 @@ const StickySideAds = () => {
     let ticking = false;
     
     const updatePosition = () => {
-      let headerBannerHeight = 0;
-      const headerBanner = document.querySelector('.sponsor-slot-header');
-      if (headerBanner) {
-        headerBannerHeight = headerBanner.offsetHeight;
-      }
+      const secondaryMenu = document.querySelector('.secondary-menu-wrapper');
+      let newTop = 280; // fallback
       
-      const scrollPos = window.scrollY;
-      const baseNavHeight = 130; 
-      const maxTop = baseNavHeight + headerBannerHeight + 20; 
-      const newTop = Math.max(baseNavHeight + 10, maxTop - scrollPos);
+      if (secondaryMenu) {
+        const rect = secondaryMenu.getBoundingClientRect();
+        newTop = Math.max(0, rect.bottom) + 15; // 15px extra spacing below the blue bar
+      }
       
       const ads = document.querySelectorAll('.sticky-ad');
       ads.forEach(ad => {
