@@ -92,7 +92,7 @@ const StickySideAds = () => {
       
       if (secondaryMenu) {
         const rect = secondaryMenu.getBoundingClientRect();
-        newTop = Math.max(0, rect.bottom) + 15; // 15px extra spacing below the blue bar
+        newTop = Math.max(0, rect.bottom) + 45; // 45px extra spacing agar tombol close (-32px) tidak tertutup menu biru
       }
       
       const ads = document.querySelectorAll('.sticky-ad');
