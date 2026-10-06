@@ -306,7 +306,7 @@ export default function YouTubeWatchClient() {
         .yt-grid {
           display: flex;
           flex-direction: row;
-          max-width: 1600px;
+          max-width: 1100px;
           margin: 0 auto;
           padding: 0 24px;
           gap: 24px;
@@ -316,7 +316,7 @@ export default function YouTubeWatchClient() {
           min-width: 0; /* allows text truncation */
         }
         .yt-side-column {
-          width: 402px;
+          width: 320px;
           flex-shrink: 0;
         }
         
@@ -640,8 +640,8 @@ export default function YouTubeWatchClient() {
           color: inherit;
         }
         .yt-related-thumb-wrapper {
-          width: 168px;
-          height: 94px;
+          width: 140px;
+          height: 79px;
           border-radius: 8px;
           overflow: hidden;
           position: relative;
