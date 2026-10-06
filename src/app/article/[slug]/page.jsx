@@ -35,6 +35,8 @@ async function getArticleBySlug(slug) {
         content: doc.content?.stringValue || '',
         coverImage: doc.coverImage?.stringValue || doc.imageUrl?.stringValue || '',
         category: doc.category?.stringValue || '',
+        videoUrl: doc.videoUrl?.stringValue || '',
+        youtubeUrl: doc.youtubeUrl?.stringValue || '',
         author: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
         publishedAt: doc.publishedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
         updatedAt: doc.updatedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
@@ -96,10 +98,17 @@ export async function generateMetadata({ params }) {
   };
 }
 
+import YouTubeWatchClient from '../../../components/YouTubeWatchClient';
+import { redirect } from 'next/navigation';
+
 export default async function ArticlePage({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const article = await getArticleBySlug(slug);
+
+  if (article && (article.category === 'Video' || article.videoUrl || article.youtubeUrl)) {
+    redirect(`/watch/${slug}`);
+  }
 
   let schemaScript = null;
   if (article) {

@@ -99,7 +99,7 @@ const VideoSection = () => {
         </div>
         
         <div className="video-grid">
-          <Link href={`/article/${getSlug(mainVideo)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+          <Link href={`/watch/${getSlug(mainVideo)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
             <div className="video-main" style={{ height: '100%' }}>
               <div className="video-player-wrapper" style={{ height: '100%', aspectRatio: 'auto', minHeight: '360px' }}>
                 <img
@@ -133,7 +133,7 @@ const VideoSection = () => {
           
           <div className="video-list">
             {sideVideos.map(video => (
-              <Link key={video.id} href={`/article/${getSlug(video)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+              <Link key={video.id} href={`/watch/${getSlug(video)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                 <div className="video-item">
                   <div className="video-item-thumb">
                     <img
