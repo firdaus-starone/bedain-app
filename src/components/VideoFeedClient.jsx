@@ -171,7 +171,7 @@ export default function VideoFeedClient() {
             key={article.id} 
             style={{ 
               height: '100dvh', 
-              width: '100vw', 
+              width: '100%', 
               scrollSnapAlign: 'start', 
               position: 'relative',
               backgroundColor: '#000',
