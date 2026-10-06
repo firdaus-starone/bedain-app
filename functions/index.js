@@ -505,7 +505,7 @@ async function doYouTubeSync() {
       publishedAt: admin.firestore.Timestamp.fromDate(new Date(snippet.publishedAt)),
       author: 'Bedain News',
       category: 'Video',
-      status: 'published',
+      status: 'draft',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       type: 'youtube'
     };
