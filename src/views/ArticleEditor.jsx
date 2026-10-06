@@ -645,7 +645,8 @@ Kembalikan WAJIB HANYA dalam format JSON valid (tanpa blok markdown) dengan stru
   "seoDescription": "Deskripsi meta maksimal 155 karakter yang bikin penasaran",
   "tags": "3-5 kata kunci spesifik atau frasa pisahkan dengan koma (contoh: Mobil Listrik, Bursa Efek Indonesia, Harga Emas)",
   "slug": "url-slug-seo-friendly-tanpa-spasi"
-}`;
+}
+PENTING: Jangan ada koma di akhir item terakhir sebelum kurung tutup. Pastikan JSON valid.`;
 
       const aiResponse = await callGeminiAPI(prompt, "Kamu adalah ahli SEO Jurnalistik spesialis pembuat metadata. WAJIB mengembalikan HANYA format JSON valid tanpa embel-embel teks.", true);
       
@@ -653,6 +654,10 @@ Kembalikan WAJIB HANYA dalam format JSON valid (tanpa blok markdown) dengan stru
       const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         cleanedJson = jsonMatch[0];
+        // Hapus koma ganda jika ada
+        cleanedJson = cleanedJson.replace(/,,+/g, ',');
+        // Hapus trailing comma sebelum penutup bracket/kurawal
+        cleanedJson = cleanedJson.replace(/,\s*([}\]])/g, '$1');
       } else {
         // Fallback if no curly braces found, maybe API returned plain text
         throw new Error("AI tidak mengembalikan format JSON yang valid. Respons AI: " + aiResponse.substring(0, 50) + "...");
