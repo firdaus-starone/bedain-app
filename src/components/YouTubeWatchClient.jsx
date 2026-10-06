@@ -74,7 +74,7 @@ export default function YouTubeWatchClient() {
               
             setRelatedVideos(related);
             
-            const qComments = query(collection(db, 'comments'), where('articleId', '==', vData.id), orderBy('createdAt', 'desc'));
+            const qComments = query(collection(db, 'comments'), where('articleSlug', '==', vData.slug), where('status', '==', 'approved'), orderBy('createdAt', 'desc'));
             onSnapshot(qComments, (commentsSnap) => {
               setComments(commentsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
             });
@@ -133,6 +133,7 @@ export default function YouTubeWatchClient() {
     const user = auth?.currentUser;
     const commentData = {
       articleId: video.id,
+      articleSlug: video.slug,
       text: newComment,
       userId: user?.uid || 'guest',
       userName: user?.displayName || 'Pengguna Tanpa Nama',
