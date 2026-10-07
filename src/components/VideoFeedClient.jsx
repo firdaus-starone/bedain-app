@@ -21,8 +21,9 @@ export default function VideoFeedClient() {
       try {
         const q = query(
           collection(db, 'articles'),
+          where('status', '==', 'published'),
           orderBy('publishedAt', 'desc'),
-          limit(1000) // Fetch recent articles, filter client-side
+          limit(150) 
         );
         const snap = await getDocs(q);
         const now = new Date();
@@ -33,7 +34,7 @@ export default function VideoFeedClient() {
             return pDate <= now;
           });
 
-        const videosOnly = articles.filter(a => a.status === 'published' && getArticleVideoData(a));
+        const videosOnly = articles.filter(a => getArticleVideoData(a));
         
         // Load initial local reactions
         const initialReactions = {};

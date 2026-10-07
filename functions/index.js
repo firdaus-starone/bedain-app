@@ -486,13 +486,21 @@ async function doYouTubeSync() {
 
   const batch = admin.firestore().batch();
   const articlesRef = admin.firestore().collection("articles");
+  let addedCount = 0;
 
   for (const item of items) {
     const videoId = item.id.videoId;
     if (!videoId) continue;
     
-    const snippet = item.snippet;
     const docRef = articlesRef.doc(`yt_${videoId}`);
+    const docSnap = await docRef.get();
+    
+    // Jika video sudah ada di database, lewati
+    if (docSnap.exists) {
+      continue;
+    }
+    
+    const snippet = item.snippet;
     
     const videoData = {
       title: snippet.title,
@@ -510,11 +518,16 @@ async function doYouTubeSync() {
       type: 'youtube'
     };
     
-    batch.set(docRef, videoData, { merge: true });
+    batch.set(docRef, videoData);
+    addedCount++;
   }
 
-  await batch.commit();
-  return { success: true, message: `Berhasil mensinkronisasi ${items.length} video` };
+  if (addedCount > 0) {
+    await batch.commit();
+    return { success: true, message: `Berhasil menambahkan ${addedCount} video baru` };
+  } else {
+    return { success: true, message: "Tidak ada video baru yang ditambahkan (semua sudah ada di portal)" };
+  }
 }
 
 // Jadwal rutin 3 jam sekali

@@ -35,15 +35,16 @@ const VideoSection = () => {
       try {
         const q = query(
           collection(db, 'articles'),
+          where('status', '==', 'published'),
           orderBy('publishedAt', 'desc'),
-          limit(1000)
+          limit(50)
         );
         const snap = await getDocs(q);
         const now = new Date();
         const articles = snap.docs.map(d => ({ id: d.id, ...d.data() }))
           .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
         const videos = articles
-          .filter(a => a.status === 'published' && getArticleVideoData(a))
+          .filter(a => getArticleVideoData(a))
           .slice(0, 4);
         
         cachedVideosMemory = videos;
