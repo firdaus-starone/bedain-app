@@ -63,6 +63,11 @@ export async function generateMetadata({ params }) {
   if (!coverImg.startsWith('http')) {
     coverImg = `https://bedainnews.com${coverImg.startsWith('/') ? '' : '/'}${coverImg}`;
   }
+  
+  // Upgrade YouTube thumbnail quality so Facebook doesn't reject it for being too small
+  if (coverImg.includes('hqdefault.jpg')) {
+    coverImg = coverImg.replace('hqdefault.jpg', 'maxresdefault.jpg');
+  }
 
   return {
     title,
