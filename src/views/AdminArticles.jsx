@@ -176,7 +176,8 @@ const AdminArticles = () => {
         
         // Auto-post to Facebook
         try {
-          const articleUrl = `https://bedainnews.com/article/${article.slug}`;
+          const isVideo = article.category === 'Video' || article.videoUrl || article.youtubeUrl;
+          const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${article.slug}`;
           fetch('/api/facebook-post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

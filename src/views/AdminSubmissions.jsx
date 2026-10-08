@@ -149,7 +149,8 @@ export default function AdminSubmissions() {
 
       // Auto-post to Facebook
       try {
-        const articleUrl = `https://bedainnews.com/article/${slugToUse}`;
+        const isVideo = sub.category === 'Video' || sub.videoUrl || sub.youtubeUrl;
+        const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${slugToUse}`;
         fetch('/api/facebook-post', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
