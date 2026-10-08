@@ -19,19 +19,41 @@ const applyWatermark = (file) => {
       const logo = new Image();
       logo.src = '/logo-no-latar.png'; // Logo transparan
       logo.onload = () => {
-        // Logo width = 15% dari lebar gambar
-        const logoWidth = img.width * 0.15;
+        // Logo width = 12% dari lebar gambar agar proporsional
+        const logoWidth = img.width * 0.12;
         const ratio = logo.width / logo.height;
         const logoHeight = logoWidth / ratio;
         
-        // Posisi di pojok kanan bawah dengan padding 3%
+        const fontSize = Math.max(14, img.width * 0.025);
+        const gap = img.width * 0.01;
+        const totalHeight = logoHeight + gap + fontSize;
+
+        // Posisi di pojok kanan bawah
         const padding = img.width * 0.03;
         const x = img.width - logoWidth - padding;
-        const y = img.height - logoHeight - padding;
+        const y = img.height - totalHeight - padding;
         
-        ctx.globalAlpha = 0.8; // Transparansi watermark
+        ctx.globalAlpha = 0.6; // Transparansi
         ctx.drawImage(logo, x, y, logoWidth, logoHeight);
+
+        // Tambahkan tulisan "bedainnews" di bawah logo
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        
+        // Bayangan teks agar terbaca jelas
+        ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+
+        const textY = y + logoHeight + gap;
+        ctx.fillText("bedainnews", x + (logoWidth / 2), textY);
+        
+        // Reset 
         ctx.globalAlpha = 1.0;
+        ctx.shadowColor = "transparent";
         
         canvas.toBlob((blob) => {
           resolve(new File([blob], file.name, { type: file.type }));

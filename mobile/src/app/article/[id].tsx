@@ -356,24 +356,6 @@ export default function ArticleDetail() {
               ]
             }]} 
           />
-          {/* Watermark Overlay */}
-          {siteSettings?.logoUrl && (
-            <View 
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                top: 16, 
-                right: 16,
-                zIndex: 2,
-                opacity: 0.45
-              }}
-            >
-              <Image 
-                source={{ uri: siteSettings.logoUrl }} 
-                style={{ width: 60, height: 60, resizeMode: 'contain' }} 
-              />
-            </View>
-          )}
         </Animated.View>
 
         <View style={[styles.contentContainer, dyn.bg]}>
