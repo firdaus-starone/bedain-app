@@ -92,8 +92,14 @@ const AdminUsers = () => {
         try {
           const userRef = doc(db, 'users', userId);
           await updateDoc(userRef, { role: newRole });
-          setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-          showToast('Role berhasil diperbarui!', 'success');
+          
+          if (newRole === 'reader') {
+            setUsers(users.filter(u => u.id !== userId)); // Hapus dari view jurnalis
+            showToast('Akun berhasil diturunkan menjadi Pembaca Biasa.', 'success');
+          } else {
+            setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+            showToast('Role berhasil diperbarui!', 'success');
+          }
         } catch (error) {
           console.error("Error updating role:", error);
           showToast('Gagal memperbarui role', 'error');
@@ -211,9 +217,15 @@ const AdminUsers = () => {
     try {
       const userRef = doc(db, 'users', editingUser.id);
       await updateDoc(userRef, { name: editName.trim(), role: editRole, photoURL: editPhotoURL });
-      setUsers(users.map(u => u.id === editingUser.id ? { ...u, name: editName.trim(), role: editRole, photoURL: editPhotoURL } : u));
+      
+      if (editRole === 'reader') {
+        setUsers(users.filter(u => u.id !== editingUser.id));
+        showToast('Jurnalis diturunkan menjadi Pembaca dan dipindahkan dari daftar.', 'success');
+      } else {
+        setUsers(users.map(u => u.id === editingUser.id ? { ...u, name: editName.trim(), role: editRole, photoURL: editPhotoURL } : u));
+        showToast('Data jurnalis berhasil diperbarui!', 'success');
+      }
       setEditingUser(null);
-      showToast('Data jurnalis berhasil diperbarui!', 'success');
     } catch (err) {
       console.error("Error editing user:", err);
       showToast('Gagal memperbarui data jurnalis', 'error');
@@ -378,6 +390,7 @@ const AdminUsers = () => {
                               style={{padding: '6px 10px', width: 'auto', fontSize: '13px', borderRadius: '6px'}}
                             >
                               <option value="pending">Pending (Menunggu)</option>
+                              <option value="reader">Reader (Jadikan Pembaca Biasa)</option>
                               <option value="reporter">Reporter (Hanya Draf)</option>
                               <option value="editor">Editor (Bisa Tayang/Hapus)</option>
                               <option value="admin">Admin (Kelola Tim)</option>
@@ -768,6 +781,7 @@ const AdminUsers = () => {
                       cursor: editingUser?.id === currentUser.uid ? 'not-allowed' : 'default'
                     }}
                   >
+                    <option value="reader">Reader (Jadikan Pembaca Biasa)</option>
                     <option value="reporter">Reporter (Menulis & Simpan Draf Berita)</option>
                     <option value="editor">Editor (Bisa Tayangkan & Edit Semua Berita)</option>
                     <option value="admin">Admin Redaksi (Kelola Jurnalis & Kategori)</option>
