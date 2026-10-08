@@ -177,13 +177,16 @@ const AdminArticles = () => {
         // Auto-post to Facebook
         try {
           const articleUrl = `https://bedainnews.com/article/${article.slug}`;
-          await fetch('/api/facebook-post', {
+          fetch('/api/facebook-post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               message: `Berita Baru dari Bedain News!\n\n${article.title}\n\nBaca selengkapnya di:`,
-              link: articleUrl
+              link: articleUrl,
+              imageUrl: article.coverImage || article.imageUrl || ''
             })
+          }).catch(fbError => {
+            console.error("Gagal auto-post ke Facebook:", fbError);
           });
         } catch (fbError) {
           console.error("Gagal auto-post ke Facebook:", fbError);
