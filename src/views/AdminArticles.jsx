@@ -173,6 +173,22 @@ const AdminArticles = () => {
           status: 'published',
           publishedAt: Timestamp.now()
         });
+        
+        // Auto-post to Facebook
+        try {
+          const articleUrl = `https://bedainnews.com/baca/${article.slug}`;
+          await fetch('/api/facebook-post', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: `Berita Baru dari Bedain News!\n\n${article.title}\n\nBaca selengkapnya di:`,
+              link: articleUrl
+            })
+          });
+        } catch (fbError) {
+          console.error("Gagal auto-post ke Facebook:", fbError);
+        }
+
         fetchArticles();
       } catch (error) {
         console.error("Error publishing article:", error);

@@ -146,6 +146,21 @@ export default function AdminSubmissions() {
       setSubmissions(prev => prev.map(item => item.id === sub.id ? { ...item, status: 'published', publishedArticleId: newArticleRef.id } : item));
       setSelectedSubmission(null);
       alert(`🎉 Selamat! Tulisan berhasil diterbitkan ke Beranda! (ID: ${newArticleRef.id})`);
+
+      // Auto-post to Facebook
+      try {
+        const articleUrl = `https://bedainnews.com/baca/${slugToUse}`;
+        await fetch('/api/facebook-post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: `[KIRIMAN WARGA]\nBerita Baru dari Bedain News!\n\n${titleToUse}\nOleh: ${sub.authorName}\n\nBaca selengkapnya di:`,
+            link: articleUrl
+          })
+        });
+      } catch (fbError) {
+        console.error("Gagal auto-post ke Facebook:", fbError);
+      }
     } catch (err) {
       console.error('Gagal menerbitkan tulisan:', err);
       alert('Terjadi kesalahan saat menerbitkan tulisan.');
