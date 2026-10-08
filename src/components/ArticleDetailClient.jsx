@@ -1105,6 +1105,21 @@ const ArticleDetail = () => {
                     priority
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 900px"
                   />
+                  {/* Watermark Overlay */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '16px',
+                    right: '16px',
+                    pointerEvents: 'none',
+                    zIndex: 2,
+                    opacity: 0.45
+                  }}>
+                    <img 
+                      src="/logo.png" 
+                      alt="watermark" 
+                      style={{ width: '80px', objectFit: 'contain' }} 
+                    />
+                  </div>
                 </div>
               </>
             ) : (

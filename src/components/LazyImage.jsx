@@ -64,21 +64,16 @@ const LazyImage = ({ src, alt, className = '', style = {}, onClick, fetchPriorit
           {(isLoaded || isEager) && (
             <div style={{
               position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              top: '8px',
+              right: '8px',
               pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               zIndex: 2,
-              opacity: 0.15
+              opacity: 0.45
             }}>
               <img 
                 src="/logo.png" 
                 alt="watermark" 
-                style={{ width: '40%', maxHeight: '40%', objectFit: 'contain' }} 
+                style={{ width: '30%', minWidth: '40px', maxWidth: '70px', objectFit: 'contain' }} 
               />
             </div>
           )}

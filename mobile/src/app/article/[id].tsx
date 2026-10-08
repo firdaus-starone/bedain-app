@@ -362,16 +362,15 @@ export default function ArticleDetail() {
               pointerEvents="none"
               style={{
                 position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                justifyContent: 'center',
-                alignItems: 'center',
+                top: 16, 
+                right: 16,
                 zIndex: 2,
-                opacity: 0.15
+                opacity: 0.45
               }}
             >
               <Image 
                 source={{ uri: siteSettings.logoUrl }} 
-                style={{ width: '50%', height: '50%', resizeMode: 'contain' }} 
+                style={{ width: 60, height: 60, resizeMode: 'contain' }} 
               />
             </View>
           )}
