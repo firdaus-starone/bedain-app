@@ -5,8 +5,9 @@ import { updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 import { uploadAndCompressImage } from '../lib/uploadImage';
-import { User, Mail, Camera, Save, ArrowLeft, Loader2, ShieldCheck, Download } from 'lucide-react';
+import { User, Mail, Camera, Save, ArrowLeft, Loader2, ShieldCheck, Download, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import html2canvas from 'html2canvas';
 import IdCard from '../components/IdCard';
@@ -14,6 +15,7 @@ import IdCard from '../components/IdCard';
 const AdminProfile = () => {
   const router = useRouter();
   const { currentUser: user, userRole, loading: authLoading } = useAuth();
+  const { settings } = useSiteSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -186,11 +188,19 @@ const AdminProfile = () => {
       <main className="admin-main profile-main-pad" style={{ padding: '30px' }}>
         <div style={{ maxWidth: '850px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <Link href={['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) ? "/admin/dashboard" : "/"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', color: 'var(--admin-text-primary)', cursor: 'pointer' }}>
-              <ArrowLeft size={20} />
-            </Link>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: 0, color: 'var(--admin-text-primary)' }}>Profil Pengguna</h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <Link href={['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) ? "/admin/dashboard" : "/"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', color: 'var(--admin-text-primary)', cursor: 'pointer' }}>
+                <ArrowLeft size={20} />
+              </Link>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: 0, color: 'var(--admin-text-primary)' }}>Profil Pengguna</h1>
+            </div>
+            {settings?.nativeAppUrl && (
+              <a href={settings.nativeAppUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold' }}>
+                <Smartphone size={18} />
+                Download App
+              </a>
+            )}
           </div>
 
           <div className="profile-layout-grid" style={{ display: 'grid', gridTemplateColumns: ['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) ? '1fr 300px' : '1fr', gap: '30px', alignItems: 'start' }}>

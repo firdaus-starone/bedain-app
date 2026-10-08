@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS = {
   youtubeUrl: '',
   tiktokUrl: '',
   threadsUrl: '',
+  nativeAppUrl: '',
   footerText: '© 2025 Bedain News. Semua hak dilindungi.',
   tickerEnabled: true,
   tickerText: 'Selamat datang di Bedain News — Portal Berita Terpercaya',

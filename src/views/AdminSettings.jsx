@@ -421,6 +421,9 @@ const AdminSettings = () => {
               <Field label="Threads URL">
                 <input style={inputStyle} value={form.threadsUrl || ''} onChange={e => handleChange('threadsUrl', e.target.value)} placeholder="https://threads.net/..." />
               </Field>
+              <Field label="Link Download Aplikasi Native (APK/App Store)" hint="Tampil di halaman profil pengguna untuk mendownload aplikasi.">
+                <input style={inputStyle} value={form.nativeAppUrl || ''} onChange={e => handleChange('nativeAppUrl', e.target.value)} placeholder="https://play.google.com/store/apps/details?id=..." />
+              </Field>
             </div>
           </Section>
 
