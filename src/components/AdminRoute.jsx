@@ -4,7 +4,7 @@ import { Navigate, Outlet } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
 import SEO from './SEO';
 const AdminRoute = () => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, userRole, loading } = useAuth();
 
   if (loading) {
     return (
@@ -20,7 +20,13 @@ const AdminRoute = () => {
     return <Navigate to="/admin" replace />;
   }
 
-  // Jika sudah login, render halaman anak (Dashboard, Editor, dll)
+  // Blokir akses jika user adalah pembaca biasa atau belum disetujui
+  if (userRole === 'reader' || userRole === 'pending' || !userRole) {
+    // Tendang ke beranda utama
+    return <Navigate to="/" replace />;
+  }
+
+  // Jika sudah login dan memiliki akses redaksi, render halaman anak (Dashboard, Editor, dll)
   return (
     <>
       <SEO title="Panel Admin" />

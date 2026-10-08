@@ -34,7 +34,7 @@ export const useAuth = () => {
               // This is the very first user in the database or the official redaksi email, make them Superadmin
               role = 'superadmin';
             } else {
-              role = 'pending'; // Requires admin approval
+              role = 'reader'; // Default access is just a reader (pembaca)
             }
             
             // Save new user profile to Firestore
