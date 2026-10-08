@@ -5,26 +5,38 @@ const FB_ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN || 'EAAY0JDZCwjrMBSp3zv8bJV3
 
 export async function POST(request) {
   try {
-    const { message, link, imageUrl } = await request.json();
+    const { message, link } = await request.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    let fbUrl = `https://graph.facebook.com/v21.0/${FB_PAGE_ID}/feed`;
+    if (link) {
+      // Force Facebook to scrape the URL first so the Link Preview is perfect
+      try {
+        const scrapeParams = new URLSearchParams({
+          id: link,
+          scrape: 'true',
+          access_token: FB_ACCESS_TOKEN,
+        });
+        await fetch('https://graph.facebook.com/v21.0/', {
+          method: 'POST',
+          body: scrapeParams,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        });
+      } catch (scrapeErr) {
+        console.error('Facebook scrape error (ignored):', scrapeErr);
+      }
+    }
+
+    const fbUrl = `https://graph.facebook.com/v21.0/${FB_PAGE_ID}/feed`;
     const fbParams = new URLSearchParams({
       access_token: FB_ACCESS_TOKEN,
+      message: message,
     });
 
-    if (imageUrl) {
-      fbUrl = `https://graph.facebook.com/v21.0/${FB_PAGE_ID}/photos`;
-      fbParams.append('url', imageUrl);
-      fbParams.append('caption', `${message} ${link || ''}`);
-    } else {
-      fbParams.append('message', message);
-      if (link) {
-        fbParams.append('link', link);
-      }
+    if (link) {
+      fbParams.append('link', link);
     }
 
     const response = await fetch(fbUrl, {

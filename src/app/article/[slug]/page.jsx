@@ -87,7 +87,6 @@ export async function generateMetadata({ params }) {
       type: 'article',
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt,
-      authors: [article.author]
     },
     twitter: {
       card: 'summary_large_image',
