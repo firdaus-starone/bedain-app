@@ -106,8 +106,9 @@ const AdminUsers = () => {
       return;
     }
     
-    // Format sederhana untuk Play Console: baris pertama bisa header atau langsung email
-    const csvContent = 'Email\n' + emails.join('\n');
+    // Google Play Console tidak menginginkan ada baris header (kata 'Email')
+    // karena akan dibaca sebagai alamat email yang tidak valid.
+    const csvContent = emails.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
