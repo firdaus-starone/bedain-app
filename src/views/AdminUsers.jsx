@@ -99,6 +99,25 @@ const AdminUsers = () => {
     }
   };
 
+  const handleDownloadCSV = () => {
+    const emails = users.map(u => u.email).filter(Boolean);
+    if (emails.length === 0) {
+      showToast('Tidak ada email untuk didownload', 'warning');
+      return;
+    }
+    
+    // Format sederhana untuk Play Console: baris pertama bisa header atau langsung email
+    const csvContent = 'Email\n' + emails.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'daftar_email_tester_play_console.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleRoleChange = async (userId, newRole) => {
     showConfirm(
       'Ubah Hak Akses',
@@ -350,22 +369,44 @@ const AdminUsers = () => {
           <div className="admin-table-container">
             <div className="admin-table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <h2>Daftar Jurnalis & Redaksi (Total: {filteredUsers.length})</h2>
-              <button 
-                onClick={() => setShowAddModal(true)}
-                className="admin-btn admin-btn-primary"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 18px',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
-                <UserPlus size={18} />
-                Tambah Jurnalis
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={handleDownloadCSV}
+                  className="admin-btn"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff'
+                  }}
+                  title="Download CSV untuk Google Play Console"
+                >
+                  <Download size={18} />
+                  Download CSV
+                </button>
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="admin-btn admin-btn-primary"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <UserPlus size={18} />
+                  Tambah Jurnalis
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px', WebkitOverflowScrolling: 'touch' }}>
               {['all', 'admin', 'editor', 'reporter'].map(role => (
