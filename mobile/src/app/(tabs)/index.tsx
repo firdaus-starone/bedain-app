@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated, ToastAndroid } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -101,7 +101,10 @@ export default function Home() {
       }
       setRecentComments(uniqueArts);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Berita berhasil diperbarui', ToastAndroid.SHORT);
+      }
     } catch(e) {
       console.error(e);
     } finally {
@@ -437,7 +440,7 @@ export default function Home() {
           contentContainerStyle={styles.terkiniScroll}
           ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} style={styles.terkiniCard} activeOpacity={0.9}>
+            <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} style={styles.terkiniCard} activeOpacity={0.9}>
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
                 <View style={styles.terkiniOverlay}>
                   <View style={[styles.terkiniBadge, { backgroundColor: item.videoUrl ? 'red' : '#3b82f6' }]}>
@@ -462,7 +465,7 @@ export default function Home() {
         {FEATURED_ARTICLE && (
           <View style={styles.featuredContainer}>
             <View style={[styles.featuredCard, dyn.card]}>
-              <TouchableOpacity onPress={() => FEATURED_ARTICLE.videoUrl ? router.push('/video') : router.push(`/article/${FEATURED_ARTICLE.id}`)} activeOpacity={0.9}>
+              <TouchableOpacity onPress={() => FEATURED_ARTICLE.videoUrl ? router.push(`/watch/${FEATURED_ARTICLE.id}` as any) : router.push(`/article/${FEATURED_ARTICLE.id}`)} activeOpacity={0.9}>
                 <View style={styles.featuredImageContainer}>
                   <Image source={{ uri: FEATURED_ARTICLE.image }} style={styles.featuredImage} />
                   <View style={styles.featuredOverlay}>
@@ -476,7 +479,7 @@ export default function Home() {
                   <Text style={styles.relatedTitle}>TERKAIT</Text>
                   <View style={styles.relatedList}>
                     {RELATED_ARTICLES.map(related => (
-                      <TouchableOpacity key={`related-${related.id}`} style={{ flex: 1, marginRight: 8 }} onPress={() => related.videoUrl ? router.push('/video') : router.push(`/article/${related.id}`)}>
+                      <TouchableOpacity key={`related-${related.id}`} style={{ flex: 1, marginRight: 8 }} onPress={() => related.videoUrl ? router.push(`/watch/${related.id}` as any) : router.push(`/article/${related.id}`)}>
                         <Text style={[styles.relatedItem, { marginRight: 0 }]} numberOfLines={2}>
                           • {related.title}
                         </Text>
@@ -496,7 +499,7 @@ export default function Home() {
         <View style={styles.listContainer}>
           {BERITA_LIST.map((item, index) => (
             <View key={item.id}>
-              <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} style={styles.listRow} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} style={styles.listRow} activeOpacity={0.7}>
                 <View style={styles.listTextContainer}>
                   <Text style={[styles.listTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
                   <Text style={styles.listDate}>{item.date}</Text>
@@ -530,7 +533,7 @@ export default function Home() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.terkiniScroll, { paddingVertical: 0, paddingBottom: 8 }]}>
           {BERITA_PILIHAN.map((item) => (
-            <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} key={`bottom-${item.id}`} style={styles.bottomCard} activeOpacity={0.9}>
+            <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`bottom-${item.id}`} style={styles.bottomCard} activeOpacity={0.9}>
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
                 <View style={styles.bottomOverlay}>
                   <View style={styles.terkiniBadge}>
@@ -554,7 +557,7 @@ export default function Home() {
           {LATEST_NEWS.map((item, index) => {
             if (index === 0) {
               return (
-                <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={[styles.mixedCardFirst, dyn.mixedCardBg]} activeOpacity={0.8}>
+                <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={[styles.mixedCardFirst, dyn.mixedCardBg]} activeOpacity={0.8}>
                   <View style={styles.mixedCardFirstText}>
                     <Text style={[styles.mixedCardFirstTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
                     <Text style={styles.mixedCardFirstDate}>{item.date}</Text>
@@ -564,7 +567,7 @@ export default function Home() {
               );
             } else {
               return (
-                <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={styles.mixedListItem} activeOpacity={0.7}>
+                <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={styles.mixedListItem} activeOpacity={0.7}>
                   <Image source={{ uri: item.image }} style={styles.mixedListImage} />
                   <View style={styles.mixedListText}>
                     <Text style={[styles.mixedListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>

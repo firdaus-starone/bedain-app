@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Dimensions, Image, TouchableOpacity, StatusBar, BackHandler, AppState } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, Image, TouchableOpacity, StatusBar, BackHandler, AppState, Share } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +34,16 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, i
     } else {
       setLikeCount((prev: number) => prev + 1);
       setIsLiked(true);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Tonton video menarik ini di Bedain News: ${item.title}\n\nhttps://bedainnews.com/article/${item.id}`,
+      });
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -165,13 +175,13 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, i
             </View>
             <Text style={styles.actionText}>{likeCount}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/article/${item.id}`)}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/watch/${item.id}` as any)}>
             <View style={styles.iconCircle}>
               <Ionicons name="chatbubble-outline" size={22} color="#ffffff" />
             </View>
             <Text style={styles.actionText}>{item.comments || Math.floor(Math.random() * 2)}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn}>
+          <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
             <View style={styles.iconCircle}>
               <Ionicons name="share-social-outline" size={24} color="#ffffff" />
             </View>

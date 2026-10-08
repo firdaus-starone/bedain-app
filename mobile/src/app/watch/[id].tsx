@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, Dimensions, useWindowDimensions, Platform, Animated, TextInput, Share, Alert, Linking } from 'react-native';
+import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +13,18 @@ const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
 
-export default function ArticleDetail() {
+const getYouTubeId = (input: string) => {
+  if (!input || typeof input !== 'string') return null;
+  const regExp = /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+  const match = input.match(regExp);
+  return match ? match[1] : null;
+};
+const getArticleVideoId = (article: any) => {
+  if (!article) return null;
+  return getYouTubeId(article.videoUrl) || getYouTubeId(article.youtubeUrl) || getYouTubeId(article.video) || getYouTubeId(article.content);
+};
+
+export default function VideoDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
@@ -328,7 +340,7 @@ export default function ArticleDetail() {
           </View>
         </View>
 
-        {/* Gambar Artikel dengan Efek Parallax */}
+        {/* Gambar Artikel dengan Efek Parallax / Video Player */}
         <Animated.View style={[styles.heroContainer, {
           zIndex: -1,
           transform: [
@@ -341,40 +353,105 @@ export default function ArticleDetail() {
             }
           ]
         }]}>
-          <Animated.Image 
-            source={{ uri: thumb }} 
-            resizeMode="cover"
-            style={[styles.heroImage, {
-              transform: [
-                {
-                  scale: scrollY.interpolate({
-                    inputRange: [-100, 0],
-                    outputRange: [1.2, 1],
-                    extrapolateRight: 'clamp',
-                  })
-                }
-              ]
-            }]} 
-          />
-          {/* Watermark Overlay */}
-          {siteSettings?.logoUrl && (
-            <View 
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 2,
-                opacity: 0.15
-              }}
-            >
-              <Image 
-                source={{ uri: siteSettings.logoUrl }} 
-                style={{ width: '50%', height: '50%', resizeMode: 'contain' }} 
-              />
-            </View>
-          )}
+          {(() => {
+            const ytId = getArticleVideoId(article);
+            let embedUrl = null;
+            let isRawHtml = false;
+            
+            if (!ytId) {
+               const urlSources = [article.videoUrl, article.youtubeUrl, article.video].filter(u => typeof u === 'string');
+               for (const u of urlSources) {
+                 if (u.includes('<iframe')) {
+                   embedUrl = `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /></head><body style="margin:0;padding:0;background-color:#000;display:flex;justify-content:center;align-items:center;">${u}</body></html>`;
+                   isRawHtml = true;
+                   break;
+                 } else if (u.includes('.mp4')) {
+                   embedUrl = `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /></head><body style="margin:0;padding:0;background-color:#000;"><video width="100%" height="100%" autoplay muted loop playsinline style="object-fit:cover;"><source src="${u}" type="video/mp4"></video></body></html>`;
+                   isRawHtml = true;
+                   break;
+                 } else if (u.includes('http')) {
+                   embedUrl = u;
+                   break;
+                 }
+               }
+            }
+
+            if (ytId) {
+              const customYoutubeHtml = `
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                    <style>
+                      body { margin: 0; background-color: #000; overflow: hidden; }
+                      .container { position: relative; width: 100vw; height: 100vh; }
+                      .video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      <div class="video" id="player"></div>
+                    </div>
+                    <script src="https://www.youtube.com/iframe_api"></script>
+                    <script>
+                      var player;
+                      function onYouTubeIframeAPIReady() {
+                        player = new YT.Player('player', {
+                          width: '100%',
+                          height: '100%',
+                          videoId: '${ytId}',
+                          playerVars: {
+                            playsinline: 1,
+                            modestbranding: 1,
+                            rel: 0,
+                            fs: 0
+                          }
+                        });
+                      }
+                    </script>
+                  </body>
+                </html>
+              `;
+              return (
+                <WebView
+                  style={[styles.heroImage, { backgroundColor: '#000' }]}
+                  source={{ html: customYoutubeHtml, baseUrl: 'https://lonelycpp.github.io' }}
+                  javaScriptEnabled={true}
+                  allowsInlineMediaPlayback={true}
+                  mediaPlaybackRequiresUserAction={false}
+                  scrollEnabled={false}
+                />
+              );
+            } else if (embedUrl) {
+              return (
+                <WebView
+                  style={[styles.heroImage, { backgroundColor: '#000' }]}
+                  javaScriptEnabled={true}
+                  allowsInlineMediaPlayback={true}
+                  mediaPlaybackRequiresUserAction={false}
+                  source={isRawHtml ? { html: embedUrl, baseUrl: 'https://www.youtube.com' } : { uri: embedUrl }}
+                />
+              );
+            } else {
+              return (
+                <Animated.Image 
+                  source={{ uri: thumb }} 
+                  resizeMode="cover"
+                  style={[styles.heroImage, {
+                    transform: [
+                      {
+                        scale: scrollY.interpolate({
+                          inputRange: [-100, 0],
+                          outputRange: [1.2, 1],
+                          extrapolateRight: 'clamp',
+                        })
+                      }
+                    ]
+                  }]} 
+                />
+              );
+            }
+          })()}
         </Animated.View>
 
         <View style={[styles.contentContainer, dyn.bg]}>

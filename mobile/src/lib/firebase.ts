@@ -1,7 +1,9 @@
+import { Platform } from 'react-native';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const firebaseConfig = {
   projectId: "bedain-eb6a6",
@@ -13,11 +15,24 @@ export const firebaseConfig = {
   measurementId: "G-Y0FHFBYB1N"
 };
 
-// Initialize Firebase only if it hasn't been initialized already (hot-reloading safety)
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+let app, auth;
+
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+  if (Platform.OS === 'web') {
+    auth = getAuth(app);
+  } else {
+    // getReactNativePersistence is only available/valid in native environment
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage)
+    });
+  }
+} else {
+  app = getApp();
+  auth = getAuth(app);
+}
 
 const db = getFirestore(app);
-const auth = getAuth(app);
 const storage = getStorage(app);
 
 export { db, auth, storage };

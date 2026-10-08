@@ -73,7 +73,7 @@ export default function HotScreen() {
           }
 
           return (
-            <TouchableOpacity key={item.id} style={[styles.card, dyn.card]} onPress={() => router.push(`/article/${item.id}`)} activeOpacity={0.8}>
+            <TouchableOpacity key={item.id} style={[styles.card, dyn.card]} onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} activeOpacity={0.8}>
               <View style={styles.rankContainer}>
                 <Text style={[styles.rankNumber, { color: rankColor, fontSize: isTop3 ? 32 : 24 }]}>{index + 1}</Text>
               </View>

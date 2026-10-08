@@ -42,23 +42,47 @@ const LazyImage = ({ src, alt, className = '', style = {}, onClick, fetchPriorit
       onClick={onClick}
     >
       {inView && src ? (
-        <img
-          src={src}
-          alt={alt}
-          className={`lazy-image ${isLoaded ? 'loaded' : ''}`}
-          onLoad={() => setIsLoaded(true)}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: style.objectFit || 'cover',
-            opacity: (isEager || isLoaded) ? 1 : 0,
-            transition: isEager ? 'none' : 'opacity 0.4s ease-in-out',
-            display: 'block'
-          }}
-          loading={isEager ? undefined : "lazy"}
-          decoding={isEager ? "sync" : "async"}
-          fetchpriority={fetchPriority || (isEager ? "high" : "auto")}
-        />
+        <>
+          <img
+            src={src}
+            alt={alt}
+            className={`lazy-image ${isLoaded ? 'loaded' : ''}`}
+            onLoad={() => setIsLoaded(true)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: style.objectFit || 'cover',
+              opacity: (isEager || isLoaded) ? 1 : 0,
+              transition: isEager ? 'none' : 'opacity 0.4s ease-in-out',
+              display: 'block'
+            }}
+            loading={isEager ? undefined : "lazy"}
+            decoding={isEager ? "sync" : "async"}
+            fetchpriority={fetchPriority || (isEager ? "high" : "auto")}
+          />
+          {/* Watermark Overlay */}
+          {(isLoaded || isEager) && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2,
+              opacity: 0.15
+            }}>
+              <img 
+                src="/logo.png" 
+                alt="watermark" 
+                style={{ width: '40%', maxHeight: '40%', objectFit: 'contain' }} 
+              />
+            </div>
+          )}
+        </>
       ) : (
         // Placeholder div that maintains the shape while waiting for inView
         <div style={{ width: '100%', height: '100%', minHeight: '50px' }}></div>
