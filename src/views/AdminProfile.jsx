@@ -16,6 +16,7 @@ const AdminProfile = () => {
   const { currentUser: user, userRole, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -165,6 +166,7 @@ const AdminProfile = () => {
       }, { merge: true });
       
       alert("Profil berhasil diperbarui!");
+      setIsEditing(false);
       // Optionally reload the page to refresh the sidebar avatar
       window.location.reload();
     } catch (error) {
@@ -215,6 +217,7 @@ const AdminProfile = () => {
                     {!formData.photoURL && <User size={40} color="#666" />}
                   </div>
                   
+                  {isEditing && (
                   <button 
                     onClick={handlePhotoClick}
                     type="button"
@@ -228,6 +231,7 @@ const AdminProfile = () => {
                   >
                     <Camera size={16} />
                   </button>
+                  )}
                   <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} />
                 </div>
                 
@@ -243,66 +247,96 @@ const AdminProfile = () => {
                 <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Nama Lengkap</label>
-                    <input 
-                      type="text" 
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      placeholder="Masukkan nama lengkap Anda"
-                      className="admin-input"
-                    />
+                    {isEditing ? (
+                      <input 
+                        type="text" 
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        placeholder="Masukkan nama lengkap Anda"
+                        className="admin-input"
+                      />
+                    ) : (
+                      <div style={{ color: '#fff', fontSize: '0.95rem', padding: '10px 15px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        {formData.name || '-'}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Alamat Email (Login)</label>
                     <div style={{ position: 'relative' }}>
                       <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
-                      <input 
-                        type="email" 
-                        name="email"
-                        value={formData.email}
-                        disabled
-                        style={{ paddingLeft: '35px', opacity: 0.7, cursor: 'not-allowed' }}
-                        className="admin-input"
-                      />
+                      {isEditing ? (
+                        <input 
+                          type="email" 
+                          name="email"
+                          value={formData.email}
+                          disabled
+                          style={{ paddingLeft: '35px', opacity: 0.7, cursor: 'not-allowed' }}
+                          className="admin-input"
+                        />
+                      ) : (
+                        <div style={{ color: '#fff', fontSize: '0.95rem', padding: '10px 15px 10px 35px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          {formData.email || '-'}
+                        </div>
+                      )}
                     </div>
-                    <small style={{ color: '#666', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Email digunakan untuk login dan tidak dapat diubah.</small>
+                    {isEditing && <small style={{ color: '#666', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Email digunakan untuk login dan tidak dapat diubah.</small>}
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Kabupaten / Kota</label>
-                    <input 
-                      type="text" 
-                      name="kabKota"
-                      value={formData.kabKota}
-                      onChange={handleChange}
-                      placeholder="Cth: Kota Makassar"
-                      className="admin-input"
-                    />
+                    {isEditing ? (
+                      <input 
+                        type="text" 
+                        name="kabKota"
+                        value={formData.kabKota}
+                        onChange={handleChange}
+                        placeholder="Cth: Kota Makassar"
+                        className="admin-input"
+                      />
+                    ) : (
+                      <div style={{ color: '#fff', fontSize: '0.95rem', padding: '10px 15px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        {formData.kabKota || '-'}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Nomor HP / WhatsApp</label>
-                    <input 
-                      type="text" 
-                      name="noHp"
-                      value={formData.noHp}
-                      onChange={handleChange}
-                      placeholder="Cth: 081234567890"
-                      className="admin-input"
-                    />
+                    {isEditing ? (
+                      <input 
+                        type="text" 
+                        name="noHp"
+                        value={formData.noHp}
+                        onChange={handleChange}
+                        placeholder="Cth: 081234567890"
+                        className="admin-input"
+                      />
+                    ) : (
+                      <div style={{ color: '#fff', fontSize: '0.95rem', padding: '10px 15px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        {formData.noHp || '-'}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '8px' }}>Bio Singkat</label>
-                  <textarea 
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleChange}
-                    placeholder="Tulis sedikit tentang diri Anda (Opsional)..."
-                    className="admin-input"
-                    rows="2"
-                    style={{ resize: 'vertical' }}
-                  ></textarea>
+                  {isEditing ? (
+                    <textarea 
+                      name="bio"
+                      value={formData.bio}
+                      onChange={handleChange}
+                      placeholder="Tulis sedikit tentang diri Anda (Opsional)..."
+                      className="admin-input"
+                      rows="2"
+                      style={{ resize: 'vertical' }}
+                    ></textarea>
+                  ) : (
+                    <div style={{ color: '#fff', fontSize: '0.95rem', padding: '10px 15px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', minHeight: '60px' }}>
+                      {formData.bio || '-'}
+                    </div>
+                  )}
                 </div>
                 
                 {['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) && (
@@ -313,51 +347,91 @@ const AdminProfile = () => {
                   <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--admin-text-secondary)', marginBottom: '5px' }}>Nomor Registrasi (NO. REG)</label>
-                      <input 
-                        type="text" 
-                        name="regNumber"
-                        value={formData.regNumber}
-                        onChange={handleChange}
-                        placeholder="Cth: B-26.10-001"
-                        className="admin-input"
-                      />
+                      {isEditing ? (
+                        <input 
+                          type="text" 
+                          name="regNumber"
+                          value={formData.regNumber}
+                          onChange={handleChange}
+                          placeholder="Cth: B-26.10-001"
+                          className="admin-input"
+                        />
+                      ) : (
+                        <div style={{ color: '#fff', fontSize: '0.9rem', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          {formData.regNumber || '-'}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--admin-text-secondary)', marginBottom: '5px' }}>Jabatan Redaksi</label>
-                      <input 
-                        type="text" 
-                        name="roleTitle"
-                        value={formData.roleTitle}
-                        onChange={handleChange}
-                        placeholder="Cth: PEMIMPIN REDAKSI"
-                        className="admin-input"
-                      />
+                      {isEditing ? (
+                        <input 
+                          type="text" 
+                          name="roleTitle"
+                          value={formData.roleTitle}
+                          onChange={handleChange}
+                          placeholder="Cth: PEMIMPIN REDAKSI"
+                          className="admin-input"
+                        />
+                      ) : (
+                        <div style={{ color: '#fff', fontSize: '0.9rem', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          {formData.roleTitle || '-'}
+                        </div>
+                      )}
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--admin-text-secondary)', marginBottom: '5px' }}>Wilayah Tugas</label>
-                      <input 
-                        type="text" 
-                        name="region"
-                        value={formData.region}
-                        onChange={handleChange}
-                        placeholder="Cth: NASIONAL / JAWA BARAT"
-                        className="admin-input"
-                      />
+                      {isEditing ? (
+                        <input 
+                          type="text" 
+                          name="region"
+                          value={formData.region}
+                          onChange={handleChange}
+                          placeholder="Cth: NASIONAL / JAWA BARAT"
+                          className="admin-input"
+                        />
+                      ) : (
+                        <div style={{ color: '#fff', fontSize: '0.9rem', padding: '8px 12px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          {formData.region || '-'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
                 )}
                 
-                <div className="profile-submit-wrap" style={{ marginTop: '10px', paddingTop: '20px', borderTop: '1px solid var(--admin-card-border)', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button 
-                    type="submit" 
-                    disabled={saving}
-                    className="admin-btn admin-btn-primary"
-                    style={{ padding: '10px 24px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '150px', justifyContent: 'center' }}
-                  >
-                    {saving ? <Loader2 size={18} className="spin" /> : <Save size={18} />}
-                    {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-                  </button>
+                <div className="profile-submit-wrap" style={{ marginTop: '10px', paddingTop: '20px', borderTop: '1px solid var(--admin-card-border)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  {!isEditing ? (
+                    <button 
+                      type="button" 
+                      onClick={(e) => { e.preventDefault(); setIsEditing(true); }}
+                      className="admin-btn admin-btn-primary"
+                      style={{ padding: '10px 24px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '150px', justifyContent: 'center' }}
+                    >
+                      Edit Profil
+                    </button>
+                  ) : (
+                    <>
+                      <button 
+                        type="button" 
+                        disabled={saving}
+                        onClick={(e) => { e.preventDefault(); setIsEditing(false); fetchUserProfile(); }}
+                        className="admin-btn"
+                        style={{ padding: '10px 24px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px' }}
+                      >
+                        Batal
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={saving}
+                        className="admin-btn admin-btn-primary"
+                        style={{ padding: '10px 24px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '150px', justifyContent: 'center' }}
+                      >
+                        {saving ? <Loader2 size={18} className="spin" /> : <Save size={18} />}
+                        {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                      </button>
+                    </>
+                  )}
                 </div>
                 
               </form>
