@@ -64,6 +64,27 @@ const AdminReaders = () => {
     );
   };
 
+  const handleRoleChange = async (userId, newRole) => {
+    if (newRole === 'reader') return; // no change
+    showConfirm(
+      'Jadikan Tim Jurnalis',
+      `Yakin ingin mengangkat pembaca ini menjadi ${newRole.toUpperCase()}? Akun ini akan pindah ke Manajemen Tim Jurnalis.`,
+      async () => {
+        try {
+          const { updateDoc } = await import('firebase/firestore');
+          const userRef = doc(db, 'users', userId);
+          await updateDoc(userRef, { role: newRole });
+          setUsers(users.filter(u => u.id !== userId)); // Remove from readers list
+          showToast(`Akun berhasil diangkat menjadi ${newRole.toUpperCase()}!`, 'success');
+        } catch (error) {
+          console.error("Error updating role:", error);
+          showToast('Gagal mengubah hak akses', 'error');
+        }
+      },
+      'warning'
+    );
+  };
+
   if (authLoading) return <div className="admin-loading-screen"><div className="spinner"></div><p>Memeriksa akses...</p></div>;
 
   if (!['superadmin', 'admin'].includes(userRole)) {
@@ -142,21 +163,34 @@ const AdminReaders = () => {
                         </span>
                       </td>
                       <td className="admin-table-actions">
-                        <button
-                          onClick={() => handleDeleteUser(user.id, user.email)}
-                          className="admin-btn-icon"
-                          title="Hapus Pembaca"
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.15)',
-                            color: '#ef4444',
-                            border: 'none',
-                            padding: '7px',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <select 
+                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                            value="reader"
+                            className="admin-input"
+                            style={{padding: '6px 10px', width: 'auto', fontSize: '13px', borderRadius: '6px'}}
+                          >
+                            <option value="reader">Pembaca</option>
+                            <option value="reporter">Jadikan Reporter</option>
+                            <option value="editor">Jadikan Editor</option>
+                            <option value="admin">Jadikan Admin</option>
+                          </select>
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.email)}
+                            className="admin-btn-icon"
+                            title="Hapus Pembaca"
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#ef4444',
+                              border: 'none',
+                              padding: '7px',
+                              borderRadius: '6px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )) : (
