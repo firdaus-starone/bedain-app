@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { 
   LayoutDashboard, PenTool, Globe, LogOut, FileText, 
-  Image as ImageIcon, Users, Settings, Tag, Newspaper, Menu, MessageSquare, DollarSign, Inbox, Mail
+  Image as ImageIcon, Users, Settings, Tag, Newspaper, Menu, MessageSquare, DollarSign, Inbox, Mail, BookOpen
 } from 'lucide-react';
 
 
@@ -144,6 +144,10 @@ const AdminSidebar = () => {
           
           <Link onClick={handleNavClick} href="/admin/media" className={`admin-nav-item ${isActive('/admin/media') ? 'active' : ''}`}>
             <ImageIcon size={18} className="admin-nav-icon" /> Galeri Media
+          </Link>
+          
+          <Link onClick={handleNavClick} href="/admin/panduan-seo" className={`admin-nav-item ${isActive('/admin/panduan-seo') ? 'active' : ''}`}>
+            <BookOpen size={18} className="admin-nav-icon" style={{ color: isActive('/admin/panduan-seo') ? '' : '#3b82f6' }} /> Panduan SEO Jurnalis
           </Link>
 
           {['superadmin', 'admin'].includes(userRole) && (

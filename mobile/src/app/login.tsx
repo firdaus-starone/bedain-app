@@ -3,13 +3,17 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { useTheme } from '../context/ThemeContext';
 
 WebBrowser.maybeCompleteAuthSession();
+
+GoogleSignin.configure({
+  webClientId: '649905383675-hkik1akqmv10g3shuikdagfrt90si53e.apps.googleusercontent.com', // Web Client ID
+});
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -20,11 +24,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: '649905383675-hkik1akqmv10g3shuikdagfrt90si53e.apps.googleusercontent.com', // Web Client ID
-    androidClientId: '649905383675-lvcfq90ul9ec2b498kbj16siegdkok76.apps.googleusercontent.com', // Android Client ID (Play Store)
-  });
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -64,42 +63,45 @@ export default function LoginScreen() {
     }
   };
 
-  React.useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.idToken || userInfo.data?.idToken; // handle both v10 and v11+ of the library
       
-      setLoading(true);
-      signInWithCredential(auth, credential)
-        .then(async (userCredential) => {
-          const userRef = doc(db, 'users', userCredential.user.uid);
-          const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) {
-            await setDoc(userRef, {
-              email: userCredential.user.email,
-              name: userCredential.user.displayName || 'Pembaca',
-              role: 'reader',
-              createdAt: new Date().toISOString()
-            });
-          }
-          router.back();
-        })
-        .catch((error) => {
-          console.error(error);
-          Alert.alert('Gagal', 'Terjadi kesalahan saat masuk dengan Google.');
-          setLoading(false);
+      if (!idToken) {
+        throw new Error("No ID Token found");
+      }
+      
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, credential);
+      
+      const userRef = doc(db, 'users', userCredential.user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          email: userCredential.user.email,
+          name: userCredential.user.displayName || 'Pembaca',
+          role: 'reader',
+          createdAt: new Date().toISOString()
         });
-    } else if (response?.type === 'error') {
-      Alert.alert('Gagal', 'Otentikasi Google dibatalkan atau gagal.');
+      }
+      router.back();
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation (e.g. sign in) is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Gagal', 'Layanan Google Play tidak tersedia.');
+      } else {
+        console.error(error);
+        Alert.alert('Gagal', 'Terjadi kesalahan saat masuk dengan Google.');
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [response]);
-
-  const handleGoogleLogin = () => {
-    if (!request) {
-      Alert.alert('Tunggu', 'Sedang memuat pengaturan Google Auth...');
-      return;
-    }
-    promptAsync();
   };
 
   const dyn = {
@@ -193,7 +195,7 @@ export default function LoginScreen() {
         <TouchableOpacity 
           style={styles.googleBtn} 
           onPress={handleGoogleLogin}
-          disabled={loading || !request}
+          disabled={loading}
         >
           <Ionicons name="logo-google" size={24} color="#ea4335" style={styles.googleIcon} />
           <Text style={styles.googleBtnText}>Lanjutkan dengan Google</Text>

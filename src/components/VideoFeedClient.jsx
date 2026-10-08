@@ -21,7 +21,6 @@ export default function VideoFeedClient() {
       try {
         const q = query(
           collection(db, 'articles'),
-          where('status', '==', 'published'),
           orderBy('publishedAt', 'desc'),
           limit(150) 
         );
@@ -34,7 +33,7 @@ export default function VideoFeedClient() {
             return pDate <= now;
           });
 
-        const videosOnly = articles.filter(a => getArticleVideoData(a));
+        const videosOnly = articles.filter(a => a.status === 'published' && getArticleVideoData(a));
         
         // Load initial local reactions
         const initialReactions = {};

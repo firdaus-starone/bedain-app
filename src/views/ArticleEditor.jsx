@@ -651,19 +651,30 @@ PENTING: Jangan ada koma di akhir item terakhir sebelum kurung tutup. Pastikan J
       const aiResponse = await callGeminiAPI(prompt, "Kamu adalah ahli SEO Jurnalistik spesialis pembuat metadata. WAJIB mengembalikan HANYA format JSON valid tanpa embel-embel teks.", true);
       
       let cleanedJson = aiResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
-      const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleanedJson = jsonMatch[0];
-        // Hapus koma ganda jika ada
-        cleanedJson = cleanedJson.replace(/,,+/g, ',');
-        // Hapus trailing comma sebelum penutup bracket/kurawal
-        cleanedJson = cleanedJson.replace(/,\s*([}\]])/g, '$1');
-      } else {
-        // Fallback if no curly braces found, maybe API returned plain text
-        throw new Error("AI tidak mengembalikan format JSON yang valid. Respons AI: " + aiResponse.substring(0, 50) + "...");
-      }
       
-      const result = JSON.parse(cleanedJson);
+      // Ekstrak hanya objek JSON pertama yang valid dengan menghitung kurung kurawal
+      let validJson = null;
+      const startIdx = cleanedJson.indexOf('{');
+      if (startIdx !== -1) {
+        let count = 0;
+        for (let i = startIdx; i < cleanedJson.length; i++) {
+          if (cleanedJson[i] === '{') count++;
+          if (cleanedJson[i] === '}') count--;
+          if (count === 0) {
+            validJson = cleanedJson.substring(startIdx, i + 1);
+            break;
+          }
+        }
+      }
+
+      if (!validJson) {
+        throw new Error("AI tidak mengembalikan format JSON yang valid.");
+      }
+
+      // Hapus koma ganda & trailing comma jika ada
+      validJson = validJson.replace(/,,+/g, ',').replace(/,\s*([}\]])/g, '$1');
+      
+      const result = JSON.parse(validJson);
 
       let finalContent = boldTagsInContent(result.tags || formData.tags, formData.content);
 
@@ -859,6 +870,86 @@ ${textToAnalyze}`;
       const errorMsg = error?.message || 'Gagal terhubung ke AI';
       setTimeout(() => showNotif(`AI Auto-Category gagal (${errorMsg}). Menggunakan metode standar. Klik Mengerti & Perbaiki untuk cek/ubah API Key AI.`, 'error'), 300);
       autoSelectCategoryStandard();
+    }
+  };
+
+  const autoGenerateCaption = async () => {
+    if (!formData.title || !formData.content) {
+      showNotif('Tulis judul dan isi berita terlebih dahulu untuk menghasilkan caption yang akurat.', 'error');
+      return;
+    }
+
+    const apiKey = getGeminiKey();
+    if (!apiKey) {
+      showNotif('API Key belum diatur. Atur API key di Bedain AI Assistant.', 'error');
+      return;
+    }
+
+    let strippedContent = '';
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(formData.content, 'text/html');
+      strippedContent = doc.body.textContent || '';
+    } catch (e) {
+      strippedContent = formData.content.replace(/<[^>]+>/g, ' ');
+    }
+    const textToAnalyze = `${formData.title}\n\n${strippedContent}`.substring(0, 2500);
+
+    setNotifModal({ isOpen: true, type: 'success', title: '⏳ Memproses AI...', message: 'Bedain AI sedang merangkai caption menarik untuk foto artikel ini...', articleSlug: '', status: '' });
+
+    try {
+      const prompt = `Berdasarkan artikel berita berikut, buatkan 1 kalimat caption pendek (keterangan foto ilustrasi utama) yang sangat menarik, deskriptif, dan cocok untuk dijadikan keterangan gambar utama berita ini (maksimal 15 kata). 
+
+Kembalikan HANYA format JSON valid tanpa blok markdown:
+{
+  "caption": "teks caption anda disini tanpa tanda kutip di dalam string"
+}
+
+Artikel:
+${textToAnalyze}`;
+
+      const aiResponse = await callGeminiAPI(prompt, "Kamu adalah jurnalis ahli pembuat keterangan foto (caption). Kembalikan HANYA format JSON valid.", true);
+      
+      let caption = '';
+      try {
+        let cleanedJson = aiResponse.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        const startIdx = cleanedJson.indexOf('{');
+        const endIdx = cleanedJson.lastIndexOf('}');
+        if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+          cleanedJson = cleanedJson.substring(startIdx, endIdx + 1);
+        }
+        const parsed = JSON.parse(cleanedJson);
+        caption = parsed.caption || '';
+      } catch (e) {
+        console.warn("JSON Parse gagal, mencoba regex fallback. Respons AI:", aiResponse);
+        // Fallback 1: Cari pola "caption": "..."
+        const match = aiResponse.match(/"caption"\s*:\s*"([^"]+)"/i);
+        if (match && match[1]) {
+          caption = match[1];
+        } else {
+          // Fallback 2: Cari teks dalam tanda kutip pertama yang cukup panjang
+          const quotes = aiResponse.match(/"([^"]{15,})"/);
+          if (quotes && quotes[1]) {
+            caption = quotes[1];
+          } else {
+            // Fallback 3: Ambil baris terakhir yang bukan format markdown/log
+            const lines = aiResponse.split('\n').map(l => l.trim()).filter(l => l.length > 15 && !l.startsWith('*') && !l.startsWith('#') && !l.toLowerCase().includes('role:'));
+            caption = lines.pop() || aiResponse.substring(0, 100);
+          }
+        }
+      }
+      
+      caption = caption.trim().replace(/^["']|["']$/g, '');
+      
+      setFormData(prev => ({ ...prev, imageCaption: caption }));
+      setNotifModal({ isOpen: false, type: 'success', title: '', message: '', articleSlug: '', status: '' });
+      setTimeout(() => showNotif(`✨ Caption gambar berhasil dibuat!`, 'success'), 300);
+      
+    } catch (error) {
+      console.warn("AI Caption Generate gagal:", error.message);
+      setNotifModal({ isOpen: false, type: 'success', title: '', message: '', articleSlug: '', status: '' });
+      const errorMsg = error?.message || 'Gagal terhubung ke AI';
+      setTimeout(() => showNotif(`Gagal membuat caption (${errorMsg}).`, 'error'), 300);
     }
   };
 
@@ -1386,7 +1477,17 @@ Konten Asli: ${formData.content}`;
                 )}
 
                 <div style={{ marginTop: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '8px', fontWeight: '500' }}>Keterangan Foto Utama</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '13px', color: 'var(--admin-text-secondary)', fontWeight: '500' }}>Keterangan Foto Utama</label>
+                    <button
+                      type="button"
+                      onClick={autoGenerateCaption}
+                      className="editor-mobile-action-btn"
+                      style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}
+                    >
+                      <Sparkles size={11} /> Auto Caption
+                    </button>
+                  </div>
                   <input
                     type="text"
                     value={formData.imageCaption}
@@ -1434,6 +1535,14 @@ Konten Asli: ${formData.content}`;
                   <div style={{ marginBottom: '8px' }}>
                     <label style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', display: 'block', marginBottom: '8px' }}>Kategori</label>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button 
+                        type="button" 
+                        onClick={autoSelectCategory}
+                        className="editor-mobile-action-btn"
+                        style={{ flex: 1, background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', transition: 'all 0.2s', minHeight: '44px', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)' }}
+                      >
+                        <Sparkles size={13} /> Pilih AI
+                      </button>
                       <button 
                         type="button" 
                         onClick={handleAddCategory}

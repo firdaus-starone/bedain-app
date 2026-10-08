@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bedain News",
     "slug": "mobile",
-    "version": "1.0.4",
+    "version": "1.0.6",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -14,7 +14,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "versionCode": 4,
+      "versionCode": 16,
       "package": "com.bedain.newsapp",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -38,7 +38,8 @@
           "imageWidth": 200
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -49,6 +50,9 @@
       "eas": {
         "projectId": "ca5a336f-7faa-4798-94f6-7aeb5b9c743f"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ca5a336f-7faa-4798-94f6-7aeb5b9c743f"
     }
   }
 }

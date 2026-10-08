@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -280,6 +280,7 @@ export default function Home() {
   }, [rawArticles]);
 
   const flatListRef = useRef<FlatList>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -367,9 +368,14 @@ export default function Home() {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <Animated.ScrollView 
         style={[styles.container, dyn.bg]} 
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -401,13 +407,23 @@ export default function Home() {
 
         {/* HEADER BANNER */}
         {headerBanners.length > 0 && (
-          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-            {headerBanners.map(b => (
-              <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: 10 }}>
-                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 60, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
-                <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>SPONSOR</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={{ marginBottom: 16 }}>
+            {headerBanners.map((b, index) => {
+              // Calculate a simple parallax translation for the banner
+              // The banner is near the top (offset maybe ~100-200), so we just map scrollY
+              const translateY = scrollY.interpolate({
+                inputRange: [-100, 0, 400],
+                outputRange: [-20, 0, 80],
+                extrapolate: 'clamp',
+              });
+              
+              return (
+                <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: index === headerBanners.length - 1 ? 0 : 10, overflow: 'hidden', backgroundColor: '#e2e8f0' }}>
+                  <Animated.Image source={{ uri: b.imageUrl }} style={{ width: '100%', aspectRatio: 4 / 3, transform: [{ translateY }], scale: 1.2 }} resizeMode="cover" />
+                  <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>SPONSOR</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -446,7 +462,7 @@ export default function Home() {
         {FEATURED_ARTICLE && (
           <View style={styles.featuredContainer}>
             <View style={[styles.featuredCard, dyn.card]}>
-              <TouchableOpacity onPress={() => router.push(`/article/${FEATURED_ARTICLE.id}`)} activeOpacity={0.9}>
+              <TouchableOpacity onPress={() => FEATURED_ARTICLE.videoUrl ? router.push('/video') : router.push(`/article/${FEATURED_ARTICLE.id}`)} activeOpacity={0.9}>
                 <View style={styles.featuredImageContainer}>
                   <Image source={{ uri: FEATURED_ARTICLE.image }} style={styles.featuredImage} />
                   <View style={styles.featuredOverlay}>
@@ -460,7 +476,7 @@ export default function Home() {
                   <Text style={styles.relatedTitle}>TERKAIT</Text>
                   <View style={styles.relatedList}>
                     {RELATED_ARTICLES.map(related => (
-                      <TouchableOpacity key={`related-${related.id}`} style={{ flex: 1, marginRight: 8 }} onPress={() => router.push(`/article/${related.id}`)}>
+                      <TouchableOpacity key={`related-${related.id}`} style={{ flex: 1, marginRight: 8 }} onPress={() => related.videoUrl ? router.push('/video') : router.push(`/article/${related.id}`)}>
                         <Text style={[styles.relatedItem, { marginRight: 0 }]} numberOfLines={2}>
                           • {related.title}
                         </Text>
@@ -480,7 +496,7 @@ export default function Home() {
         <View style={styles.listContainer}>
           {BERITA_LIST.map((item, index) => (
             <View key={item.id}>
-              <TouchableOpacity onPress={() => router.push(`/article/${item.id}`)} style={styles.listRow} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} style={styles.listRow} activeOpacity={0.7}>
                 <View style={styles.listTextContainer}>
                   <Text style={[styles.listTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
                   <Text style={styles.listDate}>{item.date}</Text>
@@ -514,7 +530,7 @@ export default function Home() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.terkiniScroll, { paddingVertical: 0, paddingBottom: 8 }]}>
           {BERITA_PILIHAN.map((item) => (
-            <TouchableOpacity onPress={() => router.push(`/article/${item.id}`)} key={`bottom-${item.id}`} style={styles.bottomCard} activeOpacity={0.9}>
+            <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} key={`bottom-${item.id}`} style={styles.bottomCard} activeOpacity={0.9}>
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
                 <View style={styles.bottomOverlay}>
                   <View style={styles.terkiniBadge}>
@@ -538,7 +554,7 @@ export default function Home() {
           {LATEST_NEWS.map((item, index) => {
             if (index === 0) {
               return (
-                <TouchableOpacity onPress={() => router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={[styles.mixedCardFirst, dyn.mixedCardBg]} activeOpacity={0.8}>
+                <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={[styles.mixedCardFirst, dyn.mixedCardBg]} activeOpacity={0.8}>
                   <View style={styles.mixedCardFirstText}>
                     <Text style={[styles.mixedCardFirstTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
                     <Text style={styles.mixedCardFirstDate}>{item.date}</Text>
@@ -548,7 +564,7 @@ export default function Home() {
               );
             } else {
               return (
-                <TouchableOpacity onPress={() => router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={styles.mixedListItem} activeOpacity={0.7}>
+                <TouchableOpacity onPress={() => item.videoUrl ? router.push('/video') : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={styles.mixedListItem} activeOpacity={0.7}>
                   <Image source={{ uri: item.image }} style={styles.mixedListImage} />
                   <View style={styles.mixedListText}>
                     <Text style={[styles.mixedListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
@@ -605,7 +621,7 @@ export default function Home() {
 
         {/* Ruang kosong di bawah untuk Bottom Navigation bar nanti */}
         <View style={{ height: 160 }} />
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
