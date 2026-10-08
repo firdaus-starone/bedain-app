@@ -185,7 +185,7 @@ const AdminProfile = () => {
         <div style={{ maxWidth: '850px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', color: 'var(--admin-text-primary)', cursor: 'pointer' }}>
+            <Link href={['admin', 'superadmin', 'editor', 'reporter'].includes(userRole) ? "/admin/dashboard" : "/"} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--admin-card-bg)', border: '1px solid var(--admin-card-border)', color: 'var(--admin-text-primary)', cursor: 'pointer' }}>
               <ArrowLeft size={20} />
             </Link>
             <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: 0, color: 'var(--admin-text-primary)' }}>Profil Pengguna</h1>

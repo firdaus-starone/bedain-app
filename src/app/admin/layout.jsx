@@ -10,6 +10,7 @@ export default function AdminLayout({ children }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isPending, setIsPending] = useState(false);
+    const [isReader, setIsReader] = useState(false);
     const [userData, setUserData] = useState(null);
     const [logoutTrigger, setLogoutTrigger] = useState(false);
     const router = useRouter();
@@ -30,6 +31,12 @@ export default function AdminLayout({ children }) {
                     if (userDoc.exists() && ['admin', 'superadmin', 'editor', 'reporter'].includes(userDoc.data().role)) {
                         setIsAdmin(true);
                         setUserData(userDoc.data());
+                    } else if (userDoc.exists() && userDoc.data().role === 'reader') {
+                        setIsReader(true);
+                        setUserData(userDoc.data());
+                        if (pathname !== '/admin/profile') {
+                            setTimeout(() => router.push('/admin/profile'), 100);
+                        }
                     } else if (userDoc.exists() && userDoc.data().role === 'pending') {
                         setIsPending(true);
                         setUserData(userDoc.data());
@@ -38,10 +45,12 @@ export default function AdminLayout({ children }) {
                         setIsAdmin(true);
                     } else {
                         // User document doesn't exist yet (first time login with Google)
-                        // useAuth.js is probably creating it right now.
-                        // We will treat them as pending by default.
-                        setIsPending(true);
-                        setUserData({}); // Empty userData means incomplete profile
+                        // We will default them to reader now (since signup default is reader)
+                        setIsReader(true);
+                        setUserData({}); 
+                        if (pathname !== '/admin/profile') {
+                            setTimeout(() => router.push('/admin/profile'), 100);
+                        }
                     }
                 } catch (error) {
                     console.error("Error checking user role:", error);
@@ -68,11 +77,43 @@ export default function AdminLayout({ children }) {
         return <>{children}</>;
     }
 
+    if (isReader) {
+        if (pathname !== '/admin/profile') {
+            setTimeout(() => router.push('/admin/profile'), 100);
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#121214', color: '#fff' }}>
+                    <div className="spinner"></div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="admin-layout" style={{ display: 'block', backgroundColor: '#121214', minHeight: '100vh', padding: '20px' }}>
+                <div style={{ maxWidth: '900px', margin: '40px auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <button 
+                            onClick={() => router.push('/')}
+                            style={{ padding: '8px 16px', background: '#333', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                        >
+                            &larr; Kembali ke Beranda
+                        </button>
+                        <button 
+                            onClick={() => auth.signOut().then(() => router.push('/'))}
+                            style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', cursor: 'pointer' }}
+                        >
+                            Keluar
+                        </button>
+                    </div>
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
     if (isPending) {
         const isProfileComplete = userData?.kabKota && userData?.noHp;
 
         if (!isProfileComplete && pathname !== '/admin/profile') {
-            // Give it a tiny delay to prevent router conflict if it was just loaded
             setTimeout(() => router.push('/admin/profile'), 100);
             return (
                 <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#121214', color: '#fff' }}>
