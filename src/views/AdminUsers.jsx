@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { signOut, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc, getCountFromServer, where } from 'firebase/firestore';
 import { auth, db, firebaseConfig } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { LayoutDashboard, PenTool, Globe, LogOut, Users, ArrowLeft, ShieldAlert, Image as ImageIcon, Settings, Tag, FileText, UserPlus, X, Trash2, Mail, User, CreditCard, Download, Camera } from 'lucide-react';
@@ -76,7 +76,18 @@ const AdminUsers = () => {
         data = data.filter(user => user.role !== 'reader');
       }
       
-      setUsers(data);
+      const usersWithCounts = await Promise.all(data.map(async (user) => {
+        try {
+          const articlesQuery = query(collection(db, 'articles'), where('authorId', '==', user.id));
+          const countSnapshot = await getCountFromServer(articlesQuery);
+          return { ...user, articleCount: countSnapshot.data().count };
+        } catch (err) {
+          console.error("Error fetching count for user", user.id, err);
+          return { ...user, articleCount: 0 };
+        }
+      }));
+      
+      setUsers(usersWithCounts);
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
@@ -373,7 +384,19 @@ const AdminUsers = () => {
                         <div style={{ fontWeight: 600, color: 'var(--admin-text-primary)', marginBottom: '3px' }}>
                           {user.name || (user.email ? user.email.split('@')[0] : 'Unknown')}
                         </div>
-                        <div style={{ fontSize: '12.5px', color: 'var(--admin-text-secondary)' }}>{user.email || 'No Email'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: 'var(--admin-text-secondary)' }}>
+                          {user.email || 'No Email'}
+                          <span style={{ 
+                            background: 'rgba(59, 130, 246, 0.1)', 
+                            color: '#3b82f6', 
+                            padding: '2px 8px', 
+                            borderRadius: '12px', 
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}>
+                            {user.articleCount !== undefined ? `${user.articleCount} Artikel` : '0 Artikel'}
+                          </span>
+                        </div>
                       </td>
                       <td>
                         <span className={`status-badge ${(user.role || '').toLowerCase() === 'superadmin' ? 'status-published' : (user.role || '').toLowerCase() === 'editor' ? 'status-draft' : (user.role || '').toLowerCase() === 'pending' ? 'status-draft' : ''}`} style={(user.role || '').toLowerCase() === 'pending' ? { background: '#fee2e2', color: '#ef4444' } : {}}>
