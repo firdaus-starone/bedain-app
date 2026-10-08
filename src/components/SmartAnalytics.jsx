@@ -60,7 +60,7 @@ const SmartAnalytics = ({ articles = [] }) => {
       }))
       .sort((a, b) => b.views - a.views);
       
-    return { cityStatsFull: full, cityStats: full.slice(0, 6) };
+    return { cityStatsFull: full, cityStats: full.slice(0, 8) };
   }, [articles]);
 
   // 3. Category Views (Kategori Paling Diminati)
@@ -220,7 +220,7 @@ const SmartAnalytics = ({ articles = [] }) => {
             </div>
             <div style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 600 }}>Lihat Semua &rarr;</div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, justifyContent: 'space-between' }}>
             {cityStats.map((item, index) => (
               <div key={item.name} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
