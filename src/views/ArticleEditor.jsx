@@ -1133,7 +1133,7 @@ Konten Asli: ${formData.content}`;
       // Auto-post to Facebook if newly published
       if (isPub && formData.originalStatus !== 'published') {
         try {
-          const articleUrl = `https://bedainnews.com/baca/${finalSlug}`;
+          const articleUrl = `https://bedainnews.com/article/${finalSlug}`;
           await fetch('/api/facebook-post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -176,7 +176,7 @@ const AdminArticles = () => {
         
         // Auto-post to Facebook
         try {
-          const articleUrl = `https://bedainnews.com/baca/${article.slug}`;
+          const articleUrl = `https://bedainnews.com/article/${article.slug}`;
           await fetch('/api/facebook-post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

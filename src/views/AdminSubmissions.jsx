@@ -149,7 +149,7 @@ export default function AdminSubmissions() {
 
       // Auto-post to Facebook
       try {
-        const articleUrl = `https://bedainnews.com/baca/${slugToUse}`;
+        const articleUrl = `https://bedainnews.com/article/${slugToUse}`;
         await fetch('/api/facebook-post', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
