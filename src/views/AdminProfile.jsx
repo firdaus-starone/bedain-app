@@ -198,7 +198,7 @@ const AdminProfile = () => {
             {settings?.nativeAppUrl && (
               <a href={settings.nativeAppUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold' }}>
                 <Smartphone size={18} />
-                Download App
+                Download di Play Store
               </a>
             )}
           </div>
