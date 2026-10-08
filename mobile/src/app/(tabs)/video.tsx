@@ -126,6 +126,19 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, i
   
   if (!ytId) {
      const urlSources = [item.videoUrl, item.youtubeUrl, item.video].filter(u => typeof u === 'string');
+     
+     if (urlSources.length === 0 && typeof item.content === 'string') {
+       const iframeMatch = item.content.match(/<iframe[^>]+src=["']([^"']+)["'][^>]*>/i);
+       if (iframeMatch) {
+         urlSources.push(`<iframe src="${iframeMatch[1]}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`);
+       } else if (item.content.includes('<video')) {
+         const videoMatch = item.content.match(/<video[^>]*>.*?<\/video>/is);
+         if (videoMatch) {
+           urlSources.push(videoMatch[0].replace(/<video/, '<video width="100%" height="100%" autoplay muted loop playsinline style="object-fit:cover;"'));
+         }
+       }
+     }
+
      for (const u of urlSources) {
        if (u.includes('<iframe')) {
          embedUrl = `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /></head><body style="margin:0;padding:0;background-color:#000;display:flex;justify-content:center;align-items:center;">${u}</body></html>`;
@@ -244,6 +257,7 @@ export default function VideoScreen() {
         if (typeof data.videoUrl === 'string' && data.videoUrl.includes('http')) return true;
         if (typeof data.youtubeUrl === 'string' && data.youtubeUrl.includes('http')) return true;
         if (typeof data.video === 'string' && data.video.includes('http')) return true;
+        if (typeof data.content === 'string' && (data.content.includes('<iframe') || data.content.includes('<video'))) return true;
         return false;
       };
 
