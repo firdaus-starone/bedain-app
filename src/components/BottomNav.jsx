@@ -79,20 +79,16 @@ const BottomNav = ({ onOpenMenu, onOpenSearch, isHidden }) => {
           <span className="bottom-nav-label">{t('navigation.send') || 'Kirim'}</span>
         </Link>
 
-        {/* 3. Beranda (Home di Tengah - Center Prominent Hub) */}
-        <div className="bottom-nav-item bottom-nav-item-center">
-          <a
-            href="/"
-            onClick={handleHomeClick}
-            className={`bottom-nav-fab ${isActive('/') ? 'active' : ''}`}
-            aria-label="Beranda"
-          >
-            <div className="fab-circle">
-              <img src="/logo-bundar.png" alt="Beranda" className="fab-icon" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-            </div>
-            <span className="bottom-nav-label fab-label">{t('navigation.home') || 'Beranda'}</span>
-          </a>
-        </div>
+        {/* 3. Beranda */}
+        <a
+          href="/"
+          onClick={handleHomeClick}
+          className={`bottom-nav-item ${isActive('/') ? 'active' : ''}`}
+          aria-label="Beranda"
+        >
+          <Home size={22} className="bottom-nav-icon" />
+          <span className="bottom-nav-label">{t('navigation.home') || 'Beranda'}</span>
+        </a>
 
         {/* 4. Trending */}
         <a
