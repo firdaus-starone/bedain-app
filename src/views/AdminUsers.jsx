@@ -7,7 +7,7 @@ import { signOut, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPas
 import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc, getCountFromServer, where } from 'firebase/firestore';
 import { auth, db, firebaseConfig } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, PenTool, Globe, LogOut, Users, ArrowLeft, ShieldAlert, Image as ImageIcon, Settings, Tag, FileText, UserPlus, X, Trash2, Mail, User, CreditCard, Download, Camera } from 'lucide-react';
+import { LayoutDashboard, PenTool, Globe, LogOut, Users, ArrowLeft, ShieldAlert, Image as ImageIcon, Settings, Tag, FileText, UserPlus, X, Trash2, Mail, User, CreditCard, Download, Camera, MessageCircle, MapPin } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import IdCard from '../components/IdCard';
 import { uploadAndCompressImage } from '../lib/uploadImage';
@@ -32,9 +32,13 @@ const AdminUsers = () => {
   const [newRole, setNewRole] = useState('reporter');
   const [saving, setSaving] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [isEditingModal, setIsEditingModal] = useState(false);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('reporter');
   const [editPhotoURL, setEditPhotoURL] = useState('');
+  const [editNoHp, setEditNoHp] = useState('');
+  const [editKabKota, setEditKabKota] = useState('');
+  const [editBio, setEditBio] = useState('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const editFileInputRef = React.useRef(null);
 
@@ -191,6 +195,10 @@ const AdminUsers = () => {
     setEditName(user.name || '');
     setEditRole(user.role || 'reporter');
     setEditPhotoURL(user.photoURL || '');
+    setEditNoHp(user.noHp || '');
+    setEditKabKota(user.kabKota || '');
+    setEditBio(user.bio || '');
+    setIsEditingModal(false);
   };
 
   const handleEditPhotoClick = () => {
@@ -227,13 +235,28 @@ const AdminUsers = () => {
     setSaving(true);
     try {
       const userRef = doc(db, 'users', editingUser.id);
-      await updateDoc(userRef, { name: editName.trim(), role: editRole, photoURL: editPhotoURL });
+      await updateDoc(userRef, { 
+        name: editName.trim(), 
+        role: editRole, 
+        photoURL: editPhotoURL,
+        noHp: editNoHp.trim(),
+        kabKota: editKabKota.trim(),
+        bio: editBio.trim()
+      });
       
       if (editRole === 'reader') {
         setUsers(users.filter(u => u.id !== editingUser.id));
         showToast('Jurnalis diturunkan menjadi Pembaca dan dipindahkan dari daftar.', 'success');
       } else {
-        setUsers(users.map(u => u.id === editingUser.id ? { ...u, name: editName.trim(), role: editRole, photoURL: editPhotoURL } : u));
+        setUsers(users.map(u => u.id === editingUser.id ? { 
+          ...u, 
+          name: editName.trim(), 
+          role: editRole, 
+          photoURL: editPhotoURL,
+          noHp: editNoHp.trim(),
+          kabKota: editKabKota.trim(),
+          bio: editBio.trim()
+        } : u));
         showToast('Data jurnalis berhasil diperbarui!', 'success');
       }
       setEditingUser(null);
@@ -712,8 +735,8 @@ const AdminUsers = () => {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
                 <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--admin-text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <PenTool size={20} color="#3b82f6" />
-                  Edit Data Jurnalis
+                  {isEditingModal ? <PenTool size={20} color="#3b82f6" /> : <User size={20} color="#10b981" />}
+                  {isEditingModal ? 'Edit Data Jurnalis' : 'Profil Jurnalis'}
                 </h3>
                 <button 
                   onClick={() => setEditingUser(null)}
@@ -723,114 +746,225 @@ const AdminUsers = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleEditUser}>
-                
-                {/* Photo Upload for Edit User */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
-                  <div style={{ position: 'relative' }}>
+              {!isEditingModal ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' }}>
                     <div 
                       style={{ 
                         width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--admin-card-bg)', 
                         backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', justifyContent: 'center', 
                         overflow: 'hidden', backgroundImage: `url(${editPhotoURL})`, backgroundSize: 'cover', backgroundPosition: 'center',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)', marginBottom: '12px'
                       }}
                     >
                       {!editPhotoURL && <User size={40} color="#666" />}
                     </div>
-                    
-                    <button 
-                      onClick={handleEditPhotoClick}
-                      type="button"
-                      disabled={isUploadingPhoto}
-                      style={{
-                        position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px',
-                        backgroundColor: '#3b82f6', borderRadius: '50%', border: 'none',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        color: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.3)', transition: 'all 0.2s'
-                      }}
-                      title="Ubah Foto Profil Jurnalis"
-                    >
-                      {isUploadingPhoto ? <div className="spinner" style={{width: '16px', height: '16px', borderTopColor: '#fff', margin: 0}}></div> : <Camera size={16} />}
-                    </button>
-                    <input type="file" accept="image/*" ref={editFileInputRef} onChange={handleEditFileChange} style={{ display: 'none' }} />
+                    <h4 style={{ margin: '0 0 4px 0', color: 'var(--admin-text-primary)', fontSize: '1.1rem' }}>{editName || 'Tanpa Nama'}</h4>
+                    <span style={{ color: 'var(--admin-text-secondary)', fontSize: '0.9rem' }}>{editingUser.email}</span>
                   </div>
-                  <span style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', marginTop: '8px' }}>
-                    {isUploadingPhoto ? 'Mengunggah...' : 'Klik ikon kamera untuk mengubah foto'}
-                  </span>
-                </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
-                    Email Jurnalis (Tidak bisa diubah)
-                  </label>
-                  <input
-                    type="email"
-                    disabled
-                    value={editingUser.email}
-                    className="admin-input"
-                    style={{ width: '100%', padding: '10px 12px', backgroundColor: 'var(--admin-hover-bg)', color: 'var(--admin-text-secondary)', cursor: 'not-allowed' }}
-                  />
-                </div>
+                  <div style={{ backgroundColor: 'var(--admin-hover-bg)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--admin-text-secondary)', fontSize: '0.9rem' }}>Role/Akses:</span>
+                      <span style={{ color: 'var(--admin-text-primary)', fontWeight: 500, fontSize: '0.9rem', textTransform: 'capitalize' }}>{editRole}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--admin-text-secondary)', fontSize: '0.9rem' }}>Domisili:</span>
+                      <span style={{ color: 'var(--admin-text-primary)', fontWeight: 500, fontSize: '0.9rem' }}>{editKabKota || '-'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--admin-text-secondary)', fontSize: '0.9rem' }}>WhatsApp:</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: 'var(--admin-text-primary)', fontWeight: 500, fontSize: '0.9rem' }}>{editNoHp || '-'}</span>
+                        {editNoHp && (
+                          <a 
+                            href={`https://wa.me/${editNoHp.replace(/^0/, '62').replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ 
+                              display: 'flex', alignItems: 'center', gap: '4px', 
+                              backgroundColor: '#25D366', color: '#fff', 
+                              padding: '4px 8px', borderRadius: '4px', 
+                              fontSize: '11px', fontWeight: 600, textDecoration: 'none' 
+                            }}
+                          >
+                            <MessageCircle size={12} /> Hubungi
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ color: 'var(--admin-text-secondary)', fontSize: '0.9rem' }}>Biografi:</span>
+                      <span style={{ color: 'var(--admin-text-primary)', fontSize: '0.9rem', fontStyle: editBio ? 'normal' : 'italic' }}>
+                        {editBio || 'Belum ada biografi'}
+                      </span>
+                    </div>
+                  </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
-                    Nama Lengkap Jurnalis
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nama Lengkap"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="admin-input"
-                    style={{ width: '100%', padding: '10px 12px' }}
-                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingModal(true)}
+                      className="admin-btn admin-btn-primary"
+                      style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <PenTool size={16} /> Edit Data
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <form onSubmit={handleEditUser}>
+                  
+                  {/* Photo Upload for Edit User */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ position: 'relative' }}>
+                      <div 
+                        style={{ 
+                          width: '80px', height: '80px', borderRadius: '50%', border: '4px solid var(--admin-card-bg)', 
+                          backgroundColor: '#2d2d2d', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                          overflow: 'hidden', backgroundImage: `url(${editPhotoURL})`, backgroundSize: 'cover', backgroundPosition: 'center',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                        }}
+                      >
+                        {!editPhotoURL && <User size={40} color="#666" />}
+                      </div>
+                      
+                      <button 
+                        onClick={handleEditPhotoClick}
+                        type="button"
+                        disabled={isUploadingPhoto}
+                        style={{
+                          position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px',
+                          backgroundColor: '#3b82f6', borderRadius: '50%', border: 'none',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                          color: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.3)', transition: 'all 0.2s'
+                        }}
+                        title="Ubah Foto Profil Jurnalis"
+                      >
+                        {isUploadingPhoto ? <div className="spinner" style={{width: '16px', height: '16px', borderTopColor: '#fff', margin: 0}}></div> : <Camera size={16} />}
+                      </button>
+                      <input type="file" accept="image/*" ref={editFileInputRef} onChange={handleEditFileChange} style={{ display: 'none' }} />
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', marginTop: '8px' }}>
+                      {isUploadingPhoto ? 'Mengunggah...' : 'Klik ikon kamera untuk mengubah foto'}
+                    </span>
+                  </div>
 
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
-                    Role / Jabatan Redaksi
-                  </label>
-                  <select
-                    value={editRole}
-                    onChange={(e) => setEditRole(e.target.value)}
-                    className="admin-input"
-                    disabled={editingUser?.id === currentUser.uid}
-                    style={{ 
-                      width: '100%', 
-                      padding: '10px 12px',
-                      opacity: editingUser?.id === currentUser.uid ? 0.6 : 1,
-                      cursor: editingUser?.id === currentUser.uid ? 'not-allowed' : 'default'
-                    }}
-                  >
-                    <option value="reader">Reader (Jadikan Pembaca Biasa)</option>
-                    <option value="reporter">Reporter (Menulis & Simpan Draf Berita)</option>
-                    <option value="editor">Editor (Bisa Tayangkan & Edit Semua Berita)</option>
-                    <option value="admin">Admin Redaksi (Kelola Jurnalis & Kategori)</option>
-                    {userRole === 'superadmin' && <option value="superadmin">Superadmin Redaksi</option>}
-                  </select>
-                </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+                      Email Jurnalis (Tidak bisa diubah)
+                    </label>
+                    <input
+                      type="email"
+                      disabled
+                      value={editingUser.email}
+                      className="admin-input"
+                      style={{ width: '100%', padding: '10px 12px', backgroundColor: 'var(--admin-hover-bg)', color: 'var(--admin-text-secondary)', cursor: 'not-allowed' }}
+                    />
+                  </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setEditingUser(null)}
-                    className="admin-btn"
-                    style={{ backgroundColor: 'var(--admin-hover-bg)', color: 'var(--admin-text-primary)', border: '1px solid var(--admin-border)', padding: '10px 16px', borderRadius: '8px' }}
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="admin-btn admin-btn-primary"
-                    style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: 600 }}
-                  >
-                    {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-                  </button>
-                </div>
-              </form>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+                      Nama Lengkap Jurnalis
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nama Lengkap"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="admin-input"
+                      style={{ width: '100%', padding: '10px 12px' }}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+                        No. WhatsApp
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: 081234567890"
+                        value={editNoHp}
+                        onChange={(e) => setEditNoHp(e.target.value)}
+                        className="admin-input"
+                        style={{ width: '100%', padding: '10px 12px' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+                        Kab/Kota Domisili
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: Pontianak"
+                        value={editKabKota}
+                        onChange={(e) => setEditKabKota(e.target.value)}
+                        className="admin-input"
+                        style={{ width: '100%', padding: '10px 12px' }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+                      Biografi / Deskripsi Singkat
+                    </label>
+                    <textarea
+                      placeholder="Tuliskan biografi singkat jurnalis..."
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      className="admin-input"
+                      rows={3}
+                      style={{ width: '100%', padding: '10px 12px', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', color: 'var(--admin-text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+                      Role / Jabatan Redaksi
+                    </label>
+                    <select
+                      value={editRole}
+                      onChange={(e) => setEditRole(e.target.value)}
+                      className="admin-input"
+                      disabled={editingUser?.id === currentUser.uid}
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px 12px',
+                        opacity: editingUser?.id === currentUser.uid ? 0.6 : 1,
+                        cursor: editingUser?.id === currentUser.uid ? 'not-allowed' : 'default'
+                      }}
+                    >
+                      <option value="reader">Reader (Jadikan Pembaca Biasa)</option>
+                      <option value="reporter">Reporter (Menulis & Simpan Draf Berita)</option>
+                      <option value="editor">Editor (Bisa Tayangkan & Edit Semua Berita)</option>
+                      <option value="admin">Admin Redaksi (Kelola Jurnalis & Kategori)</option>
+                      {userRole === 'superadmin' && <option value="superadmin">Superadmin Redaksi</option>}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingModal(false)}
+                      className="admin-btn"
+                      style={{ backgroundColor: 'var(--admin-hover-bg)', color: 'var(--admin-text-primary)', border: '1px solid var(--admin-border)', padding: '10px 16px', borderRadius: '8px' }}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="admin-btn admin-btn-primary"
+                      style={{ padding: '10px 20px', borderRadius: '8px', fontWeight: 600 }}
+                    >
+                      {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}
