@@ -93,7 +93,7 @@ const BreakingNews = () => {
         const q = query(
           collection(db, 'articles'),
           orderBy('publishedAt', 'desc'),
-          limit(12) // Ambil 12 artikel terakhir untuk dianalisa
+          limit(30) // Ambil 30 artikel untuk Breaking News dan Analisa Trending
         );
         const snap = await getDocs(q);
         const now = new Date();
@@ -101,10 +101,16 @@ const BreakingNews = () => {
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(a => a.status === 'published' && (!a.publishedAt || (a.publishedAt.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now())) <= now));
           
+        const breakingItems = latestArticles
+          .filter(a => a.isBreakingNews === true)
+          .slice(0, 5)
+          .map(a => ({ type: 'breaking', text: a.title, link: `/${a.category === 'Video' || a.videoUrl || a.youtubeUrl ? 'watch' : 'article'}/${a.slug}` }));
+
         const topicCounts = {};
         const tagDisplays = {};
         
-        latestArticles.forEach(article => {
+        // Cukup pakai 12 artikel teratas untuk analisa trending
+        latestArticles.slice(0, 12).forEach(article => {
            const rawTags = article.tags || [];
            const tags = typeof rawTags === 'string' ? rawTags.split(',') : rawTags;
            if (Array.isArray(tags)) {
@@ -127,8 +133,9 @@ const BreakingNews = () => {
           .slice(0, 8)
           .map(entry => ({ type: 'topic', text: tagDisplays[entry[0]], count: entry[1] }));
 
-        cachedTopicsMemory = sortedTopics;
-        return sortedTopics;
+        const finalItems = [...breakingItems, ...sortedTopics];
+        cachedTopicsMemory = finalItems;
+        return finalItems;
       } catch (error) {
         console.error('Error fetching trending topics:', error);
         return null;
@@ -176,11 +183,18 @@ const BreakingNews = () => {
             <span>{mounted && currentTime ? currentTime : `Today | ${todayFormatted}`}</span>
           </div>
           <div className="breaking-ticker" style={{ display: 'flex', alignItems: 'center', gap: '16px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            <span className="breaking-label" style={{ backgroundColor: alertColor, position: 'sticky', left: 0, zIndex: 2 }}>{t('navigation.trending').toUpperCase()}</span>
+            <span className="breaking-label" style={{ backgroundColor: alertColor, position: 'sticky', left: 0, zIndex: 2 }}>
+              {allTickerItems.some(i => i.type === 'breaking') ? 'BREAKING NEWS' : t('navigation.trending').toUpperCase()}
+            </span>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', whiteSpace: 'nowrap' }}>
               {allTickerItems.length > 0 ? allTickerItems.map((item, index) => (
                 <span key={index} className="breaking-text">
-                  {item.type === 'topic' ? (
+                  {item.type === 'breaking' ? (
+                    <Link href={item.link} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                      <span style={{ color: '#ef4444', marginRight: '6px' }}>🔴</span>
+                      {item.text}
+                    </Link>
+                  ) : item.type === 'topic' ? (
                     <Link href={`/cari?q=${encodeURIComponent(item.text)}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
                       <TrendingUp size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px', color: alertColor }} />
                       #{item.text.replace(/\s+/g, '')}

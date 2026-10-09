@@ -62,7 +62,8 @@ const ArticleEditor = () => {
     title_en: '',
     content_en: '',
     title_zh: '',
-    content_zh: ''
+    content_zh: '',
+    isBreakingNews: false
   });
 
   useEffect(() => {
@@ -111,6 +112,7 @@ const ArticleEditor = () => {
               slug: data.slug || '',
               location: data.location || '',
               contributorName: data.contributorName || '',
+              isBreakingNews: data.isBreakingNews || false,
               title_en: data.title_en || '',
               content_en: data.content_en || '',
               title_zh: data.title_zh || '',
@@ -1093,8 +1095,8 @@ Konten Asli: ${formData.content}`;
           contributorName: formData.contributorName || '',
           title_en: formData.title_en || '',
           content_en: formData.content_en || '',
-          title_zh: formData.title_zh || '',
           content_zh: formData.content_zh || '',
+          isBreakingNews: formData.isBreakingNews || false,
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
           publishedAt: finalStatus === 'published' 
             ? (formData.originalPublishedAt ? formData.originalPublishedAt : Timestamp.now()) 
@@ -1692,6 +1694,24 @@ Konten Asli: ${formData.content}`;
                       Jadikan Headline Utama Halaman Depan
                     </span>
                   </label>
+                </div>
+
+                <div style={{ marginTop: '12px', padding: '16px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', margin: 0 }}>
+                    <input 
+                      type="checkbox" 
+                      name="isBreakingNews" 
+                      checked={formData.isBreakingNews} 
+                      onChange={handleChange}
+                      style={{ width: '18px', height: '18px', accentColor: '#ef4444' }}
+                    />
+                    <span style={{ fontSize: '13px', color: '#ef4444', fontWeight: 600, lineHeight: 1.4 }}>
+                      🔥 Tandai sebagai BREAKING NEWS
+                    </span>
+                  </label>
+                  <p style={{ margin: '6px 0 0 30px', fontSize: '11px', color: 'var(--admin-text-secondary)', lineHeight: 1.4 }}>
+                    Artikel ini akan langsung tampil menonjol di teks berjalan (Ticker) paling atas. Gunakan hanya untuk berita sangat mendesak/penting.
+                  </p>
                 </div>
               </div>
             </aside>

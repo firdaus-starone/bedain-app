@@ -329,7 +329,7 @@ export default function VideoDetail() {
             <View style={styles.authorContainer}>
               <View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[styles.authorName, dyn.textMain]}>{article.author?.name || 'Redaksi'}</Text>
+                  <Text style={[styles.authorName, dyn.textMain]}>{article.contributorName || article.author?.name || 'Redaksi'}</Text>
                   <View style={styles.categoryBadge}>
                     <Text style={styles.categoryText}>{article.category?.toUpperCase() || 'BERITA'}</Text>
                   </View>
@@ -629,7 +629,7 @@ export default function VideoDetail() {
               <Ionicons name="pencil" size={16} color={isDarkMode ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
               <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#475569' }}>
                 <Text style={{ fontWeight: '700', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Kontributor: </Text>
-                {article.author?.name || 'Redaksi'}
+                {article.contributorName || article.author?.name || 'Redaksi'}
               </Text>
             </View>
 
