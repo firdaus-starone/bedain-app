@@ -5,7 +5,7 @@ const FB_ACCESS_TOKEN = 'EAAY0JDZCwjrMBSl9VhKokEzoobMZC8R3az5nIkQjBr1aurJanRHZCD
 
 export async function POST(request) {
   try {
-    const { message, link } = await request.json();
+    const { message, link, scheduledTime } = await request.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
@@ -37,6 +37,25 @@ export async function POST(request) {
 
     if (link) {
       fbParams.append('link', link);
+    }
+    
+    // Fitur Penjadwalan Facebook (Tayang Otomatis)
+    if (scheduledTime) {
+      const now = Math.floor(Date.now() / 1000);
+      let scheduleAt = parseInt(scheduledTime, 10);
+      
+      // Facebook API requires scheduled_publish_time to be between 10 mins and 6 months
+      const minTime = now + 660; // 11 mins from now to be safe
+      const maxTime = now + (6 * 30 * 24 * 60 * 60) - 86400; // 6 months minus 1 day
+      
+      if (scheduleAt < minTime) {
+        scheduleAt = minTime; // Force minimum 11 minutes
+      } else if (scheduleAt > maxTime) {
+        scheduleAt = maxTime;
+      }
+      
+      fbParams.append('published', 'false');
+      fbParams.append('scheduled_publish_time', scheduleAt.toString());
     }
 
     const response = await fetch(fbUrl, {

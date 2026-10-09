@@ -5,12 +5,21 @@ const GlobalAdsense = () => {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check if we are on an admin page or utility page
+    // Check if we are on an admin page, utility page, or thin-content page
     const path = pathname.toLowerCase();
+    
+    // To pass AdSense "No publisher-content" checks, we aggressively block ads on non-article/non-category pages
     const isRestrictedPage = path.startsWith('/admin') || 
                              path.startsWith('/login') || 
                              path.startsWith('/contact') || 
-                             path.startsWith('/kontak');
+                             path.startsWith('/kontak') ||
+                             path.startsWith('/search') ||
+                             path.startsWith('/cari') ||
+                             path.startsWith('/tag') ||
+                             path.startsWith('/author') ||
+                             path.startsWith('/tentang-kami') ||
+                             path.startsWith('/redaksi') ||
+                             path.startsWith('/pedoman');
 
     if (isRestrictedPage) {
       // We don't load ads on restricted pages

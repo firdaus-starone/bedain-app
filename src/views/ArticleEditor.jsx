@@ -1132,18 +1132,25 @@ Konten Asli: ${formData.content}`;
       const isPub = finalStatus === 'published';
       const isSched = finalStatus === 'scheduled';
       
-      // Auto-post to Facebook if newly published
-      if (isPub && formData.originalStatus !== 'published') {
+      // Auto-post to Facebook if newly published or scheduled
+      if ((isPub && formData.originalStatus !== 'published') || (isSched && formData.originalStatus !== 'scheduled')) {
         try {
           const isVideo = formData.category === 'Video' || formData.videoUrl || formData.youtubeUrl;
           const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${finalSlug}`;
+          
+          let scheduledTime = null;
+          if (isSched && formData.scheduledAt) {
+            scheduledTime = Math.floor(new Date(formData.scheduledAt).getTime() / 1000);
+          }
+
           fetch('/api/facebook-post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               message: `Berita Baru dari Bedain News!\n\n${formData.title}\n\nBaca selengkapnya di:`,
               link: articleUrl,
-              imageUrl: formData.imageUrl || ''
+              imageUrl: formData.imageUrl || '',
+              scheduledTime: scheduledTime
             })
           }).catch(fbError => {
             console.error("Gagal auto-post ke Facebook:", fbError);

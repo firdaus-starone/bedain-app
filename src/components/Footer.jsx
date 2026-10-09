@@ -171,6 +171,12 @@ const Footer = () => {
           {footerMenus.length > 0 && (
             footerMenus.map(col => {
               const isCategoryCol = col.title.toLowerCase() === 'kategori';
+              
+              // Hide column if it's not a special column and has no links
+              if (!isCategoryCol && col.title.toLowerCase() !== 'informasi' && (!col.links || col.links.length === 0)) {
+                return null;
+              }
+
               return (
               <div className={`footer-col ${isCategoryCol ? 'footer-col-kategori' : ''}`} key={col.id}>
                 <h3 className="footer-heading">{t(`footer.cols.${col.title.toLowerCase()}`) || col.title}</h3>
