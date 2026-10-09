@@ -2980,7 +2980,7 @@ body {
 }
 .admin-header {
   border-bottom: 1px solid var(--admin-card-border);
-  background-color: var(--admin-card-bg);
+  background-color: var(--admin-bg);
   z-index: 100;
   justify-content: space-between;
   align-items: center;
