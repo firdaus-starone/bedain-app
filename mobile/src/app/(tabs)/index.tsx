@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated, ToastAndroid } from 'react-native';
+import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated, ToastAndroid, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,8 +46,113 @@ const mapArticle = (a: any) => {
     image: a.coverImage || a.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80',
     category: a.category || 'Berita',
     slug: a.slug || a.id,
-    videoUrl: hasVideo
+    videoUrl: hasVideo,
+    views: a.views || 0,
   };
+};
+
+const PulsingDot = () => {
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.4,
+          duration: 800,
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, [pulseAnim]);
+
+  return (
+    <Animated.View style={{
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: '#ef4444',
+      marginRight: 6,
+      opacity: pulseAnim,
+      alignSelf: 'center',
+    }} />
+  );
+};
+
+/**
+ * Efek "tebasan samurai" pada judul aplikasi:
+ * kilatan pedang diagonal menyapu judul, disusul hentakan kecil (impact).
+ * Hanya memakai Animated bawaan agar bisa dikirim via OTA tanpa build native.
+ */
+const SamuraiTitle = ({ children }: { children: ReactNode }) => {
+  const slash = useRef(new Animated.Value(0)).current;
+  const impact = useRef(new Animated.Value(0)).current;
+  const [titleWidth, setTitleWidth] = useState(0);
+
+  useEffect(() => {
+    if (!titleWidth) return;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(3500),
+        Animated.parallel([
+          // Bilah pedang menyapu dari kiri ke kanan
+          Animated.timing(slash, {
+            toValue: 1,
+            duration: 450,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          // Hentakan saat pedang "mengenai" judul
+          Animated.sequence([
+            Animated.delay(200),
+            Animated.timing(impact, { toValue: 1, duration: 80, useNativeDriver: true }),
+            Animated.spring(impact, { toValue: 0, friction: 4, tension: 140, useNativeDriver: true }),
+          ]),
+        ]),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [titleWidth, slash, impact]);
+
+  const bladeX = slash.interpolate({ inputRange: [0, 1], outputRange: [-40, titleWidth + 40] });
+  const bladeOpacity = slash.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, 1, 1, 0] });
+  const shakeX = impact.interpolate({ inputRange: [0, 1], outputRange: [0, 2.5] });
+  const scale = impact.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] });
+
+  return (
+    <Animated.View style={{ transform: [{ translateX: shakeX }, { scale }] }}>
+      <View
+        onLayout={e => setTitleWidth(e.nativeEvent.layout.width)}
+        style={{ flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }}
+      >
+        {children}
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -16,
+            bottom: -16,
+            left: 0,
+            width: 16,
+            alignItems: 'center',
+            opacity: bladeOpacity,
+            transform: [{ translateX: bladeX }, { rotate: '20deg' }],
+          }}
+        >
+          {/* Jejak cahaya pedang */}
+          <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(186,230,253,0.35)' }} />
+          {/* Mata pedang yang tajam */}
+          <View style={{ width: 3, height: '100%', backgroundColor: 'rgba(255,255,255,0.95)' }} />
+        </Animated.View>
+      </View>
+    </Animated.View>
+  );
 };
 
 export default function Home() {
@@ -255,22 +360,27 @@ export default function Home() {
     RELATED_ARTICLES,
     BERITA_LIST,
     BERITA_PILIHAN,
-    LATEST_NEWS
+    LATEST_NEWS,
+    BREAKING_NEWS
   } = useMemo(() => {
-    const headlines = rawArticles.filter(a => a.isHeadline).map(mapArticle);
-    const nonHeadlines = rawArticles.filter(a => !a.isHeadline).map(mapArticle);
+    const allMapped = rawArticles.map(mapArticle);
+    const breaking = rawArticles.filter(a => a.isBreakingNews).map(mapArticle);
     
-    // Berita Pilihan (Editor's Choice)
-    const pilihan = headlines.length >= 5 
-      ? headlines.slice(0, 5) 
-      : nonHeadlines.slice(15, 20); // Fallback
+    // Berita Populer: Diambil dari semua artikel, diurut views terbanyak
+    const pilihan = [...allMapped]
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5);
 
-    // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish) (Eksklusif non-pilihan)
-    const terkini = nonHeadlines.slice(0, 5);
-    const featured = nonHeadlines[5];
-    const related = nonHeadlines.slice(6, 8);
-    const list = nonHeadlines.slice(8, 13);
-    const latest = nonHeadlines.slice(13, 28);
+    // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish)
+    // Saring agar berita populer tidak muncul dua kali di feed utama
+    const pilihanIds = new Set(pilihan.map(p => p.id));
+    const mainFeed = allMapped.filter(a => !pilihanIds.has(a.id));
+
+    const terkini = mainFeed.slice(0, 5);
+    const featured = mainFeed[5];
+    const related = mainFeed.slice(6, 8);
+    const list = mainFeed.slice(8, 13);
+    const latest = mainFeed.slice(13, 28);
     
     return {
       BERITA_TERKINI: terkini || [],
@@ -278,13 +388,63 @@ export default function Home() {
       RELATED_ARTICLES: related || [],
       BERITA_LIST: list || [],
       BERITA_PILIHAN: pilihan || [],
-      LATEST_NEWS: latest || []
+      LATEST_NEWS: latest || [],
+      BREAKING_NEWS: breaking || []
     };
   }, [rawArticles]);
 
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [tickerIndex, setTickerIndex] = useState(0);
+
+  const tickerItems = useMemo(() => {
+    const items: any[] = [];
+    if (BREAKING_NEWS && BREAKING_NEWS.length > 0) {
+      BREAKING_NEWS.forEach((article: any) => items.push({ type: 'breaking', data: article }));
+    }
+    if (hotTopics && hotTopics.length > 0) {
+      hotTopics.forEach((topic: any) => items.push({ type: 'topic', data: topic }));
+    }
+    return items.length > 0 ? items : [{ type: 'topic', data: '#BeritaTerbaru' }];
+  }, [BREAKING_NEWS, hotTopics]);
+
+  // 0 = tampil, -1 = keluar ke atas, 1 = siap masuk dari bawah
+  const tickerAnim = useRef(new Animated.Value(0)).current;
+  // Ticker berhenti sementara selama jari menahan item (agar judul panjang sempat dibaca)
+  const tickerPaused = useRef(false);
+
+  useEffect(() => {
+    if (tickerItems.length <= 1) return;
+    const interval = setInterval(() => {
+      if (tickerPaused.current) return;
+      Animated.timing(tickerAnim, {
+        toValue: -1,
+        duration: 250,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (!finished) return;
+        setTickerIndex(prev => (prev + 1) % tickerItems.length);
+        tickerAnim.setValue(1);
+        Animated.timing(tickerAnim, {
+          toValue: 0,
+          duration: 300,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [tickerItems.length, tickerAnim]);
+
+  const tickerTranslateY = tickerAnim.interpolate({ inputRange: [-1, 0, 1], outputRange: [-12, 0, 12] });
+  const tickerOpacity = tickerAnim.interpolate({ inputRange: [-1, 0, 1], outputRange: [0, 1, 0] });
+  const pauseTicker = () => { tickerPaused.current = true; };
+  const resumeTicker = () => { tickerPaused.current = false; };
+
+  // Index aman: jika daftar menyusut (realtime), modulo mencegah akses di luar batas
+  const currentTicker = tickerItems[tickerIndex % tickerItems.length];
 
   useEffect(() => {
     if (BERITA_TERKINI.length === 0) return;
@@ -329,6 +489,7 @@ export default function Home() {
       />
       {/* HEADER UTAMA */}
       <View style={[styles.headerContainer, dyn.card]}>
+        <SamuraiTitle>
         <View style={styles.logoContainer}>
           {siteSettings.logoUrl ? (
             <Image 
@@ -346,6 +507,7 @@ export default function Home() {
             )}
           </Text>
         </View>
+        </SamuraiTitle>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/search')}>
             <Ionicons name="search-outline" size={22} color={dyn.iconColor} />
@@ -389,23 +551,34 @@ export default function Home() {
         }
       >
         
-        {/* TOPIK HANGAT */}
+        {/* TOPIK HANGAT & BREAKING NEWS */}
         <View style={[styles.hotTopicContainer, dyn.card, dyn.borderBottom]}>
-          <View style={styles.hotTopicLabel}>
-            <Text style={styles.hotTopicLabelText}>TOPIK HANGAT</Text>
+          <View style={[styles.hotTopicLabel, currentTicker.type === 'breaking' ? { backgroundColor: '#ef4444' } : {}]}>
+            <Text style={styles.hotTopicLabelText}>{currentTicker.type === 'breaking' ? 'BREAKING NEWS' : 'TOPIK HANGAT'}</Text>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hotTopicScroll}>
-            {hotTopics.map((topic, index) => (
+          <Animated.View style={{ flex: 1, paddingRight: 16, opacity: tickerOpacity, transform: [{ translateY: tickerTranslateY }] }}>
+            {currentTicker.type === 'breaking' ? (
               <TouchableOpacity 
-                key={index} 
                 style={styles.hotTopicItem}
-                onPress={() => router.push({ pathname: '/search', params: { q: topic.replace('#', '') } })}
+                onPressIn={pauseTicker}
+                onPressOut={resumeTicker}
+                onPress={() => currentTicker.data.videoUrl ? router.push(`/watch/${currentTicker.data.id}` as any) : router.push(`/article/${currentTicker.data.id}`)}
+              >
+                <PulsingDot />
+                <Text style={[styles.hotTopicText, dyn.hotTopicText, { fontWeight: 'bold', flexShrink: 1 }]} numberOfLines={1}>{currentTicker.data.title}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={styles.hotTopicItem}
+                onPressIn={pauseTicker}
+                onPressOut={resumeTicker}
+                onPress={() => router.push({ pathname: '/search', params: { q: String(currentTicker.data).replace('#', '') } })}
               >
                 <Ionicons name="trending-up" size={16} color="#1b61d1" style={{ marginRight: 4 }} />
-                <Text style={[styles.hotTopicText, dyn.hotTopicText]}>{topic}</Text>
+                <Text style={[styles.hotTopicText, dyn.hotTopicText, { flexShrink: 1 }]} numberOfLines={1}>{currentTicker.data}</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            )}
+          </Animated.View>
         </View>
 
         {/* HEADER BANNER */}
@@ -529,15 +702,15 @@ export default function Home() {
 
         {/* SECTION SEPERTI PALING ATAS (Korusel Mungil) */}
         <View style={styles.bottomSectionHeader}>
-          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Pilihan</Text>
+          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Populer</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.terkiniScroll, { paddingVertical: 0, paddingBottom: 8 }]}>
           {BERITA_PILIHAN.map((item) => (
             <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`bottom-${item.id}`} style={styles.bottomCard} activeOpacity={0.9}>
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
                 <View style={styles.bottomOverlay}>
-                  <View style={styles.terkiniBadge}>
-                    <Text style={styles.terkiniBadgeText}>PILIHAN</Text>
+                  <View style={[styles.terkiniBadge, { backgroundColor: '#f97316' }]}>
+                    <Text style={styles.terkiniBadgeText}>POPULER</Text>
                   </View>
                   <View style={[styles.bottomTextContainer, dyn.bottomBanner]}>
                     <Text style={[styles.bottomTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
