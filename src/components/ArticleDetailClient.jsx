@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-; import Link from 'next/link';
+import Link from 'next/link';
 import Image from 'next/image';
 import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -23,6 +24,7 @@ import { Capacitor } from '@capacitor/core';
 // TextToSpeech di-load secara dinamis untuk menghindari SSR error
 import { useI18n } from '../hooks/useI18n';
 import { useAuth } from '../hooks/useAuth';
+import { getPublicArticleUrl, isMobileDevice, shareArticleWithImage } from '../lib/shareHelper';
 
 const ArticleDetail = () => {
   const { currentUser } = useAuth();
@@ -442,23 +444,50 @@ const ArticleDetail = () => {
   }, []);
 
   const handleShare = async () => {
-    if (!isMobileDevice()) {
-      setShowShareModal(true);
-      return;
+    if (!article) return;
+
+    // 1. Pada perangkat mobile/HP yang mendukung Web Share API, panggil native share sheet
+    if (isMobileDevice() && typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        setIsSharing(true);
+        const publicUrl = getPublicArticleUrl(article);
+        const title = displayArticle?.title || article.title || 'Bedain News';
+        const text = article.seoDescription || article.excerpt || `${title} - Bedain News`;
+
+        await navigator.share({
+          title,
+          text,
+          url: publicUrl
+        });
+        return;
+      } catch (err) {
+        // Abaikan jika user sengaja membatalkan sheet (AbortError)
+        if (err && (err.name === 'AbortError' || err.message?.toLowerCase().includes('cancel') || err.message?.toLowerCase().includes('dismiss'))) {
+          return;
+        }
+        console.warn('Native Web Share tidak tersedia atau dibatalkan, beralih ke modal:', err);
+      } finally {
+        setIsSharing(false);
+      }
     }
-    setIsSharing(true);
-    const success = await shareArticleWithImage(article);
-    setIsSharing(false);
-    if (!success) {
-      setShowShareModal(true);
-    }
+
+    // 2. Pada desktop browser atau fallback jika native share gagal, langsung buka modal share interaktif
+    setShowShareModal(true);
   };
 
   const handleCopyLink = () => {
+    if (!article) return;
     const publicUrl = getPublicArticleUrl(article);
-    navigator.clipboard.writeText(publicUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(publicUrl).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      }).catch(() => {
+        prompt('Salin tautan artikel ini:', publicUrl);
+      });
+    } else {
+      prompt('Salin tautan artikel ini:', publicUrl);
+    }
   };
 
   const handlePrint = () => {
@@ -1128,6 +1157,36 @@ const ArticleDetail = () => {
                   </div>
                 </div>
 
+                {/* Horizontal Social Share */}
+                <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                  <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                    <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
+                    <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
+                  </button>
+                  <button className="share-icon-btn" onClick={() => {
+                      const el = document.getElementById('comment-section-anchor');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      else setShowCommentModal(true);
+                    }} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
+                    <MessageSquare size={18} />
+                    <div style={{ position: 'absolute', top: '0px', right: '2px', background: 'var(--color-accent)', color: '#fff', fontSize: '9px', fontWeight: 'bold', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--color-bg-primary)', padding: '0 4px' }}>
+                      {realCommentCount}
+                    </div>
+                  </button>
+                  <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                    <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+                  </button>
+                  <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+                    <Share2 size={18} />
+                  </button>
+                  <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                    {copied ? <Check size={18} /> : <Link2 size={18} />}
+                  </button>
+                  <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
+                    <Type size={18} />
+                  </button>
+                </div>
+
                 {/* Video Wrapper */}
                 {videoData?.type === 'youtube' && (
                   <div className="article-main-video-wrapper hero-media-mobile-full" style={{ marginBottom: '32px', background: 'var(--color-bg-secondary)', position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px' }}>
@@ -1252,6 +1311,36 @@ const ArticleDetail = () => {
                     <span style={{ color: 'var(--color-accent)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                       <Clock size={14} /> {readingTimeMinutes} {t('article.readTime')}
                     </span>
+                 </div>
+
+                 {/* Horizontal Social Share */}
+                 <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                   <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                     <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
+                     <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
+                   </button>
+                   <button className="share-icon-btn" onClick={() => {
+                       const el = document.getElementById('comment-section-anchor');
+                       if (el) el.scrollIntoView({ behavior: 'smooth' });
+                       else setShowCommentModal(true);
+                     }} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
+                     <MessageSquare size={18} />
+                     <div style={{ position: 'absolute', top: '0px', right: '2px', background: 'var(--color-accent)', color: '#fff', fontSize: '9px', fontWeight: 'bold', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--color-bg-primary)', padding: '0 4px' }}>
+                       {realCommentCount}
+                     </div>
+                   </button>
+                   <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                     <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
+                   </button>
+                   <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+                     <Share2 size={18} />
+                   </button>
+                   <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                     {copied ? <Check size={18} /> : <Link2 size={18} />}
+                   </button>
+                   <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
+                     <Type size={18} />
+                   </button>
                  </div>
               </>
             )}
@@ -2168,80 +2257,144 @@ const ArticleDetail = () => {
         );
       })()}
 
-      {showShareModal && (
+      {isClient && showShareModal && createPortal(
         <div style={{ 
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', 
-          zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' 
+          background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '16px'
         }} onClick={() => setShowShareModal(false)}>
           <div style={{ 
-            background: 'var(--color-bg-tertiary)', padding: '32px', borderRadius: '24px', 
-            width: '90%', maxWidth: '400px', textAlign: 'center',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+            background: 'var(--color-bg-secondary)', padding: '28px 24px', borderRadius: '24px', 
+            width: '100%', maxWidth: '420px', textAlign: 'center',
+            border: '1px solid var(--color-border)',
+            boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
+            position: 'relative',
+            maxHeight: '90vh',
+            overflowY: 'auto'
           }} onClick={e => e.stopPropagation()}>
-             <h3 style={{ color: 'var(--color-text-primary)', fontSize: '1.4rem', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>Bagikan Artikel Ini</h3>
-             <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '24px' }}>{article.title}</p>
+             {/* Close button top right */}
+             <button 
+               onClick={() => setShowShareModal(false)}
+               aria-label="Tutup"
+               style={{
+                 position: 'absolute', top: '16px', right: '16px',
+                 background: 'var(--color-bg-tertiary)', border: 'none',
+                 color: 'var(--color-text-secondary)', width: '32px', height: '32px',
+                 borderRadius: '50%', cursor: 'pointer', display: 'flex',
+                 alignItems: 'center', justifyContent: 'center', fontSize: '16px',
+                 transition: 'all 0.2s'
+               }}
+             >✕</button>
+
+             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(37, 99, 235, 0.12)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+               <Share2 size={24} />
+             </div>
+
+             <h3 style={{ color: 'var(--color-text-primary)', fontSize: '1.3rem', fontFamily: 'var(--font-heading)', margin: '0 0 6px 0', fontWeight: 800 }}>Bagikan Artikel Ini</h3>
+             <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', margin: '0 0 20px 0', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article?.title}</p>
+             
              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                 {isClient && isMobileDevice() && (
-                    <button 
-                      onClick={async () => {
-                        setIsSharing(true);
-                        const success = await shareArticleWithImage(article);
-                        setIsSharing(false);
-                        if (success) setShowShareModal(false);
-                      }}
-                      disabled={isSharing}
-                      style={{ background: 'linear-gradient(135deg, var(--color-accent), #ff5252)', color: '#fff', padding: '14px', borderRadius: '12px', textDecoration: 'none', fontWeight: 800, fontSize: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(230,57,70,0.3)' }}
-                    >
-                      <Share2 size={18} />
-                      <span>{isSharing ? 'Menyiapkan Foto...' : 'Bagikan dengan Foto Artikel'}</span>
-                    </button>
-                  )}
+                 {/* WhatsApp */}
                  <button 
-                   onClick={async () => {
-                     if (isClient && isMobileDevice() && (Capacitor.isNativePlatform() || (typeof navigator !== 'undefined' && navigator.canShare && navigator.share))) {
-                       setIsSharing(true);
-                       const success = await shareArticleWithImage(article);
-                       setIsSharing(false);
-                       if (success) {
-                         setShowShareModal(false);
-                         return;
-                       }
-                     }
-                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`*${article.title}*\n\n${article.seoDescription || article.excerpt || ''}\n\nBaca selengkapnya di Bedain News:\n${getPublicArticleUrl(article)}`)}`, '_blank', 'noopener,noreferrer');
+                   onClick={() => {
+                     const publicUrl = getPublicArticleUrl(article);
+                     const title = displayArticle?.title || article?.title || 'Bedain News';
+                     const desc = article?.seoDescription || article?.excerpt || '';
+                     const shareText = `*${title}*\n\n${desc ? desc + '\n\n' : ''}Baca selengkapnya di Bedain News:\n${publicUrl}`;
+                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
+                     setShowShareModal(false);
                    }}
-                   style={{ background: '#25D366', color: '#fff', padding: '14px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', width: '100%' }}
+                   style={{ background: '#25D366', color: '#fff', padding: '13px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'opacity 0.2s' }}
                  >
-                   WhatsApp {isClient && Capacitor.isNativePlatform() ? '(Sertakan Foto)' : ''}
+                   <span>Bagikan ke WhatsApp</span>
                  </button>
+
+                 {/* Telegram */}
                  <button 
-                   onClick={async () => {
-                     if (isClient && isMobileDevice() && (Capacitor.isNativePlatform() || (typeof navigator !== 'undefined' && navigator.canShare && navigator.share))) {
-                       setIsSharing(true);
-                       const success = await shareArticleWithImage(article);
-                       setIsSharing(false);
-                       if (success) {
-                         setShowShareModal(false);
-                         return;
-                       }
-                     }
-                     window.open(`https://t.me/share/url?url=${encodeURIComponent(getPublicArticleUrl(article))}&text=${encodeURIComponent(`${article.title} - Bedain News`)}`, '_blank', 'noopener,noreferrer');
+                   onClick={() => {
+                     const publicUrl = getPublicArticleUrl(article);
+                     const title = displayArticle?.title || article?.title || 'Bedain News';
+                     window.open(`https://t.me/share/url?url=${encodeURIComponent(publicUrl)}&text=${encodeURIComponent(`${title} - Bedain News`)}`, '_blank', 'noopener,noreferrer');
+                     setShowShareModal(false);
                    }}
-                   style={{ background: '#0088cc', color: '#fff', padding: '14px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', width: '100%' }}
+                   style={{ background: '#0088cc', color: '#fff', padding: '13px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'opacity 0.2s' }}
                  >
-                   Telegram {isClient && Capacitor.isNativePlatform() ? '(Sertakan Foto)' : ''}
+                   <span>Bagikan ke Telegram</span>
                  </button>
-                 <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(getPublicArticleUrl(article))}`} target="_blank" rel="noopener noreferrer" style={{ background: '#000', border: '1px solid #333', color: '#fff', padding: '14px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', display: 'block' }}>X (Twitter)</a>
-                 <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getPublicArticleUrl(article))}`} target="_blank" rel="noopener noreferrer" style={{ background: '#1877F2', color: '#fff', padding: '14px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px' }}>Facebook</a>
-                 <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getPublicArticleUrl(article))}`} target="_blank" rel="noopener noreferrer" style={{ background: '#0A66C2', color: '#fff', padding: '14px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px' }}>LinkedIn</a>
-                 <button onClick={handleCopyLink} style={{ background: 'var(--color-bg-secondary)', color: copied ? 'var(--color-success)' : 'var(--color-text-primary)', padding: '14px', borderRadius: '12px', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                   {copied ? 'Tautan Berhasil Disalin!' : 'Salin Tautan'}
+
+                 {/* Social Media Grid: X, Facebook, LinkedIn */}
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                   <a 
+                     href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article?.title || 'Bedain News')}&url=${encodeURIComponent(getPublicArticleUrl(article))}`} 
+                     target="_blank" 
+                     rel="noopener noreferrer" 
+                     onClick={() => setShowShareModal(false)}
+                     style={{ background: '#000', border: '1px solid #333', color: '#fff', padding: '12px 6px', borderRadius: '10px', textDecoration: 'none', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                   >
+                     X (Twitter)
+                   </a>
+                   <a 
+                     href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getPublicArticleUrl(article))}`} 
+                     target="_blank" 
+                     rel="noopener noreferrer" 
+                     onClick={() => setShowShareModal(false)}
+                     style={{ background: '#1877F2', color: '#fff', padding: '12px 6px', borderRadius: '10px', textDecoration: 'none', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                   >
+                     Facebook
+                   </a>
+                   <a 
+                     href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getPublicArticleUrl(article))}`} 
+                     target="_blank" 
+                     rel="noopener noreferrer" 
+                     onClick={() => setShowShareModal(false)}
+                     style={{ background: '#0A66C2', color: '#fff', padding: '12px 6px', borderRadius: '10px', textDecoration: 'none', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                   >
+                     LinkedIn
+                   </a>
+                 </div>
+
+                 {/* Native OS Share button jika browser mendukung */}
+                 {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
+                   <button 
+                     onClick={async () => {
+                       try {
+                         const publicUrl = getPublicArticleUrl(article);
+                         const title = displayArticle?.title || article?.title || 'Bedain News';
+                         const text = article?.seoDescription || article?.excerpt || `${title} - Bedain News`;
+                         await navigator.share({ title, text, url: publicUrl });
+                         setShowShareModal(false);
+                       } catch (e) {
+                         if (e && (e.name === 'AbortError' || e.message?.toLowerCase().includes('cancel'))) {
+                           return;
+                         }
+                       }
+                     }}
+                     style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', padding: '12px', borderRadius: '12px', fontWeight: 700, fontSize: '13.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                   >
+                     <Share2 size={16} color="var(--color-accent)" />
+                     <span>Aplikasi Lainnya (Sistem)</span>
+                   </button>
+                 )}
+
+                 {/* Copy link button */}
+                 <button 
+                   onClick={handleCopyLink} 
+                   style={{ 
+                     background: copied ? 'rgba(34, 197, 94, 0.15)' : 'var(--color-bg-tertiary)', 
+                     color: copied ? '#22c55e' : 'var(--color-text-primary)', 
+                     border: copied ? '1px solid #22c55e' : '1px solid var(--color-border)',
+                     padding: '13px', borderRadius: '12px', fontWeight: 700, fontSize: '14px', 
+                     cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' 
+                   }}
+                 >
+                   {copied ? <Check size={18} color="#22c55e" /> : <Link2 size={18} />}
+                   <span>{copied ? 'Tautan Berhasil Disalin!' : 'Salin Tautan'}</span>
                  </button>
-                 <button onClick={() => setShowShareModal(false)} style={{ background: 'transparent', color: 'var(--color-text-secondary)', padding: '10px', marginTop: '4px', fontSize: '13px', border: 'none', cursor: 'pointer' }}>Batal</button>
              </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showCommentModal && (

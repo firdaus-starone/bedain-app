@@ -140,39 +140,13 @@ export const shareArticleWithImage = async (article, customText = '') => {
       return true;
     }
 
-    // 2. Jika dijalankan di Browser Mobile/Tablet yang mendukung Web Share API dengan files
-    if (isMobileDevice() && typeof navigator !== 'undefined' && navigator.canShare && navigator.share) {
-      try {
-        const response = await fetch(imageUrl, { mode: 'cors' });
-        if (response.ok) {
-          const blob = await response.blob();
-          const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
-          const file = new File([blob], `bedainapp_article.${ext}`, { type: blob.type || 'image/jpeg' });
-
-          const shareDataWithFile = {
-            title: title,
-            text: text,
-            files: [file]
-          };
-          if (!text.includes(publicUrl)) {
-            shareDataWithFile.url = publicUrl;
-          }
-
-          if (navigator.canShare(shareDataWithFile)) {
-            await navigator.share(shareDataWithFile);
-            return true;
-          }
-        }
-      } catch (webImgErr) {
-        console.warn('Gagal menyiapkan file gambar untuk Web Share API:', webImgErr);
-      }
-
-      // Fallback Web Share tanpa file (hindari duplikasi param url jika text sudah memuat publicUrl)
-      const shareDataNoFile = text.includes(publicUrl) ? { title, text } : { title, text, url: publicUrl };
-      if (navigator.canShare(shareDataNoFile)) {
-        await navigator.share(shareDataNoFile);
+    // 2. Jika dijalankan di Browser Web yang mendukung Web Share API
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      const shareData = text.includes(publicUrl) ? { title, text } : { title, text, url: publicUrl };
+      if (typeof navigator.canShare === 'function' && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
         return true;
-      } else if (navigator.share) {
+      } else {
         await navigator.share({ title, url: publicUrl });
         return true;
       }
