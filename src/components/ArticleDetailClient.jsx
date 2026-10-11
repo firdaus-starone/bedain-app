@@ -21,18 +21,19 @@ import CommentSection from './CommentSection';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Capacitor } from '@capacitor/core';
 // TextToSpeech di-load secara dinamis untuk menghindari SSR error
-import { shareArticleWithImage, getPublicArticleUrl, isMobileDevice } from '../lib/shareHelper';
 import { useI18n } from '../hooks/useI18n';
-
-
+import { useAuth } from '../hooks/useAuth';
 
 const ArticleDetail = () => {
+  const { currentUser } = useAuth();
   const { lang, t } = useI18n();
   const { slug } = useParams();
   const router = useRouter();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [scheduledNotice, setScheduledNotice] = useState(null);
+  const [isEditorialPreview, setIsEditorialPreview] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState('normal'); // 'normal', 'large', 'xlarge'
   const [reaction, setReaction] = useState(null);
@@ -93,6 +94,49 @@ const ArticleDetail = () => {
         if (!snap.empty) {
           const docData = snap.docs[0];
           const foundArticle = { id: docData.id, ...docData.data() };
+
+          // Verifikasi status tayang & jam jadwal
+          const now = new Date();
+          const isSched = foundArticle.status === 'scheduled';
+          let scheduledDate = null;
+          if (foundArticle.scheduledAt) {
+            scheduledDate = new Date(foundArticle.scheduledAt);
+          } else if (foundArticle.publishedAt?.toDate) {
+            scheduledDate = foundArticle.publishedAt.toDate();
+          } else if (foundArticle.publishedAt) {
+            scheduledDate = new Date(foundArticle.publishedAt);
+          }
+
+          const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
+          const isDraft = foundArticle.status === 'draft';
+
+          // Jika pengunjung umum dan berita belum waktunya tayang / masih draf:
+          if ((isNotYetPublished || isDraft) && !currentUser) {
+            if (isNotYetPublished) {
+              const timeFormatted = scheduledDate.toLocaleString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short'
+              });
+              setScheduledNotice({
+                title: foundArticle.title,
+                timeStr: timeFormatted
+              });
+            } else {
+              setError('Berita ini masih berupa draf dan belum diterbitkan oleh redaksi.');
+            }
+            setLoading(false);
+            return;
+          }
+
+          if (isNotYetPublished || isDraft) {
+            setIsEditorialPreview(true);
+          }
+
           setArticle(foundArticle);
 
           try {
@@ -122,12 +166,45 @@ const ArticleDetail = () => {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
               const data = docSnap.data();
-              const pubDate = data.publishedAt?.toDate ? data.publishedAt.toDate() : (data.publishedAt ? new Date(data.publishedAt) : new Date());
-              if (pubDate > new Date()) {
-                setError('Artikel ini belum diterbitkan (terjadwal).');
+              const now = new Date();
+              const isSched = data.status === 'scheduled';
+              let scheduledDate = null;
+              if (data.scheduledAt) {
+                scheduledDate = new Date(data.scheduledAt);
+              } else if (data.publishedAt?.toDate) {
+                scheduledDate = data.publishedAt.toDate();
+              } else if (data.publishedAt) {
+                scheduledDate = new Date(data.publishedAt);
+              }
+              const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
+              const isDraft = data.status === 'draft';
+
+              if ((isNotYetPublished || isDraft) && !currentUser) {
+                if (isNotYetPublished) {
+                  const timeFormatted = scheduledDate.toLocaleString('id-ID', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                  });
+                  setScheduledNotice({
+                    title: data.title,
+                    timeStr: timeFormatted
+                  });
+                } else {
+                  setError('Artikel ini masih berupa draf dan belum diterbitkan.');
+                }
                 setLoading(false);
                 return;
               }
+
+              if (isNotYetPublished || isDraft) {
+                setIsEditorialPreview(true);
+              }
+
               setArticle({ id: docSnap.id, ...data });
               setLoading(false);
               return;
@@ -752,6 +829,37 @@ const ArticleDetail = () => {
     );
   }
 
+  if (scheduledNotice) {
+    return (
+      <div className="app-container" style={{ background: 'var(--color-bg-primary)', minHeight: '100vh' }}>
+        <Navbar />
+        <div style={{ textAlign: 'center', padding: '80px 20px', minHeight: '65vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ maxWidth: '560px', width: '100%', background: 'var(--color-bg-secondary)', padding: '48px 32px', borderRadius: '24px', border: '1px solid rgba(168, 85, 247, 0.3)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+            <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto', border: '1px solid rgba(168, 85, 247, 0.4)' }}>
+              <Clock size={36} />
+            </div>
+            <h1 style={{ fontSize: '1.75rem', marginBottom: '12px', color: 'var(--color-text)', fontFamily: 'var(--font-heading)' }}>
+              Berita Ini Belum Tayang
+            </h1>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '15px', marginBottom: '20px', lineHeight: 1.6 }}>
+              Artikel <strong>"{scheduledNotice.title}"</strong> telah dijadwalkan oleh redaksi dan akan tayang otomatis pada:
+            </p>
+            <div style={{ display: 'inline-block', padding: '12px 24px', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '14px', color: '#d8b4fe', fontWeight: 700, fontSize: '15px', marginBottom: '24px' }}>
+              ⏰ {scheduledNotice.timeStr}
+            </div>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '32px', opacity: 0.8 }}>
+              Silakan kunjungi kembali saat jam tayang tiba untuk membaca liputan lengkapnya.
+            </p>
+            <Link href="/" className="btn" style={{ background: 'linear-gradient(135deg, var(--color-accent), #ff5252)', color: 'var(--color-text-primary)', padding: '12px 30px', borderRadius: '30px', textDecoration: 'none', fontWeight: 600, display: 'inline-block', boxShadow: '0 8px 16px rgba(230,57,70,0.3)' }}>
+              Kembali ke Beranda
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   if (error || !article) {
     return (
       <div className="app-container">
@@ -869,6 +977,26 @@ const ArticleDetail = () => {
           
           {/* Main Article Content */}
           <article style={{ minWidth: 0, overflow: 'visible', padding: 0, boxSizing: 'border-box', width: '100%' }}>
+            {isEditorialPreview && (
+              <div style={{
+                background: 'linear-gradient(90deg, rgba(168, 85, 247, 0.18), rgba(234, 88, 12, 0.18))',
+                border: '1px solid rgba(168, 85, 247, 0.45)',
+                color: '#e9d5ff',
+                padding: '14px 18px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '13px',
+                lineHeight: 1.5
+              }}>
+                <span style={{ fontSize: '22px', flexShrink: 0 }}>🔒</span>
+                <div>
+                  <strong>Mode Pratinjau Redaksi:</strong> Artikel ini berstatus <em>{article.status === 'scheduled' ? `Terjadwal (${article.scheduledAt ? article.scheduledAt.replace('T', ' ') : 'Belum Tayang'})` : 'Draf'}</em>. Pengunjung publik yang membuka link ini saat ini akan melihat informasi jadwal tayang.
+                </div>
+              </div>
+            )}
             
             {/* Breadcrumb Schema.org Structured Data */}
             <script

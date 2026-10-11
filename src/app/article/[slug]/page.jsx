@@ -39,6 +39,8 @@ const getArticleBySlug = cache(async (slug) => {
         videoUrl: doc.videoUrl?.stringValue || '',
         youtubeUrl: doc.youtubeUrl?.stringValue || '',
         author: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
+        status: doc.status?.stringValue || 'published',
+        scheduledAt: doc.scheduledAt?.stringValue || '',
         publishedAt: doc.publishedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
         updatedAt: doc.updatedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
       };
@@ -54,10 +56,23 @@ export async function generateMetadata({ params }) {
   const slug = resolvedParams.slug;
   const article = await getArticleBySlug(slug);
 
-  if (!article) {
+  const now = new Date();
+  let scheduledDate = null;
+  if (article && article.status === 'scheduled') {
+    if (article.scheduledAt) scheduledDate = new Date(article.scheduledAt);
+    else if (article.publishedAt) scheduledDate = new Date(article.publishedAt);
+  }
+  const isScheduledNotYet = article && article.status === 'scheduled' && scheduledDate && scheduledDate > now;
+  const isDraft = article && article.status === 'draft';
+
+  if (!article || isDraft || isScheduledNotYet) {
     return {
-      title: 'Artikel Tidak Ditemukan - Bedain News',
-      description: 'Artikel yang Anda cari tidak ditemukan.'
+      title: isScheduledNotYet ? 'Berita Belum Tayang - Bedain News' : 'Artikel Tidak Ditemukan - Bedain News',
+      description: isScheduledNotYet ? 'Artikel ini telah dijadwalkan oleh redaksi dan akan tayang otomatis.' : 'Artikel yang Anda cari tidak ditemukan.',
+      robots: {
+        index: false,
+        follow: false
+      }
     };
   }
 

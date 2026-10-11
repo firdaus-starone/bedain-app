@@ -21,6 +21,7 @@ export default function YouTubeWatchClient() {
   const [userReaction, setUserReaction] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [scheduledNotice, setScheduledNotice] = useState(null);
 
   // Stabilize random subscriber count using useMemo to avoid hydration and re-render issues
   const randomSubscribers = React.useMemo(() => {
@@ -40,6 +41,25 @@ export default function YouTubeWatchClient() {
         const docData = snap.docs[0];
         const vData = { id: docData.id, ...docData.data() };
         
+        // Cek status tayang & jam jadwal
+        const now = new Date();
+        const isSched = vData.status === 'scheduled';
+        let scheduledDate = null;
+        if (vData.scheduledAt) scheduledDate = new Date(vData.scheduledAt);
+        else if (vData.publishedAt?.toDate) scheduledDate = vData.publishedAt.toDate();
+        else if (vData.publishedAt) scheduledDate = new Date(vData.publishedAt);
+        const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
+        const isDraft = vData.status === 'draft';
+
+        if ((isNotYetPublished || isDraft) && !auth?.currentUser) {
+          setScheduledNotice({
+            title: vData.title,
+            timeStr: scheduledDate ? scheduledDate.toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : 'segera'
+          });
+          setLoading(false);
+          return;
+        }
+
         setVideo(vData);
         
         const storedReact = localStorage.getItem(`reaction_${vData.id}`);
@@ -221,6 +241,30 @@ export default function YouTubeWatchClient() {
         <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: '40px', height: '40px', border: '4px solid #333', borderTopColor: '#3ea6ff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
           <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  if (scheduledNotice) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#0f0f0f', color: '#fff' }}>
+        <Navbar />
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
+          <div style={{ maxWidth: '520px', background: '#1c1c1e', padding: '40px 28px', borderRadius: '24px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⏰</div>
+            <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px' }}>Video Ini Belum Tayang</h1>
+            <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '20px', lineHeight: 1.5 }}>
+              Video <strong>"{scheduledNotice.title}"</strong> dijadwalkan tayang otomatis pada:
+            </p>
+            <div style={{ display: 'inline-block', padding: '10px 20px', background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '12px', color: '#d8b4fe', fontWeight: 'bold', fontSize: '15px', marginBottom: '24px' }}>
+              ⏰ {scheduledNotice.timeStr}
+            </div>
+            <br />
+            <button onClick={() => router.push('/')} style={{ padding: '12px 28px', backgroundColor: '#3ea6ff', color: '#0f0f0f', borderRadius: '24px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>
+              Kembali ke Beranda
+            </button>
+          </div>
         </div>
       </div>
     );

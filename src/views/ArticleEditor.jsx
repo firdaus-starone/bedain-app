@@ -1167,21 +1167,16 @@ Konten Asli: ${formData.content}`;
       const isSched = finalStatus === 'scheduled';
       const targetDocId = editId || (typeof newDocRef !== 'undefined' ? newDocRef?.id : null);
       const isAlreadySharedToFB = !!formData.facebookPostId;
-      const statusBecamePubOrSched = (isPub && originalStatus !== 'published') || (isSched && originalStatus !== 'scheduled');
+      const statusBecamePublished = isPub && originalStatus !== 'published';
 
       // Auto-post to Facebook HANYA jika:
       // 1. autoShareFacebook aktif (default true)
-      // 2. BELUM PERNAH diposting atau dijadwalkan ke Facebook (!isAlreadySharedToFB)
-      // 3. Status berubah menjadi published atau scheduled
-      if (formData.autoShareFacebook !== false && !isAlreadySharedToFB && statusBecamePubOrSched) {
+      // 2. BELUM PERNAH diposting ke Facebook (!isAlreadySharedToFB)
+      // 3. Status artikel SAAT INI benar-benar TAYANG (published), BUKAN scheduled atau draft
+      if (formData.autoShareFacebook !== false && !isAlreadySharedToFB && statusBecamePublished) {
         try {
           const isVideo = formData.category === 'Video' || formData.videoUrl || formData.youtubeUrl;
           const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${finalSlug}`;
-          
-          let scheduledTime = null;
-          if (isSched && formData.scheduledAt) {
-            scheduledTime = Math.floor(new Date(formData.scheduledAt).getTime() / 1000);
-          }
 
           fetch('/api/facebook-post', {
             method: 'POST',
@@ -1189,8 +1184,7 @@ Konten Asli: ${formData.content}`;
             body: JSON.stringify({
               message: `Berita Baru dari Bedain News!\n\n${formData.title}\n\nBaca selengkapnya di:`,
               link: articleUrl,
-              imageUrl: formData.imageUrl || '',
-              scheduledTime: scheduledTime
+              imageUrl: formData.imageUrl || ''
             })
           })
           .then(res => res.json())
