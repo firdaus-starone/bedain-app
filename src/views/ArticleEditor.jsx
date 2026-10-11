@@ -44,6 +44,8 @@ const ArticleEditor = () => {
   const [catModal, setCatModal] = useState({ isOpen: false, name: '', loading: false });
   const [activeLang, setActiveLang] = useState('id'); // 'id', 'en', 'zh'
   const [translating, setTranslating] = useState(false);
+  const [originalStatus, setOriginalStatus] = useState(null);
+  const [originalPublishedAt, setOriginalPublishedAt] = useState(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -68,8 +70,7 @@ const ArticleEditor = () => {
     isBreakingNews: false,
     facebookPostId: null,
     facebookPostedAt: null,
-    autoShareFacebook: true,
-    originalStatus: undefined
+    autoShareFacebook: true
   });
 
   useEffect(() => {
@@ -94,7 +95,7 @@ const ArticleEditor = () => {
       if (justCreatedRef.current) {
         justCreatedRef.current = false;
         // Artikel baru disimpan, sinkronisasi originalStatus ke status saat ini
-        setFormData(prev => ({ ...prev, originalStatus: prev.status }));
+        setOriginalStatus(formData.status);
         return;
       }
       const fetchArticleToEdit = async () => {
@@ -104,6 +105,8 @@ const ArticleEditor = () => {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const data = docSnap.data();
+            setOriginalStatus(data.status || 'draft');
+            setOriginalPublishedAt(data.publishedAt || data.createdAt || data.updatedAt || null);
             setFormData({
               title: data.title || '',
               category: data.category || 'Nasional',
@@ -127,9 +130,7 @@ const ArticleEditor = () => {
               content_zh: data.content_zh || '',
               facebookPostId: data.facebookPostId || null,
               facebookPostedAt: data.facebookPostedAt || null,
-              autoShareFacebook: data.autoShareFacebook !== false,
-              originalStatus: data.status,
-              originalPublishedAt: data.publishedAt || data.createdAt || data.updatedAt || null
+              autoShareFacebook: data.autoShareFacebook !== false
             });
           } else {
             alert('Berita tidak ditemukan.');
@@ -1116,7 +1117,7 @@ Konten Asli: ${formData.content}`;
           facebookPostedAt: formData.facebookPostedAt || null,
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
           publishedAt: finalStatus === 'published' 
-            ? (formData.originalPublishedAt ? formData.originalPublishedAt : Timestamp.now()) 
+            ? (originalPublishedAt ? originalPublishedAt : Timestamp.now()) 
             : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
         });
       } else {
@@ -1124,7 +1125,8 @@ Konten Asli: ${formData.content}`;
           ...formData,
           content: finalContentWithBold,
           slug: finalSlug,
-          coverImage: formData.imageUrl,
+          coverImage: formData.imageUrl || '',
+          imageUrl: formData.imageUrl || '',
           status: finalStatus,
           autoShareFacebook: formData.autoShareFacebook !== false,
           facebookPostId: null,
@@ -1136,18 +1138,25 @@ Konten Asli: ${formData.content}`;
           authorId: currentUser.uid,
           contributorName: formData.contributorName || '',
           author: {
-            email: currentUser.email,
-            name: authorName
+            email: currentUser.email || '',
+            name: authorName || ''
           },
           views: 0
         };
+
+        // Sanitasi ketat: bersihkan field internal atau undefined agar Firestore tidak error
+        delete articleData.originalStatus;
+        delete articleData.originalPublishedAt;
+        Object.keys(articleData).forEach(key => {
+          if (articleData[key] === undefined) {
+            delete articleData[key];
+          }
+        });
+
         const newDocRef = await addDoc(collection(db, 'articles'), articleData);
         justCreatedRef.current = true;
-        setFormData(prev => ({
-          ...prev,
-          originalStatus: finalStatus,
-          originalPublishedAt: articleData.publishedAt
-        }));
+        setOriginalStatus(finalStatus);
+        setOriginalPublishedAt(articleData.publishedAt);
         router.replace(`/admin/editor?id=${newDocRef.id}`);
       }
       
@@ -1158,7 +1167,7 @@ Konten Asli: ${formData.content}`;
       const isSched = finalStatus === 'scheduled';
       const targetDocId = editId || (typeof newDocRef !== 'undefined' ? newDocRef?.id : null);
       const isAlreadySharedToFB = !!formData.facebookPostId;
-      const statusBecamePubOrSched = (isPub && formData.originalStatus !== 'published') || (isSched && formData.originalStatus !== 'scheduled');
+      const statusBecamePubOrSched = (isPub && originalStatus !== 'published') || (isSched && originalStatus !== 'scheduled');
 
       // Auto-post to Facebook HANYA jika:
       // 1. autoShareFacebook aktif (default true)
@@ -1195,9 +1204,9 @@ Konten Asli: ${formData.content}`;
                 });
                 setFormData(prev => ({
                   ...prev,
-                  facebookPostId: fbData.id,
-                  originalStatus: finalStatus
+                  facebookPostId: fbData.id
                 }));
+                setOriginalStatus(finalStatus);
               } catch (upErr) {
                 console.warn("Gagal menyimpan facebookPostId ke Firestore:", upErr);
               }
@@ -1212,10 +1221,7 @@ Konten Asli: ${formData.content}`;
       }
 
       // Pastikan originalStatus langsung tersinkronisasi di local state
-      setFormData(prev => ({
-        ...prev,
-        originalStatus: finalStatus
-      }));
+      setOriginalStatus(finalStatus);
 
       setNotifModal({
         isOpen: true,
