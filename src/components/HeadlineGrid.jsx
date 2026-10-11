@@ -66,32 +66,26 @@ const HeadlineGrid = ({ articles, loading }) => {
     if (item.date) return item.date;
     const val = item.publishedAt || item.createdAt;
     if (!val) return 'Baru saja';
+    const currentYear = new Date().getFullYear();
+    const formatD = (d) => {
+      const opts = { day: 'numeric', month: 'short' };
+      if (d.getFullYear() !== currentYear) opts.year = 'numeric';
+      return d.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', opts);
+    };
     if (typeof val?.toDate === 'function') {
       try {
-        return val.toDate().toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric'
-        });
+        return formatD(val.toDate());
       } catch (e) {}
     }
     if (typeof val?.seconds === 'number') {
       try {
-        return new Date(val.seconds * 1000).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric'
-        });
+        return formatD(new Date(val.seconds * 1000));
       } catch (e) {}
     }
     try {
       const d = new Date(val);
       if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric'
-        });
+        return formatD(d);
       }
     } catch (e) {}
     return 'Baru saja';
@@ -223,12 +217,24 @@ const HeadlineGrid = ({ articles, loading }) => {
                       </h3>
                     </div>
 
-                    {/* Date below title box */}
-                    <div className="story-date-text" style={{ position: 'relative', bottom: 'auto', left: '6px', right: 'auto', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <span>📅 {dateText}</span>
-                      <span>•</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><ThumbsUp size={12}/> {item.reactions?.like || 0}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><MessageSquare size={12}/> {item.commentCount || 0}</span>
+                    {/* Date, Like & Comment - strictly aligned in 1 single line */}
+                    <div className="story-date-text" style={{ 
+                      position: 'relative', 
+                      bottom: 'auto', 
+                      left: '6px', 
+                      right: '6px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '4px', 
+                      flexWrap: 'nowrap', 
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      fontSize: '0.54rem'
+                    }}>
+                      <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>📅 {dateText}</span>
+                      <span style={{ opacity: 0.6, flexShrink: 0 }}>•</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}><ThumbsUp size={10}/> {item.reactions?.like || 0}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}><MessageSquare size={10}/> {item.commentCount || 0}</span>
                     </div>
                   </div>
                 </article>
