@@ -7,7 +7,8 @@ import { uploadAndCompressImage } from '../lib/uploadImage';
 import { useSiteSettings, saveSiteSettings, DEFAULT_SETTINGS } from '../hooks/useSiteSettings';
 import {
   LayoutDashboard, PenTool, Globe, LogOut, Users, Image as ImageIcon,
-  Settings, Save, RefreshCw, UploadCloud, Check, AlertCircle, FileText
+  Settings, Save, RefreshCw, UploadCloud, Check, AlertCircle, FileText,
+  Sparkles, Key, Eye, EyeOff, ExternalLink
 } from 'lucide-react';
 
 
@@ -60,6 +61,7 @@ const AdminSettings = () => {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // 'success' | 'error'
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [uploadingSeoImg, setUploadingSeoImg] = useState(false);
@@ -374,6 +376,74 @@ const AdminSettings = () => {
                 onChange={e => handleChange('adsenseClientId', e.target.value)} 
                 placeholder="ca-pub-6752045445074470" 
               />
+            </Field>
+          </Section>
+
+          {/* Integrasi Google Gemini AI */}
+          <Section title="🤖 Integrasi Google Gemini AI" icon={<Sparkles size={18} style={{ color: 'var(--color-accent)' }} />}>
+            <Field 
+              label="Google Gemini API Key (Sinkronisasi Global)" 
+              hint="Kunci API Gemini dari Google AI Studio (AIzaSy...). Kunci ini otomatis tersinkronisasi dan aktif di seluruh editor artikel dan Asisten AI Bedain News di semua komputer/perangkat tim redaksi (Mac, Windows, dll)."
+            >
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input 
+                  type={showGeminiKey ? "text" : "password"}
+                  style={{ ...inputStyle, flex: 1 }} 
+                  value={form.geminiApiKey || ''} 
+                  onChange={e => handleChange('geminiApiKey', e.target.value)} 
+                  placeholder="Masukkan API Key Gemini (AIzaSy...)" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGeminiKey(!showGeminiKey)}
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: 'var(--admin-hover-bg)',
+                    border: '1px solid var(--admin-border)',
+                    borderRadius: '8px',
+                    color: 'var(--admin-text-primary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px'
+                  }}
+                  title={showGeminiKey ? "Sembunyikan Key" : "Tampilkan Key"}
+                >
+                  {showGeminiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: 'rgba(230, 57, 70, 0.12)',
+                    border: '1px solid rgba(230, 57, 70, 0.3)',
+                    borderRadius: '8px',
+                    color: 'var(--color-accent)',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Key size={14} /> Dapatkan API Key <ExternalLink size={12} />
+                </a>
+              </div>
+              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: form.geminiApiKey ? '#4ade80' : 'var(--admin-text-secondary)' }}>
+                <span style={{ 
+                  display: 'inline-block', 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '50%', 
+                  backgroundColor: form.geminiApiKey ? '#4ade80' : '#f4a261' 
+                }} />
+                {form.geminiApiKey ? 'API Key terpasang secara terpusat dan aktif di seluruh editor.' : 'Belum ada API Key (Asisten AI akan berjalan dalam mode simulasi).'}
+              </div>
             </Field>
           </Section>
           {/* Kontak & Sosial Media */}

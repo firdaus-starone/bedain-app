@@ -5,6 +5,7 @@ import {
   ArrowRight, FileText, Type, Search, Lightbulb, ExternalLink,
   AlertCircle, ShieldCheck
 } from 'lucide-react';
+import { useSiteSettings, saveSiteSettings } from '../hooks/useSiteSettings';
 
 const AIAssistantModal = ({ 
   isOpen, 
@@ -18,7 +19,9 @@ const AIAssistantModal = ({
   onApplySEO,
   inline = false
 }) => {
+  const { settings } = useSiteSettings();
   const [apiKey, setApiKey] = useState('');
+  const [savingKey, setSavingKey] = useState(false);
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [activeTab, setActiveTab] = useState('grammar'); // grammar, headlines, excerpt, seo, expand, custom
   const [customPrompt, setCustomPrompt] = useState('');
@@ -31,21 +34,38 @@ const AIAssistantModal = ({
   const [copied, setCopied] = useState(false);
   const [applied, setApplied] = useState('');
 
-  // Load API key from env or localStorage
+  // Load API key from Firestore site settings, localStorage, or env
   useEffect(() => {
-    const localKey = localStorage.getItem('bedain_gemini_api_key');
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (localKey && localKey.trim() !== '') {
-      setApiKey(localKey);
+    const siteKey = settings?.geminiApiKey;
+    const localKey = typeof window !== 'undefined' ? localStorage.getItem('bedain_gemini_api_key') : null;
+    const envKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY);
+    
+    if (siteKey && siteKey.trim() !== '') {
+      setApiKey(siteKey.trim());
+    } else if (localKey && localKey.trim() !== '') {
+      setApiKey(localKey.trim());
     } else if (envKey && envKey !== 'YOUR_GEMINI_API_KEY') {
       setApiKey(envKey);
     }
-  }, [isOpen]);
+  }, [isOpen, settings?.geminiApiKey]);
 
-  const saveApiKey = (key) => {
-    setApiKey(key);
-    localStorage.setItem('bedain_gemini_api_key', key);
-    setShowKeyInput(false);
+  const saveApiKey = async (key) => {
+    const cleanKey = (key || '').trim();
+    setSavingKey(true);
+    setApiKey(cleanKey);
+    try {
+      localStorage.setItem('bedain_gemini_api_key', cleanKey);
+    } catch (e) {}
+
+    try {
+      // Sync to global Firestore site settings so all editors & computers receive it
+      await saveSiteSettings({ geminiApiKey: cleanKey });
+    } catch (err) {
+      console.warn('Gagal menyimpan geminiApiKey ke Firestore settings/site:', err);
+    } finally {
+      setSavingKey(false);
+      setShowKeyInput(false);
+    }
   };
 
   // Strip HTML tags for clean text analysis
@@ -73,7 +93,12 @@ const AIAssistantModal = ({
     setParsedAntiplagiat(null);
     setApplied('');
 
-    const effectiveKey = apiKey.trim() || import.meta.env.VITE_GEMINI_API_KEY;
+    const effectiveKey = (apiKey && apiKey.trim()) 
+      || (settings?.geminiApiKey && settings.geminiApiKey.trim())
+      || (typeof window !== 'undefined' ? localStorage.getItem('bedain_gemini_api_key')?.trim() : '')
+      || process.env.NEXT_PUBLIC_GEMINI_API_KEY
+      || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY)
+      || '';
 
     if (!effectiveKey || effectiveKey === 'YOUR_GEMINI_API_KEY') {
       // Demo / Simulation mode when no API key is set yet
@@ -492,7 +517,7 @@ const AIAssistantModal = ({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                Google Gemini API Key (Opsional)
+                Google Gemini API Key (Tersinkronisasi Global)
               </span>
               <a
                 href="https://aistudio.google.com/app/apikey"
@@ -521,6 +546,7 @@ const AIAssistantModal = ({
               />
               <button
                 onClick={() => saveApiKey(apiKey)}
+                disabled={savingKey}
                 style={{
                   background: 'var(--color-accent)',
                   color: '#fff',
@@ -529,14 +555,15 @@ const AIAssistantModal = ({
                   borderRadius: '10px',
                   fontWeight: 700,
                   fontSize: '13px',
-                  cursor: 'pointer'
+                  cursor: savingKey ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                Simpan
+                {savingKey ? 'Menyimpan...' : 'Simpan & Sinkronkan'}
               </button>
             </div>
             <span style={{ fontSize: '11.5px', color: 'var(--color-text-secondary)' }}>
-              Jika dikosongkan, AI Assistant akan berjalan dalam <b>Mode Simulasi Cerdas Bedain</b> sehingga tetap dapat diuji coba tanpa hambatan.
+              Menyimpan API Key di sini akan otomatis tersimpan ke server database sehingga aktif di semua perangkat/komputer tim redaksi. Jika dikosongkan, AI Assistant akan berjalan dalam <b>Mode Simulasi Cerdas Bedain</b>.
             </span>
           </div>
         )}

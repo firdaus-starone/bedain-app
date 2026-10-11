@@ -73,10 +73,10 @@ service cloud.firestore {
       allow delete: if hasRole(['superadmin', 'admin']);
     }
 
-    // Koleksi Pengaturan Portal (Logo, Nama Situs, Kontak)
+    // Koleksi Pengaturan Portal (Logo, Nama Situs, Kontak, Integrasi AI)
     match /settings/{document=**} {
       allow read: if true;
-      allow write: if hasRole(['superadmin', 'admin']);
+      allow write: if isEditorOrAdmin();
     }
 
     // Koleksi Halaman Statis (Tentang Kami, Pedoman Media Siber, dll)

@@ -11,6 +11,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import AIAssistantModal from '../components/AIAssistantModal';
 import AIGeneratorModal from '../components/AIGeneratorModal';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const ArticleEditor = () => {
   const router = useRouter();
@@ -21,6 +22,7 @@ const ArticleEditor = () => {
   const isUserTypingRef = useRef(false);
   
   const { currentUser, userRole, loading: authLoading } = useAuth();
+  const { settings: siteSettings } = useSiteSettings();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [fetchingEdit, setFetchingEdit] = useState(!!editId);
@@ -413,9 +415,12 @@ const ArticleEditor = () => {
   };
 
   const getGeminiKey = () => {
-    const localKey = localStorage.getItem('bedain_gemini_api_key');
+    if (siteSettings?.geminiApiKey && siteSettings.geminiApiKey.trim() !== '') {
+      return siteSettings.geminiApiKey.trim();
+    }
+    const localKey = typeof window !== 'undefined' ? localStorage.getItem('bedain_gemini_api_key') : null;
     if (localKey && localKey.trim() !== '') return localKey.trim();
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const envKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY);
     if (envKey && envKey !== 'YOUR_GEMINI_API_KEY') return envKey;
     return null;
   };

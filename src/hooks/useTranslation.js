@@ -103,7 +103,29 @@ export const useTranslation = (article) => {
       }
 
       // Need to translate via Gemini API
-      const apiKey = localStorage.getItem('bedain_gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY;
+      let siteKey = null;
+      try {
+        const cached = typeof window !== 'undefined' ? localStorage.getItem('bedain_settings_cache') : null;
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          siteKey = parsed?.geminiApiKey;
+        }
+      } catch (e) {}
+
+      if (!siteKey) {
+        try {
+          const settingsSnap = await getDoc(doc(db, 'settings', 'site'));
+          if (settingsSnap.exists()) {
+            siteKey = settingsSnap.data()?.geminiApiKey;
+          }
+        } catch (e) {}
+      }
+
+      const apiKey = (siteKey && siteKey.trim())
+        || (typeof window !== 'undefined' ? localStorage.getItem('bedain_gemini_api_key')?.trim() : null)
+        || process.env.NEXT_PUBLIC_GEMINI_API_KEY
+        || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY);
+
       if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY') {
          console.error("Gemini API key not found for translation.");
          setTranslating(false);

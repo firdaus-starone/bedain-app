@@ -49,6 +49,7 @@ export const DEFAULT_SETTINGS = {
   stickyAdRightCtaText: 'Pasang Sekarang',
   stickyAdRightUrl: '',
   stickyAdRightImage: '',
+  geminiApiKey: '',
 };
 
 const SETTINGS_DOC = 'settings/site';
