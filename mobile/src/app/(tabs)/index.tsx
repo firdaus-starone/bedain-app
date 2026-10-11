@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated, ToastAndroid, Easing } from 'react-native';
+import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated, ToastAndroid, Easing, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,21 @@ const HOT_TOPICS = [
   '#Otomotif'
 ];
 
+const HOME_TABS = [
+  { id: 'terkini', label: 'Terkini' },
+  { id: 'rekomendasi', label: 'Rekomendasi' },
+  { id: 'populer', label: 'Populer' },
+  { id: 'redaksi', label: 'Meja Redaksi' },
+  { id: 'komentar', label: 'Komentar' },
+];
+
+const getYouTubeId = (input: string) => {
+  if (!input || typeof input !== 'string') return null;
+  const regExp = /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+  const match = input.match(regExp);
+  return match ? match[1] : null;
+};
+
 const mapArticle = (a: any) => {
   let dateStr = 'Baru saja';
   if (a.publishedAt) {
@@ -39,16 +54,37 @@ const mapArticle = (a: any) => {
     ))
   );
 
+  let cover = a.coverImage || a.imageUrl;
+  if (!cover || cover.includes('unsplash')) {
+    const ytId = getYouTubeId(a.videoUrl) || getYouTubeId(a.youtubeUrl) || getYouTubeId(a.video) || getYouTubeId(a.content);
+    if (ytId) {
+      cover = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    }
+  }
+
   return {
     id: a.id,
     title: a.title || 'Tanpa Judul',
     date: dateStr,
-    image: a.coverImage || a.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80',
+    image: cover || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80',
     category: a.category || 'Berita',
     slug: a.slug || a.id,
     videoUrl: hasVideo,
     views: a.views || 0,
   };
+};
+
+const filterPublished = (article: any) => {
+  const now = new Date();
+  if (article.status === 'draft') return false;
+  if (article.status === 'scheduled') {
+    const p = article.publishedAt?.toDate ? article.publishedAt.toDate() : (article.publishedAt ? new Date(article.publishedAt) : null);
+    if (p) return p <= now;
+    const s = article.scheduledAt ? new Date(article.scheduledAt) : null;
+    if (s) return s <= now;
+    return false;
+  }
+  return true;
 };
 
 const PulsingDot = () => {
@@ -84,101 +120,49 @@ const PulsingDot = () => {
   );
 };
 
-/**
- * Efek "kilau pedang samurai" pada judul aplikasi:
- * pantulan cahaya logam menyapu HURUF judul dari kiri ke kanan.
- *
- * Cara kerja (tanpa MaskedView / library native, agar bisa dikirim via OTA):
- * beberapa "jendela" sempit ber-overflow hidden bergerak melintasi judul.
- * Di dalam tiap jendela ada salinan teks berwarna perak/putih yang digeser
- * berlawanan arah, sehingga posisinya tepat menimpa teks asli.
- * Hasilnya: hanya bagian huruf yang tersapu jendela yang tampak berkilau.
- */
-type SwordShineTitleProps = {
-  first: string;
-  rest?: string;
-  textStyle: any;
-  firstColor: string;
-  restColor: string;
-  isDarkMode: boolean;
-};
-
-const SwordShineTitle = ({ first, rest, textStyle, firstColor, restColor, isDarkMode }: SwordShineTitleProps) => {
-  const sweep = useRef(new Animated.Value(0)).current;
-  const [size, setSize] = useState({ w: 0, h: 0 });
-
-  useEffect(() => {
-    if (!size.w) return;
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.delay(3000),
-        Animated.timing(sweep, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [size.w, sweep]);
-
-  const renderText = (c1: string, c2: string) => (
-    <Text style={[textStyle, { color: c1 }]} numberOfLines={1}>
-      {first}
-      {rest ? <Text style={{ color: c2 }}>{rest}</Text> : null}
-    </Text>
-  );
-
-  // Warna kilau: perak di mode terang (di atas huruf gelap), biru baja di mode gelap (di atas huruf terang)
-  const glow = isDarkMode ? '#7dd3fc' : '#cbd5e1';
-  const core = '#ffffff';
-
-  // Satu lapis jendela kilau; beberapa lapis bertumpuk = tepi kilau yang lembut
-  const renderBand = (bandWidth: number, opacity: number, color: string) => {
-    const windowX = sweep.interpolate({ inputRange: [0, 1], outputRange: [-bandWidth, size.w] });
-    const contentX = sweep.interpolate({ inputRange: [0, 1], outputRange: [bandWidth, -size.w] });
-    return (
-      <Animated.View
-        key={bandWidth}
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: bandWidth,
-          height: size.h,
-          overflow: 'hidden',
-          opacity,
-          transform: [{ translateX: windowX }],
-        }}
-      >
-        <Animated.View style={{ width: size.w, transform: [{ translateX: contentX }] }}>
-          {renderText(color, color)}
-        </Animated.View>
-      </Animated.View>
-    );
-  };
-
-  return (
-    <View onLayout={e => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
-      {renderText(firstColor, restColor)}
-      {size.w > 0 && (
-        <>
-          {renderBand(48, 0.35, glow)}
-          {renderBand(22, 0.7, glow)}
-          {renderBand(8, 1, core)}
-        </>
-      )}
-    </View>
-  );
-};
 
 export default function Home() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const [categories, setCategories] = useState<{ name: string, slug: string }[]>([]);
+  const [activeTab, setActiveTab] = useState<'terkini' | 'rekomendasi' | 'populer' | 'redaksi' | 'komentar'>('terkini');
+  const [allApprovedComments, setAllApprovedComments] = useState<any[]>([]);
+  const scrollViewRef = useRef<any>(null);
+  const horizontalScrollRef = useRef<ScrollView>(null);
+  const tabBarScrollRef = useRef<ScrollView>(null);
+
+  const handleTabChange = (tabId: any) => {
+    setActiveTab(tabId);
+    const index = HOME_TABS.findIndex(t => t.id === tabId);
+    if (index !== -1 && horizontalScrollRef.current) {
+      horizontalScrollRef.current.scrollTo({
+        x: index * screenWidth,
+        animated: true,
+      });
+    }
+  };
+
+  const handleHorizontalScrollEnd = (e: any) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / screenWidth);
+    if (index >= 0 && index < HOME_TABS.length) {
+      const nextTab = HOME_TABS[index].id as any;
+      if (nextTab !== activeTab) {
+        setActiveTab(nextTab);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const index = HOME_TABS.findIndex(t => t.id === activeTab);
+    if (index !== -1 && tabBarScrollRef.current) {
+      const approxTabWidth = 100;
+      const targetX = Math.max(0, index * approxTabWidth - screenWidth / 2 + approxTabWidth / 2);
+      tabBarScrollRef.current.scrollTo({ x: targetX, animated: true });
+    }
+  }, [activeTab, screenWidth]);
+
   const [siteSettings, setSiteSettings] = useState({
     siteName: 'Bedain News',
     logoUrl: '',
@@ -188,9 +172,62 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
   const [recentComments, setRecentComments] = useState<any[]>([]);
+  const [dbRedaksiArticles, setDbRedaksiArticles] = useState<any[]>([]);
 
   const headerBanners = banners.filter(b => b.slot === 'header');
   const feedBanners = banners.filter(b => b.slot === 'sidebar');
+
+  const fetchRedaksi = async () => {
+    try {
+      let docs: any[] = [];
+      try {
+        const qR = query(
+          collection(db, 'articles'),
+          where('category', 'in', ['Meja Redaksi', 'meja-redaksi', 'Meja-Redaksi']),
+          where('status', '==', 'published'),
+          orderBy('publishedAt', 'desc'),
+          limit(30)
+        );
+        const snapR = await getDocs(qR);
+        docs = snapR.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch {
+        try {
+          const qR2 = query(
+            collection(db, 'articles'),
+            where('category', '==', 'Meja Redaksi'),
+            where('status', '==', 'published'),
+            orderBy('publishedAt', 'desc'),
+            limit(30)
+          );
+          const snapR2 = await getDocs(qR2);
+          docs = snapR2.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch {
+          try {
+            const qR3 = query(
+              collection(db, 'articles'),
+              where('category', 'in', ['Meja Redaksi', 'meja-redaksi']),
+              limit(50)
+            );
+            const snapR3 = await getDocs(qR3);
+            docs = snapR3.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch {
+            const qR4 = query(
+              collection(db, 'articles'),
+              where('category', '==', 'Meja Redaksi'),
+              limit(50)
+            );
+            const snapR4 = await getDocs(qR4);
+            docs = snapR4.docs.map(d => ({ id: d.id, ...d.data() }));
+          }
+        }
+      }
+
+      const validDocs = docs.filter(filterPublished).map(mapArticle);
+      setDbRedaksiArticles(validDocs);
+    } catch (err) {
+      console.error('Error fetching redaksi articles:', err);
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -215,9 +252,10 @@ export default function Home() {
       const snapComments = await getDocs(qComments);
       const allComments = snapComments.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const validComments = allComments.filter((c: any) => c.status === 'approved');
+      setAllApprovedComments(validComments);
       const uniqueArts: any[] = [];
       const slugs = new Set();
-      for (const c of validComments) {
+      for (const c of validComments as any[]) {
         if (!slugs.has(c.articleSlug)) {
           slugs.add(c.articleSlug);
           uniqueArts.push({ articleSlug: c.articleSlug, articleTitle: c.articleTitle || 'Artikel Tanpa Judul', latestComment: c });
@@ -225,6 +263,8 @@ export default function Home() {
         }
       }
       setRecentComments(uniqueArts);
+
+      await fetchRedaksi();
 
       await new Promise(resolve => setTimeout(resolve, 1500));
       if (Platform.OS === 'android') {
@@ -251,19 +291,6 @@ export default function Home() {
     };
     
     let unsubscribeArticles: any = null;
-
-    const filterPublished = (article: any) => {
-      const now = new Date();
-      if (article.status === 'draft') return false;
-      if (article.status === 'scheduled') {
-        const p = article.publishedAt?.toDate ? article.publishedAt.toDate() : (article.publishedAt ? new Date(article.publishedAt) : null);
-        if (p) return p <= now;
-        const s = article.scheduledAt ? new Date(article.scheduledAt) : null;
-        if (s) return s <= now;
-        return false;
-      }
-      return true; // Loloskan semua yang bukan draft atau belum waktunya
-    };
 
     const fetchArticlesRealtime = () => {
       try {
@@ -348,9 +375,10 @@ export default function Home() {
         const snap = await getDocs(q);
         const allComments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const validComments = allComments.filter((c: any) => c.status === 'approved');
+        setAllApprovedComments(validComments);
         const uniqueArts: any[] = [];
         const slugs = new Set();
-        for (const c of validComments) {
+        for (const c of validComments as any[]) {
           if (!slugs.has(c.articleSlug)) {
             slugs.add(c.articleSlug);
             uniqueArts.push({ articleSlug: c.articleSlug, articleTitle: c.articleTitle || 'Artikel Tanpa Judul', latestComment: c });
@@ -367,6 +395,7 @@ export default function Home() {
     fetchCategories();
     fetchBanners();
     fetchComments();
+    fetchRedaksi();
     fetchArticlesRealtime();
 
     return () => {
@@ -381,7 +410,11 @@ export default function Home() {
     BERITA_LIST,
     BERITA_PILIHAN,
     LATEST_NEWS,
-    BREAKING_NEWS
+    BREAKING_NEWS,
+    VIDEO_ARTICLES,
+    REKOMENDASI_ARTICLES,
+    POPULER_ARTICLES,
+    REDAKSI_ARTICLES
   } = useMemo(() => {
     const allMapped = rawArticles.map(mapArticle);
     const breaking = rawArticles.filter(a => a.isBreakingNews).map(mapArticle);
@@ -402,6 +435,33 @@ export default function Home() {
     const list = mainFeed.slice(8, 13);
     const latest = mainFeed.slice(13, 28);
     
+    // Video Articles: Diambil dari artikel yang memiliki video
+    const filteredVideos = allMapped.filter(a => a.videoUrl);
+    // Fallback jika belum banyak artikel bervideo di database
+    const videoArticles = filteredVideos.length > 0
+      ? filteredVideos.slice(0, 10)
+      : allMapped.slice(0, 6).map(a => ({ ...a, videoUrl: true }));
+
+    // Tab Rekomendasi
+    const rekomendasiArticles = allMapped.slice(0, 15);
+
+    // Tab Populer
+    const populerArticles = [...allMapped].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 20);
+
+    // Tab Meja Redaksi: Diambil murni dari kategori "Meja Redaksi"
+    const localRedaksi = allMapped.filter(a => {
+      const cat = (a.category || '').trim().toLowerCase();
+      return cat === 'meja redaksi' || cat === 'meja-redaksi';
+    });
+
+    const combinedRedaksiMap = new Map();
+    [...localRedaksi, ...dbRedaksiArticles].forEach(item => {
+      if (item && item.id && !combinedRedaksiMap.has(item.id)) {
+        combinedRedaksiMap.set(item.id, item);
+      }
+    });
+    const redaksiArticles = Array.from(combinedRedaksiMap.values());
+    
     return {
       BERITA_TERKINI: terkini || [],
       FEATURED_ARTICLE: featured || null,
@@ -409,9 +469,13 @@ export default function Home() {
       BERITA_LIST: list || [],
       BERITA_PILIHAN: pilihan || [],
       LATEST_NEWS: latest || [],
-      BREAKING_NEWS: breaking || []
+      BREAKING_NEWS: breaking || [],
+      VIDEO_ARTICLES: videoArticles || [],
+      REKOMENDASI_ARTICLES: rekomendasiArticles || [],
+      POPULER_ARTICLES: populerArticles || [],
+      REDAKSI_ARTICLES: redaksiArticles || []
     };
-  }, [rawArticles]);
+  }, [rawArticles, dbRedaksiArticles]);
 
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -498,6 +562,47 @@ export default function Home() {
     hotTopicText: { color: isDarkMode ? '#cbd5e1' : '#475569' },
     bottomBanner: { backgroundColor: isDarkMode ? 'rgba(30,41,59,0.95)' : 'rgba(241,245,249,0.95)' },
     mixedCardBg: { backgroundColor: isDarkMode ? colors.card : '#f1f5f9' },
+    videoSectionBg: {
+      backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
+      borderColor: isDarkMode ? '#1e293b' : '#e2e8f0',
+    },
+    videoSectionTitle: {
+      color: isDarkMode ? '#f8fafc' : '#0f172a',
+    },
+    videoSectionSub: {
+      color: isDarkMode ? '#94a3b8' : '#64748b',
+    },
+    videoMoreBtn: {
+      backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
+    },
+    videoMoreTxt: {
+      color: isDarkMode ? '#60a5fa' : '#2563eb',
+    },
+    videoCardBg: {
+      backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+      borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    },
+    videoCardTitle: {
+      color: isDarkMode ? '#f1f5f9' : '#0f172a',
+    },
+    tabBarBg: {
+      backgroundColor: isDarkMode ? colors.card : '#1b61d1',
+      borderBottomColor: isDarkMode ? colors.border : '#1550ac',
+    },
+    tabBarItemActive: {
+      backgroundColor: isDarkMode ? '#2563eb' : '#ffffff',
+    },
+    tabBarItemInactive: {
+      backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.18)',
+    },
+    tabTextActive: {
+      color: isDarkMode ? '#ffffff' : '#1b61d1',
+      fontWeight: '800' as const,
+    },
+    tabTextInactive: {
+      color: isDarkMode ? '#94a3b8' : 'rgba(255,255,255,0.92)',
+      fontWeight: '600' as const,
+    },
   };
 
   return (
@@ -517,14 +622,12 @@ export default function Home() {
               resizeMode="contain" 
             />
           ) : null}
-          <SwordShineTitle
-            first={siteSettings.siteName?.split(' ')[0]?.toLowerCase() || ''}
-            rest={siteSettings.siteName?.split(' ').length > 1 ? siteSettings.siteName.split(' ').slice(1).join('').toLowerCase() : ''}
-            textStyle={styles.logoText}
-            firstColor={colors.text}
-            restColor={styles.logoTextOrange.color}
-            isDarkMode={isDarkMode}
-          />
+          <Text style={[styles.logoText, { color: colors.text }]}>
+            {siteSettings.siteName?.split(' ')[0]?.toLowerCase() || 'bedain'}
+            <Text style={styles.logoTextOrange}>
+              {siteSettings.siteName?.split(' ').length > 1 ? siteSettings.siteName.split(' ').slice(1).join('').toLowerCase() : 'news'}
+            </Text>
+          </Text>
         </View>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/search')}>
@@ -536,41 +639,69 @@ export default function Home() {
         </View>
       </View>
 
-      {/* NAVIGASI KATEGORI (Bar Biru) Dibuat Sticky */}
-      <View style={styles.categoryBar}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-          {categories.map((cat, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.categoryItem}
-              onPress={() => router.push(`/category/${cat.slug || 'semua'}`)}
-            >
-              <Text style={styles.categoryText}>{cat.name}</Text>
-            </TouchableOpacity>
-          ))}
+      {/* NAVIGASI TAB UTAMA (Pengganti Menu Kategori Atas) */}
+      <View style={[styles.tabBarContainer, dyn.tabBarBg]}>
+        <ScrollView 
+          ref={tabBarScrollRef}
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.tabBarScroll}
+        >
+          {HOME_TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => handleTabChange(tab.id)}
+                style={[
+                  styles.tabBarItem,
+                  isActive ? dyn.tabBarItemActive : dyn.tabBarItemInactive
+                ]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.tabBarText, isActive ? dyn.tabTextActive : dyn.tabTextInactive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
-      <Animated.ScrollView 
-        style={[styles.container, dyn.bg]} 
-        showsVerticalScrollIndicator={false}
+      {/* KONTEN TAB UTAMA DENGAN SWIPE HORIZONTAL (PAGING) */}
+      <ScrollView
+        ref={horizontalScrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleHorizontalScrollEnd}
+        onScrollEndDrag={handleHorizontalScrollEnd}
         scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            colors={['#1b61d1']} 
-            tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
-          />
-        }
+        style={{ flex: 1 }}
       >
-        
-        {/* TOPIK HANGAT & BREAKING NEWS */}
-        <View style={[styles.hotTopicContainer, dyn.card, dyn.borderBottom]}>
+        {/* TAB 1: TERKINI */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <Animated.ScrollView 
+            ref={scrollViewRef}
+            nestedScrollEnabled={true}
+            style={[styles.container, dyn.bg]} 
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: true }
+            )}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                colors={['#1b61d1']} 
+                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+              />
+            }
+          >
+            {/* TOPIK HANGAT & BREAKING NEWS */}
+            <View style={[styles.hotTopicContainer, dyn.card, dyn.borderBottom]}>
           <View style={[styles.hotTopicLabel, currentTicker.type === 'breaking' ? { backgroundColor: '#ef4444' } : {}]}>
             <Text style={styles.hotTopicLabelText}>{currentTicker.type === 'breaking' ? 'BREAKING NEWS' : 'TOPIK HANGAT'}</Text>
           </View>
@@ -613,7 +744,7 @@ export default function Home() {
               
               return (
                 <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: index === headerBanners.length - 1 ? 0 : 10, overflow: 'hidden', backgroundColor: '#e2e8f0' }}>
-                  <Animated.Image source={{ uri: b.imageUrl }} style={{ width: '100%', aspectRatio: 4 / 3, transform: [{ translateY }], scale: 1.2 }} resizeMode="cover" />
+                  <Animated.Image source={{ uri: b.imageUrl }} style={{ width: '100%', aspectRatio: 4 / 3, transform: [{ translateY }, { scale: 1.2 }] }} resizeMode="cover" />
                   <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>SPONSOR</Text>
                 </TouchableOpacity>
               );
@@ -627,6 +758,7 @@ export default function Home() {
           data={BERITA_TERKINI}
           keyExtractor={(item) => item.id}
           horizontal
+          nestedScrollEnabled={true}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.terkiniScroll}
           ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
@@ -722,7 +854,7 @@ export default function Home() {
         <View style={styles.bottomSectionHeader}>
           <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Populer</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.terkiniScroll, { paddingVertical: 0, paddingBottom: 8 }]}>
+        <ScrollView horizontal nestedScrollEnabled={true} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.terkiniScroll, { paddingVertical: 0, paddingBottom: 8 }]}>
           {BERITA_PILIHAN.map((item) => (
             <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`bottom-${item.id}`} style={styles.bottomCard} activeOpacity={0.9}>
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
@@ -746,27 +878,109 @@ export default function Home() {
         </View>
         <View style={styles.mixedListContainer}>
           {LATEST_NEWS.map((item, index) => {
-            if (index === 0) {
-              return (
-                <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={[styles.mixedCardFirst, dyn.mixedCardBg]} activeOpacity={0.8}>
-                  <View style={styles.mixedCardFirstText}>
-                    <Text style={[styles.mixedCardFirstTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
-                    <Text style={styles.mixedCardFirstDate}>{item.date}</Text>
+            const isFirst = index === 0;
+            const isFifth = index === 4;
+            const isFallbackTrigger = LATEST_NEWS.length < 5 && index === LATEST_NEWS.length - 1;
+            const showVideoSection = (isFifth || isFallbackTrigger) && VIDEO_ARTICLES.length > 0;
+
+            return (
+              <Fragment key={`latest-frag-${item.id || index}`}>
+                {isFirst ? (
+                  <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={[styles.mixedCardFirst, dyn.mixedCardBg]} activeOpacity={0.8}>
+                    <View style={styles.mixedCardFirstText}>
+                      <Text style={[styles.mixedCardFirstTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
+                      <Text style={styles.mixedCardFirstDate}>{item.date}</Text>
+                    </View>
+                    <Image source={{ uri: item.image }} style={styles.mixedCardFirstImage} />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={styles.mixedListItem} activeOpacity={0.7}>
+                    <Image source={{ uri: item.image }} style={styles.mixedListImage} />
+                    <View style={styles.mixedListText}>
+                      <Text style={[styles.mixedListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
+                      <Text style={styles.mixedListDate}>{item.date}</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                {/* SETELAH KARTU KE-5: TAMBAH SECTION BARU BLOK VIDEO */}
+                {showVideoSection && (
+                  <View style={[styles.videoSectionContainer, dyn.videoSectionBg]}>
+                    <View style={styles.videoHeaderRow}>
+                      <View style={styles.videoHeaderTitleWrap}>
+                        <View style={styles.videoRedBadge}>
+                          <Ionicons name="play" size={13} color="#ffffff" style={{ marginLeft: 2 }} />
+                        </View>
+                        <View>
+                          <Text style={[styles.videoSectionTitle, dyn.videoSectionTitle]}>Video Pilihan</Text>
+                          <Text style={[styles.videoSectionSubtitle, dyn.videoSectionSub]}>Tonton video berita terkini</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity 
+                        onPress={() => router.push('/(tabs)/video' as any)}
+                        style={[styles.videoMoreButton, dyn.videoMoreBtn]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.videoMoreText, dyn.videoMoreTxt]}>Lihat Semua</Text>
+                        <Ionicons name="chevron-forward" size={13} color={dyn.videoMoreTxt.color} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <ScrollView 
+                      horizontal 
+                      nestedScrollEnabled={true}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.videoScrollContent}
+                    >
+                      {VIDEO_ARTICLES.map((vid: any) => (
+                        <TouchableOpacity
+                          key={`video-card-${vid.id}`}
+                          style={[styles.videoCard, dyn.videoCardBg]}
+                          activeOpacity={0.85}
+                          onPress={() => router.push(`/watch/${vid.id}` as any)}
+                        >
+                          <View style={styles.videoThumbContainer}>
+                            <Image 
+                              source={{ uri: vid.image }} 
+                              style={styles.videoThumbImage}
+                              resizeMode="cover"
+                            />
+                            {/* Overlay Tombol Play Glassmorphism */}
+                            <View style={styles.videoPlayOverlay}>
+                              <View style={styles.videoPlayCircle}>
+                                <Ionicons name="play" size={18} color="#ffffff" style={{ marginLeft: 2 }} />
+                              </View>
+                            </View>
+                            {/* Badge Merah VIDEO */}
+                            <View style={styles.videoTagBadge}>
+                              <Text style={styles.videoTagText}>VIDEO</Text>
+                            </View>
+                            {/* Badge Views */}
+                            {vid.views > 0 && (
+                              <View style={styles.videoViewsBadge}>
+                                <Ionicons name="eye-outline" size={10} color="#ffffff" />
+                                <Text style={styles.videoViewsText}>{vid.views}</Text>
+                              </View>
+                            )}
+                          </View>
+
+                          <View style={styles.videoCardBody}>
+                            <Text style={[styles.videoCardTitle, dyn.videoCardTitle]} numberOfLines={2}>
+                              {vid.title}
+                            </Text>
+                            <View style={styles.videoCardMeta}>
+                              <Text style={styles.videoCardCategory} numberOfLines={1}>{vid.category}</Text>
+                              <Text style={[styles.videoCardDot, dyn.textMuted]}>•</Text>
+                              <Text style={[styles.videoCardDate, dyn.textMuted]}>{vid.date}</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
                   </View>
-                  <Image source={{ uri: item.image }} style={styles.mixedCardFirstImage} />
-                </TouchableOpacity>
-              );
-            } else {
-              return (
-                <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={styles.mixedListItem} activeOpacity={0.7}>
-                  <Image source={{ uri: item.image }} style={styles.mixedListImage} />
-                  <View style={styles.mixedListText}>
-                    <Text style={[styles.mixedListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
-                    <Text style={styles.mixedListDate}>{item.date}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            }
+                )}
+              </Fragment>
+            );
           })}
         </View>
 
@@ -812,10 +1026,295 @@ export default function Home() {
             </View>
           </View>
         )}
+            <View style={{ height: 160 }} />
+          </Animated.ScrollView>
+        </View>
 
-        {/* Ruang kosong di bawah untuk Bottom Navigation bar nanti */}
-        <View style={{ height: 160 }} />
-      </Animated.ScrollView>
+        {/* TAB 2: REKOMENDASI */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <ScrollView
+            nestedScrollEnabled={true}
+            style={[styles.container, dyn.bg]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                colors={['#1b61d1']} 
+                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+              />
+            }
+          >
+            <View style={styles.tabContentWrapper}>
+            {/* Hero Card Pertama */}
+            {REKOMENDASI_ARTICLES[0] && (
+              <TouchableOpacity 
+                style={[styles.recomHeroCard, dyn.card]} 
+                activeOpacity={0.85}
+                onPress={() => REKOMENDASI_ARTICLES[0].videoUrl ? router.push(`/watch/${REKOMENDASI_ARTICLES[0].id}` as any) : router.push(`/article/${REKOMENDASI_ARTICLES[0].id}`)}
+              >
+                <Image source={{ uri: REKOMENDASI_ARTICLES[0].image }} style={styles.recomHeroImage} />
+                <View style={styles.recomHeroBody}>
+                  <View style={styles.recomBadgeRow}>
+                    <View style={styles.recomCategoryBadge}>
+                      <Text style={styles.recomCategoryText}>{REKOMENDASI_ARTICLES[0].category?.toUpperCase() || 'PILIHAN'}</Text>
+                    </View>
+                    <Text style={[styles.recomHeroDate, dyn.textMuted]}>{REKOMENDASI_ARTICLES[0].date}</Text>
+                  </View>
+                  <Text style={[styles.recomHeroTitle, dyn.textMain]} numberOfLines={3}>{REKOMENDASI_ARTICLES[0].title}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* List Rekomendasi Lainnya */}
+            <View style={styles.recomListContainer}>
+              {REKOMENDASI_ARTICLES.slice(1).map((item) => (
+                <TouchableOpacity
+                  key={`recom-${item.id}`}
+                  style={[styles.recomListItem, dyn.card]}
+                  activeOpacity={0.8}
+                  onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                >
+                  <Image source={{ uri: item.image }} style={styles.recomListImage} />
+                  <View style={styles.recomListBody}>
+                    <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                    <Text style={[styles.recomListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 }}>
+                      <Ionicons name="time-outline" size={12} color={dyn.textMuted.color} />
+                      <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View style={{ height: 160 }} />
+        </ScrollView>
+        </View>
+
+        {/* TAB 3: POPULER */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <ScrollView
+            nestedScrollEnabled={true}
+            style={[styles.container, dyn.bg]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                colors={['#1b61d1']} 
+                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+              />
+            }
+          >
+            <View style={styles.tabContentWrapper}>
+            {/* Juara #1 Terpopuler */}
+            {POPULER_ARTICLES[0] && (
+              <TouchableOpacity 
+                style={[styles.popularTopCard, dyn.card]} 
+                activeOpacity={0.85}
+                onPress={() => POPULER_ARTICLES[0].videoUrl ? router.push(`/watch/${POPULER_ARTICLES[0].id}` as any) : router.push(`/article/${POPULER_ARTICLES[0].id}`)}
+              >
+                <Image source={{ uri: POPULER_ARTICLES[0].image }} style={styles.popularTopImage} />
+                <View style={styles.rankBadgeFirst}>
+                  <Text style={styles.rankBadgeFirstText}>#1 TERPOPULER</Text>
+                </View>
+                <View style={styles.popularTopBody}>
+                  <Text style={[styles.popularTopTitle, dyn.textMain]} numberOfLines={2}>{POPULER_ARTICLES[0].title}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                    <Text style={[styles.recomListDate, dyn.textMuted]}>{POPULER_ARTICLES[0].date}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="eye" size={13} color="#f97316" />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#f97316' }}>{POPULER_ARTICLES[0].views || 0} pembaca</Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* Peringkat #2 sampai seterusnya */}
+            <View style={styles.popularRankList}>
+              {POPULER_ARTICLES.slice(1).map((item, idx) => {
+                const rank = idx + 2;
+                return (
+                  <TouchableOpacity
+                    key={`pop-${item.id}`}
+                    style={[styles.popularRankItem, dyn.card]}
+                    activeOpacity={0.8}
+                    onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                  >
+                    <View style={[styles.rankNumberBox, rank <= 3 ? styles.rankNumberTop : {}]}>
+                      <Text style={[styles.rankNumberText, rank <= 3 ? { color: '#f97316' } : dyn.textMuted]}>
+                        {rank < 10 ? `0${rank}` : rank}
+                      </Text>
+                    </View>
+                    <View style={styles.popularRankContent}>
+                      <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                      <Text style={[styles.popularRankTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <Ionicons name="eye-outline" size={12} color={dyn.textMuted.color} />
+                        <Text style={[styles.recomListDate, dyn.textMuted]}>{item.views || 0} views</Text>
+                        <Text style={dyn.textMuted}>•</Text>
+                        <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                      </View>
+                    </View>
+                    <Image source={{ uri: item.image }} style={styles.popularRankThumb} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+          <View style={{ height: 160 }} />
+        </ScrollView>
+        </View>
+
+        {/* TAB 4: MEJA REDAKSI */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <ScrollView
+            nestedScrollEnabled={true}
+            style={[styles.container, dyn.bg]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                colors={['#1b61d1']} 
+                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+              />
+            }
+          >
+            <View style={styles.tabContentWrapper}>
+            {/* Editorial Manifesto Box */}
+            <View style={[styles.editorialBox, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: '#1b61d1' }]}>
+              <Text style={[styles.editorialBoxText, dyn.textMain]}>
+                "Menyajikan fakta dengan independen, tajam, dan berimbang langsung dari ruang redaksi kami untuk pembaca cerdas."
+              </Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#1b61d1', marginTop: 8, textAlign: 'right' }}>— Dewan Redaksi Bedain News</Text>
+            </View>
+
+            {/* Daftar Artikel Redaksi */}
+            {REDAKSI_ARTICLES.length === 0 ? (
+              <View style={[styles.emptyCommentFeed, dyn.card, { marginTop: 12 }]}>
+                <Ionicons name="newspaper-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
+                <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Artikel Redaksi</Text>
+                <Text style={[styles.emptyCommentSub, dyn.textMuted]}>
+                  Belum ada artikel yang diterbitkan pada kategori Meja Redaksi.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: 14, marginTop: 10 }}>
+                {REDAKSI_ARTICLES.map((item) => (
+                  <TouchableOpacity
+                    key={`redaksi-${item.id}`}
+                    style={[styles.editorialCard, dyn.card]}
+                    activeOpacity={0.8}
+                    onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                  >
+                    <Image source={{ uri: item.image }} style={styles.editorialCardImg} />
+                    <View style={styles.editorialCardBody}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <View style={styles.editorialBadge}>
+                          <Text style={styles.editorialBadgeText}>MEJA REDAKSI</Text>
+                        </View>
+                        <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                      </View>
+                      <Text style={[styles.editorialCardTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 6 }}>
+                        <Ionicons name="pencil" size={12} color="#16a34a" />
+                        <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>Liputan Khusus Redaksi</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+          <View style={{ height: 160 }} />
+        </ScrollView>
+        </View>
+
+        {/* TAB 5: KOMENTAR */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <ScrollView
+            nestedScrollEnabled={true}
+            style={[styles.container, dyn.bg]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                colors={['#1b61d1']} 
+                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+              />
+            }
+          >
+            <View style={styles.tabContentWrapper}>
+            {/* List Komentar Feed */}
+            {allApprovedComments.length === 0 ? (
+              <View style={[styles.emptyCommentFeed, dyn.card]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
+                <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Komentar</Text>
+                <Text style={[styles.emptyCommentSub, dyn.textMuted]}>Jadilah pembaca pertama yang memberikan tanggapan di artikel kami!</Text>
+              </View>
+            ) : (
+              <View style={{ gap: 14, marginTop: 8 }}>
+                {allApprovedComments.map((comment: any, idx: number) => {
+                  let commentDate = 'Baru saja';
+                  if (comment.createdAt) {
+                    const d = typeof comment.createdAt.toDate === 'function' ? comment.createdAt.toDate() : new Date(comment.createdAt);
+                    commentDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                  }
+
+                  return (
+                    <View key={comment.id || idx} style={[styles.commentFeedCard, dyn.card]}>
+                      {/* Header Komentar */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <View style={styles.commentFeedAvatar}>
+                            <Text style={styles.commentFeedAvatarText}>
+                              {(comment.authorName || 'A').charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={[styles.commentFeedAuthor, dyn.textMain]}>{comment.authorName || 'Anonim'}</Text>
+                            <Text style={[styles.recomListDate, dyn.textMuted]}>{commentDate}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.readerBadge}>
+                          <Text style={styles.readerBadgeText}>Pembaca</Text>
+                        </View>
+                      </View>
+
+                      {/* Isi Komentar */}
+                      <View style={[styles.commentFeedBubble, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}>
+                        <Ionicons name="chatbox-outline" size={14} color="#7c3aed" style={{ marginBottom: 4 }} />
+                        <Text style={[styles.commentFeedText, dyn.textMain]}>
+                          "{comment.content}"
+                        </Text>
+                      </View>
+
+                      {/* Tautan ke Artikel Terkait */}
+                      <TouchableOpacity
+                        onPress={() => router.push(`/article/${comment.articleSlug}`)}
+                        style={[styles.commentArticleLink, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="newspaper-outline" size={15} color="#1b61d1" />
+                        <Text style={[styles.commentArticleTitle, dyn.textMain]} numberOfLines={1}>
+                          {comment.articleTitle || 'Lihat Artikel Terkait'}
+                        </Text>
+                        <Ionicons name="arrow-forward" size={14} color="#1b61d1" style={{ marginLeft: 'auto' }} />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+          <View style={{ height: 160 }} />
+        </ScrollView>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -1172,5 +1671,462 @@ const styles = StyleSheet.create({
   mixedListDate: {
     fontSize: 12,
     color: '#64748b',
+  },
+  videoSectionContainer: {
+    marginVertical: 14,
+    marginBottom: 20,
+    borderRadius: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  videoHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  videoHeaderTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  videoRedBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  videoSectionSubtitle: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  videoMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 2,
+  },
+  videoMoreText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  videoScrollContent: {
+    paddingLeft: 14,
+    paddingRight: 4,
+  },
+  videoCard: {
+    width: 220,
+    marginRight: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  videoThumbContainer: {
+    width: '100%',
+    height: 120,
+    position: 'relative',
+    backgroundColor: '#000',
+  },
+  videoThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoPlayOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoPlayCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoTagBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 4,
+  },
+  videoTagText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  videoViewsBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  videoViewsText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  videoCardBody: {
+    padding: 10,
+  },
+  videoCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  videoCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  videoCardCategory: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ef4444',
+    textTransform: 'uppercase',
+  },
+  videoCardDot: {
+    fontSize: 10,
+  },
+  videoCardDate: {
+    fontSize: 10,
+  },
+  // TAB BAR NAVIGATION
+  tabBarContainer: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  tabBarScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+    alignItems: 'center',
+  },
+  tabBarItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  tabBarText: {
+    fontSize: 13,
+    letterSpacing: 0.1,
+  },
+  // TAB CONTENT COMMON
+  tabContentWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  tabHeroBanner: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  tabHeroTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  tabHeroSub: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  // REKOMENDASI TAB
+  recomHeroCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  recomHeroImage: {
+    width: '100%',
+    height: 190,
+    backgroundColor: '#cbd5e1',
+  },
+  recomHeroBody: {
+    padding: 14,
+  },
+  recomBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  recomCategoryBadge: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  recomCategoryText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  recomHeroDate: {
+    fontSize: 11,
+  },
+  recomHeroTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 22,
+  },
+  recomListContainer: {
+    gap: 12,
+  },
+  recomListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 10,
+    gap: 12,
+  },
+  recomListImage: {
+    width: 95,
+    height: 75,
+    borderRadius: 8,
+    backgroundColor: '#cbd5e1',
+  },
+  recomListBody: {
+    flex: 1,
+  },
+  recomCategorySmall: {
+    color: '#3b82f6',
+    fontSize: 10,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  recomListTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  recomListDate: {
+    fontSize: 11,
+  },
+  // POPULER TAB
+  popularTopCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 16,
+    position: 'relative',
+  },
+  popularTopImage: {
+    width: '100%',
+    height: 190,
+    backgroundColor: '#cbd5e1',
+  },
+  rankBadgeFirst: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  rankBadgeFirstText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  popularTopBody: {
+    padding: 14,
+  },
+  popularTopTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 22,
+  },
+  popularRankList: {
+    gap: 12,
+  },
+  popularRankItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 12,
+    gap: 12,
+  },
+  rankNumberBox: {
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankNumberTop: {
+    transform: [{ scale: 1.1 }],
+  },
+  rankNumberText: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  popularRankContent: {
+    flex: 1,
+  },
+  popularRankTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  popularRankThumb: {
+    width: 75,
+    height: 65,
+    borderRadius: 8,
+    backgroundColor: '#cbd5e1',
+  },
+  // MEJA REDAKSI TAB
+  editorialBox: {
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+  },
+  editorialBoxText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+  editorialCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  editorialCardImg: {
+    width: '100%',
+    height: 160,
+    backgroundColor: '#cbd5e1',
+  },
+  editorialCardBody: {
+    padding: 14,
+  },
+  editorialBadge: {
+    backgroundColor: '#16a34a',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  editorialBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  editorialCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 22,
+  },
+  // KOMENTAR TAB
+  emptyCommentFeed: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 50,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+  },
+  emptyCommentTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 12,
+  },
+  emptyCommentSub: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  commentFeedCard: {
+    borderRadius: 14,
+    padding: 14,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  commentFeedAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#1b61d1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commentFeedAvatarText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  commentFeedAuthor: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  readerBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  readerBadgeText: {
+    color: '#3b82f6',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  commentFeedBubble: {
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  commentFeedText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  commentArticleLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    paddingTop: 10,
+    gap: 8,
+  },
+  commentArticleTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
   }
 });
