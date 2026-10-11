@@ -127,12 +127,23 @@ export default function Home() {
   const { width: screenWidth } = useWindowDimensions();
   const [categories, setCategories] = useState<{ name: string, slug: string }[]>([]);
   const [activeTab, setActiveTab] = useState<'terkini' | 'rekomendasi' | 'populer' | 'redaksi' | 'komentar'>('terkini');
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['terkini']));
   const [allApprovedComments, setAllApprovedComments] = useState<any[]>([]);
   const scrollViewRef = useRef<any>(null);
   const horizontalScrollRef = useRef<ScrollView>(null);
   const tabBarScrollRef = useRef<ScrollView>(null);
 
+  const markTabVisited = (tabId: string) => {
+    setVisitedTabs(prev => {
+      if (prev.has(tabId)) return prev;
+      const next = new Set(prev);
+      next.add(tabId);
+      return next;
+    });
+  };
+
   const handleTabChange = (tabId: any) => {
+    markTabVisited(tabId);
     setActiveTab(tabId);
     const index = HOME_TABS.findIndex(t => t.id === tabId);
     if (index !== -1 && horizontalScrollRef.current) {
@@ -148,6 +159,7 @@ export default function Home() {
     const index = Math.round(offsetX / screenWidth);
     if (index >= 0 && index < HOME_TABS.length) {
       const nextTab = HOME_TABS[index].id as any;
+      markTabVisited(nextTab);
       if (nextTab !== activeTab) {
         setActiveTab(nextTab);
       }
@@ -531,24 +543,25 @@ export default function Home() {
   const currentTicker = tickerItems[tickerIndex % tickerItems.length];
 
   useEffect(() => {
-    if (BERITA_TERKINI.length === 0) return;
+    if (activeTab !== 'terkini' || BERITA_TERKINI.length <= 1) return;
     const interval = setInterval(() => {
-      let nextIndex = currentIndex + 1;
-      if (nextIndex >= BERITA_TERKINI.length) {
-        nextIndex = 0;
-      }
-      setCurrentIndex(nextIndex);
-      if (flatListRef.current) {
-        flatListRef.current.scrollToIndex({ 
-          index: nextIndex, 
-          animated: true,
-          viewPosition: 0,
-          viewOffset: 16 
-        });
-      }
-    }, 3000);
+      setCurrentIndex(prev => {
+        const nextIndex = (prev + 1) % BERITA_TERKINI.length;
+        if (flatListRef.current) {
+          try {
+            flatListRef.current.scrollToIndex({ 
+              index: nextIndex, 
+              animated: true,
+              viewPosition: 0,
+              viewOffset: 16 
+            });
+          } catch (_) {}
+        }
+        return nextIndex;
+      });
+    }, 3500);
     return () => clearInterval(interval);
-  }, [currentIndex, BERITA_TERKINI.length]);
+  }, [activeTab, BERITA_TERKINI.length]);
 
   const dyn = {
     bg: { backgroundColor: colors.background },
@@ -675,8 +688,10 @@ export default function Home() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleHorizontalScrollEnd}
-        onScrollEndDrag={handleHorizontalScrollEnd}
-        scrollEventThrottle={16}
+        directionalLockEnabled={true}
+        overScrollMode="never"
+        removeClippedSubviews={Platform.OS === 'android'}
+        nestedScrollEnabled={true}
         style={{ flex: 1 }}
       >
         {/* TAB 1: TERKINI */}
@@ -684,6 +699,9 @@ export default function Home() {
           <Animated.ScrollView 
             ref={scrollViewRef}
             nestedScrollEnabled={true}
+            directionalLockEnabled={true}
+            overScrollMode="never"
+            removeClippedSubviews={Platform.OS === 'android'}
             style={[styles.container, dyn.bg]} 
             showsVerticalScrollIndicator={false}
             scrollEventThrottle={16}
@@ -1032,287 +1050,315 @@ export default function Home() {
 
         {/* TAB 2: REKOMENDASI */}
         <View style={{ width: screenWidth, flex: 1 }}>
-          <ScrollView
-            nestedScrollEnabled={true}
-            style={[styles.container, dyn.bg]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={onRefresh} 
-                colors={['#1b61d1']} 
-                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
-              />
-            }
-          >
-            <View style={styles.tabContentWrapper}>
-            {/* Hero Card Pertama */}
-            {REKOMENDASI_ARTICLES[0] && (
-              <TouchableOpacity 
-                style={[styles.recomHeroCard, dyn.card]} 
-                activeOpacity={0.85}
-                onPress={() => REKOMENDASI_ARTICLES[0].videoUrl ? router.push(`/watch/${REKOMENDASI_ARTICLES[0].id}` as any) : router.push(`/article/${REKOMENDASI_ARTICLES[0].id}`)}
-              >
-                <Image source={{ uri: REKOMENDASI_ARTICLES[0].image }} style={styles.recomHeroImage} />
-                <View style={styles.recomHeroBody}>
-                  <View style={styles.recomBadgeRow}>
-                    <View style={styles.recomCategoryBadge}>
-                      <Text style={styles.recomCategoryText}>{REKOMENDASI_ARTICLES[0].category?.toUpperCase() || 'PILIHAN'}</Text>
-                    </View>
-                    <Text style={[styles.recomHeroDate, dyn.textMuted]}>{REKOMENDASI_ARTICLES[0].date}</Text>
-                  </View>
-                  <Text style={[styles.recomHeroTitle, dyn.textMain]} numberOfLines={3}>{REKOMENDASI_ARTICLES[0].title}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* List Rekomendasi Lainnya */}
-            <View style={styles.recomListContainer}>
-              {REKOMENDASI_ARTICLES.slice(1).map((item) => (
-                <TouchableOpacity
-                  key={`recom-${item.id}`}
-                  style={[styles.recomListItem, dyn.card]}
-                  activeOpacity={0.8}
-                  onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+          {visitedTabs.has('rekomendasi') ? (
+            <ScrollView
+              nestedScrollEnabled={true}
+              directionalLockEnabled={true}
+              overScrollMode="never"
+              removeClippedSubviews={Platform.OS === 'android'}
+              style={[styles.container, dyn.bg]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl 
+                  refreshing={refreshing} 
+                  onRefresh={onRefresh} 
+                  colors={['#1b61d1']} 
+                  tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+                />
+              }
+            >
+              <View style={styles.tabContentWrapper}>
+              {/* Hero Card Pertama */}
+              {REKOMENDASI_ARTICLES[0] && (
+                <TouchableOpacity 
+                  style={[styles.recomHeroCard, dyn.card]} 
+                  activeOpacity={0.85}
+                  onPress={() => REKOMENDASI_ARTICLES[0].videoUrl ? router.push(`/watch/${REKOMENDASI_ARTICLES[0].id}` as any) : router.push(`/article/${REKOMENDASI_ARTICLES[0].id}`)}
                 >
-                  <Image source={{ uri: item.image }} style={styles.recomListImage} />
-                  <View style={styles.recomListBody}>
-                    <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
-                    <Text style={[styles.recomListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 }}>
-                      <Ionicons name="time-outline" size={12} color={dyn.textMuted.color} />
-                      <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                  <Image source={{ uri: REKOMENDASI_ARTICLES[0].image }} style={styles.recomHeroImage} />
+                  <View style={styles.recomHeroBody}>
+                    <View style={styles.recomBadgeRow}>
+                      <View style={styles.recomCategoryBadge}>
+                        <Text style={styles.recomCategoryText}>{REKOMENDASI_ARTICLES[0].category?.toUpperCase() || 'PILIHAN'}</Text>
+                      </View>
+                      <Text style={[styles.recomHeroDate, dyn.textMuted]}>{REKOMENDASI_ARTICLES[0].date}</Text>
                     </View>
+                    <Text style={[styles.recomHeroTitle, dyn.textMain]} numberOfLines={3}>{REKOMENDASI_ARTICLES[0].title}</Text>
                   </View>
                 </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-          <View style={{ height: 160 }} />
-        </ScrollView>
-        </View>
+              )}
 
-        {/* TAB 3: POPULER */}
-        <View style={{ width: screenWidth, flex: 1 }}>
-          <ScrollView
-            nestedScrollEnabled={true}
-            style={[styles.container, dyn.bg]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={onRefresh} 
-                colors={['#1b61d1']} 
-                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
-              />
-            }
-          >
-            <View style={styles.tabContentWrapper}>
-            {/* Juara #1 Terpopuler */}
-            {POPULER_ARTICLES[0] && (
-              <TouchableOpacity 
-                style={[styles.popularTopCard, dyn.card]} 
-                activeOpacity={0.85}
-                onPress={() => POPULER_ARTICLES[0].videoUrl ? router.push(`/watch/${POPULER_ARTICLES[0].id}` as any) : router.push(`/article/${POPULER_ARTICLES[0].id}`)}
-              >
-                <Image source={{ uri: POPULER_ARTICLES[0].image }} style={styles.popularTopImage} />
-                <View style={styles.rankBadgeFirst}>
-                  <Text style={styles.rankBadgeFirstText}>#1 TERPOPULER</Text>
-                </View>
-                <View style={styles.popularTopBody}>
-                  <Text style={[styles.popularTopTitle, dyn.textMain]} numberOfLines={2}>{POPULER_ARTICLES[0].title}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                    <Text style={[styles.recomListDate, dyn.textMuted]}>{POPULER_ARTICLES[0].date}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Ionicons name="eye" size={13} color="#f97316" />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#f97316' }}>{POPULER_ARTICLES[0].views || 0} pembaca</Text>
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Peringkat #2 sampai seterusnya */}
-            <View style={styles.popularRankList}>
-              {POPULER_ARTICLES.slice(1).map((item, idx) => {
-                const rank = idx + 2;
-                return (
+              {/* List Rekomendasi Lainnya */}
+              <View style={styles.recomListContainer}>
+                {REKOMENDASI_ARTICLES.slice(1).map((item) => (
                   <TouchableOpacity
-                    key={`pop-${item.id}`}
-                    style={[styles.popularRankItem, dyn.card]}
+                    key={`recom-${item.id}`}
+                    style={[styles.recomListItem, dyn.card]}
                     activeOpacity={0.8}
                     onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
                   >
-                    <View style={[styles.rankNumberBox, rank <= 3 ? styles.rankNumberTop : {}]}>
-                      <Text style={[styles.rankNumberText, rank <= 3 ? { color: '#f97316' } : dyn.textMuted]}>
-                        {rank < 10 ? `0${rank}` : rank}
-                      </Text>
-                    </View>
-                    <View style={styles.popularRankContent}>
+                    <Image source={{ uri: item.image }} style={styles.recomListImage} />
+                    <View style={styles.recomListBody}>
                       <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
-                      <Text style={[styles.popularRankTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                        <Ionicons name="eye-outline" size={12} color={dyn.textMuted.color} />
-                        <Text style={[styles.recomListDate, dyn.textMuted]}>{item.views || 0} views</Text>
-                        <Text style={dyn.textMuted}>•</Text>
+                      <Text style={[styles.recomListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 }}>
+                        <Ionicons name="time-outline" size={12} color={dyn.textMuted.color} />
                         <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
-                      </View>
-                    </View>
-                    <Image source={{ uri: item.image }} style={styles.popularRankThumb} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-          <View style={{ height: 160 }} />
-        </ScrollView>
-        </View>
-
-        {/* TAB 4: MEJA REDAKSI */}
-        <View style={{ width: screenWidth, flex: 1 }}>
-          <ScrollView
-            nestedScrollEnabled={true}
-            style={[styles.container, dyn.bg]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={onRefresh} 
-                colors={['#1b61d1']} 
-                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
-              />
-            }
-          >
-            <View style={styles.tabContentWrapper}>
-            {/* Editorial Manifesto Box */}
-            <View style={[styles.editorialBox, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: '#1b61d1' }]}>
-              <Text style={[styles.editorialBoxText, dyn.textMain]}>
-                "Menyajikan fakta dengan independen, tajam, dan berimbang langsung dari ruang redaksi kami untuk pembaca cerdas."
-              </Text>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#1b61d1', marginTop: 8, textAlign: 'right' }}>— Dewan Redaksi Bedain News</Text>
-            </View>
-
-            {/* Daftar Artikel Redaksi */}
-            {REDAKSI_ARTICLES.length === 0 ? (
-              <View style={[styles.emptyCommentFeed, dyn.card, { marginTop: 12 }]}>
-                <Ionicons name="newspaper-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
-                <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Artikel Redaksi</Text>
-                <Text style={[styles.emptyCommentSub, dyn.textMuted]}>
-                  Belum ada artikel yang diterbitkan pada kategori Meja Redaksi.
-                </Text>
-              </View>
-            ) : (
-              <View style={{ gap: 14, marginTop: 10 }}>
-                {REDAKSI_ARTICLES.map((item) => (
-                  <TouchableOpacity
-                    key={`redaksi-${item.id}`}
-                    style={[styles.editorialCard, dyn.card]}
-                    activeOpacity={0.8}
-                    onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
-                  >
-                    <Image source={{ uri: item.image }} style={styles.editorialCardImg} />
-                    <View style={styles.editorialCardBody}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <View style={styles.editorialBadge}>
-                          <Text style={styles.editorialBadgeText}>MEJA REDAKSI</Text>
-                        </View>
-                        <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
-                      </View>
-                      <Text style={[styles.editorialCardTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 6 }}>
-                        <Ionicons name="pencil" size={12} color="#16a34a" />
-                        <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>Liputan Khusus Redaksi</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
                 ))}
               </View>
-            )}
-          </View>
-          <View style={{ height: 160 }} />
-        </ScrollView>
+            </View>
+            <View style={{ height: 160 }} />
+          </ScrollView>
+          ) : (
+            <View style={{ flex: 1, backgroundColor: colors.background }} />
+          )}
+        </View>
+
+        {/* TAB 3: POPULER */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          {visitedTabs.has('populer') ? (
+            <ScrollView
+              nestedScrollEnabled={true}
+              directionalLockEnabled={true}
+              overScrollMode="never"
+              removeClippedSubviews={Platform.OS === 'android'}
+              style={[styles.container, dyn.bg]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl 
+                  refreshing={refreshing} 
+                  onRefresh={onRefresh} 
+                  colors={['#1b61d1']} 
+                  tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+                />
+              }
+            >
+              <View style={styles.tabContentWrapper}>
+              {/* Juara #1 Terpopuler */}
+              {POPULER_ARTICLES[0] && (
+                <TouchableOpacity 
+                  style={[styles.popularTopCard, dyn.card]} 
+                  activeOpacity={0.85}
+                  onPress={() => POPULER_ARTICLES[0].videoUrl ? router.push(`/watch/${POPULER_ARTICLES[0].id}` as any) : router.push(`/article/${POPULER_ARTICLES[0].id}`)}
+                >
+                  <Image source={{ uri: POPULER_ARTICLES[0].image }} style={styles.popularTopImage} />
+                  <View style={styles.rankBadgeFirst}>
+                    <Text style={styles.rankBadgeFirstText}>#1 TERPOPULER</Text>
+                  </View>
+                  <View style={styles.popularTopBody}>
+                    <Text style={[styles.popularTopTitle, dyn.textMain]} numberOfLines={2}>{POPULER_ARTICLES[0].title}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                      <Text style={[styles.recomListDate, dyn.textMuted]}>{POPULER_ARTICLES[0].date}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="eye" size={13} color="#f97316" />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#f97316' }}>{POPULER_ARTICLES[0].views || 0} pembaca</Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Peringkat #2 sampai seterusnya */}
+              <View style={styles.popularRankList}>
+                {POPULER_ARTICLES.slice(1).map((item, idx) => {
+                  const rank = idx + 2;
+                  return (
+                    <TouchableOpacity
+                      key={`pop-${item.id}`}
+                      style={[styles.popularRankItem, dyn.card]}
+                      activeOpacity={0.8}
+                      onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                    >
+                      <View style={[styles.rankNumberBox, rank <= 3 ? styles.rankNumberTop : {}]}>
+                        <Text style={[styles.rankNumberText, rank <= 3 ? { color: '#f97316' } : dyn.textMuted]}>
+                          {rank < 10 ? `0${rank}` : rank}
+                        </Text>
+                      </View>
+                      <View style={styles.popularRankContent}>
+                        <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                        <Text style={[styles.popularRankTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <Ionicons name="eye-outline" size={12} color={dyn.textMuted.color} />
+                          <Text style={[styles.recomListDate, dyn.textMuted]}>{item.views || 0} views</Text>
+                          <Text style={dyn.textMuted}>•</Text>
+                          <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                        </View>
+                      </View>
+                      <Image source={{ uri: item.image }} style={styles.popularRankThumb} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+            <View style={{ height: 160 }} />
+          </ScrollView>
+          ) : (
+            <View style={{ flex: 1, backgroundColor: colors.background }} />
+          )}
+        </View>
+
+        {/* TAB 4: MEJA REDAKSI */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          {visitedTabs.has('redaksi') ? (
+            <ScrollView
+              nestedScrollEnabled={true}
+              directionalLockEnabled={true}
+              overScrollMode="never"
+              removeClippedSubviews={Platform.OS === 'android'}
+              style={[styles.container, dyn.bg]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl 
+                  refreshing={refreshing} 
+                  onRefresh={onRefresh} 
+                  colors={['#1b61d1']} 
+                  tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+                />
+              }
+            >
+              <View style={styles.tabContentWrapper}>
+              {/* Editorial Manifesto Box */}
+              <View style={[styles.editorialBox, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: '#1b61d1' }]}>
+                <Text style={[styles.editorialBoxText, dyn.textMain]}>
+                  "Menyajikan fakta dengan independen, tajam, dan berimbang langsung dari ruang redaksi kami untuk pembaca cerdas."
+                </Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#1b61d1', marginTop: 8, textAlign: 'right' }}>— Dewan Redaksi Bedain News</Text>
+              </View>
+
+              {/* Daftar Artikel Redaksi */}
+              {REDAKSI_ARTICLES.length === 0 ? (
+                <View style={[styles.emptyCommentFeed, dyn.card, { marginTop: 12 }]}>
+                  <Ionicons name="newspaper-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
+                  <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Artikel Redaksi</Text>
+                  <Text style={[styles.emptyCommentSub, dyn.textMuted]}>
+                    Belum ada artikel yang diterbitkan pada kategori Meja Redaksi.
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ gap: 14, marginTop: 10 }}>
+                  {REDAKSI_ARTICLES.map((item) => (
+                    <TouchableOpacity
+                      key={`redaksi-${item.id}`}
+                      style={[styles.editorialCard, dyn.card]}
+                      activeOpacity={0.8}
+                      onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                    >
+                      <Image source={{ uri: item.image }} style={styles.editorialCardImg} />
+                      <View style={styles.editorialCardBody}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <View style={styles.editorialBadge}>
+                            <Text style={styles.editorialBadgeText}>MEJA REDAKSI</Text>
+                          </View>
+                          <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                        </View>
+                        <Text style={[styles.editorialCardTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 6 }}>
+                          <Ionicons name="pencil" size={12} color="#16a34a" />
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>Liputan Khusus Redaksi</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+            <View style={{ height: 160 }} />
+          </ScrollView>
+          ) : (
+            <View style={{ flex: 1, backgroundColor: colors.background }} />
+          )}
         </View>
 
         {/* TAB 5: KOMENTAR */}
         <View style={{ width: screenWidth, flex: 1 }}>
-          <ScrollView
-            nestedScrollEnabled={true}
-            style={[styles.container, dyn.bg]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={onRefresh} 
-                colors={['#1b61d1']} 
-                tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
-              />
-            }
-          >
-            <View style={styles.tabContentWrapper}>
-            {/* List Komentar Feed */}
-            {allApprovedComments.length === 0 ? (
-              <View style={[styles.emptyCommentFeed, dyn.card]}>
-                <Ionicons name="chatbubble-ellipses-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
-                <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Komentar</Text>
-                <Text style={[styles.emptyCommentSub, dyn.textMuted]}>Jadilah pembaca pertama yang memberikan tanggapan di artikel kami!</Text>
-              </View>
-            ) : (
-              <View style={{ gap: 14, marginTop: 8 }}>
-                {allApprovedComments.map((comment: any, idx: number) => {
-                  let commentDate = 'Baru saja';
-                  if (comment.createdAt) {
-                    const d = typeof comment.createdAt.toDate === 'function' ? comment.createdAt.toDate() : new Date(comment.createdAt);
-                    commentDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                  }
+          {visitedTabs.has('komentar') ? (
+            <ScrollView
+              nestedScrollEnabled={true}
+              directionalLockEnabled={true}
+              overScrollMode="never"
+              removeClippedSubviews={Platform.OS === 'android'}
+              style={[styles.container, dyn.bg]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl 
+                  refreshing={refreshing} 
+                  onRefresh={onRefresh} 
+                  colors={['#1b61d1']} 
+                  tintColor={isDarkMode ? '#ffffff' : '#1b61d1'} 
+                />
+              }
+            >
+              <View style={styles.tabContentWrapper}>
+              {/* List Komentar Feed */}
+              {allApprovedComments.length === 0 ? (
+                <View style={[styles.emptyCommentFeed, dyn.card]}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
+                  <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Komentar</Text>
+                  <Text style={[styles.emptyCommentSub, dyn.textMuted]}>Jadilah pembaca pertama yang memberikan tanggapan di artikel kami!</Text>
+                </View>
+              ) : (
+                <View style={{ gap: 14, marginTop: 8 }}>
+                  {allApprovedComments.map((comment: any, idx: number) => {
+                    let commentDate = 'Baru saja';
+                    if (comment.createdAt) {
+                      const d = typeof comment.createdAt.toDate === 'function' ? comment.createdAt.toDate() : new Date(comment.createdAt);
+                      commentDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                    }
 
-                  return (
-                    <View key={comment.id || idx} style={[styles.commentFeedCard, dyn.card]}>
-                      {/* Header Komentar */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                          <View style={styles.commentFeedAvatar}>
-                            <Text style={styles.commentFeedAvatarText}>
-                              {(comment.authorName || 'A').charAt(0).toUpperCase()}
-                            </Text>
+                    return (
+                      <View key={comment.id || idx} style={[styles.commentFeedCard, dyn.card]}>
+                        {/* Header Komentar */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <View style={styles.commentFeedAvatar}>
+                              <Text style={styles.commentFeedAvatarText}>
+                                {(comment.authorName || 'A').charAt(0).toUpperCase()}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text style={[styles.commentFeedAuthor, dyn.textMain]}>{comment.authorName || 'Anonim'}</Text>
+                              <Text style={[styles.recomListDate, dyn.textMuted]}>{commentDate}</Text>
+                            </View>
                           </View>
-                          <View>
-                            <Text style={[styles.commentFeedAuthor, dyn.textMain]}>{comment.authorName || 'Anonim'}</Text>
-                            <Text style={[styles.recomListDate, dyn.textMuted]}>{commentDate}</Text>
+                          <View style={styles.readerBadge}>
+                            <Text style={styles.readerBadgeText}>Pembaca</Text>
                           </View>
                         </View>
-                        <View style={styles.readerBadge}>
-                          <Text style={styles.readerBadgeText}>Pembaca</Text>
+
+                        {/* Isi Komentar */}
+                        <View style={[styles.commentFeedBubble, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}>
+                          <Ionicons name="chatbox-outline" size={14} color="#7c3aed" style={{ marginBottom: 4 }} />
+                          <Text style={[styles.commentFeedText, dyn.textMain]}>
+                            "{comment.content}"
+                          </Text>
                         </View>
-                      </View>
 
-                      {/* Isi Komentar */}
-                      <View style={[styles.commentFeedBubble, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}>
-                        <Ionicons name="chatbox-outline" size={14} color="#7c3aed" style={{ marginBottom: 4 }} />
-                        <Text style={[styles.commentFeedText, dyn.textMain]}>
-                          "{comment.content}"
-                        </Text>
+                        {/* Tautan ke Artikel Terkait */}
+                        <TouchableOpacity
+                          onPress={() => router.push(`/article/${comment.articleSlug}`)}
+                          style={[styles.commentArticleLink, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="newspaper-outline" size={15} color="#1b61d1" />
+                          <Text style={[styles.commentArticleTitle, dyn.textMain]} numberOfLines={1}>
+                            {comment.articleTitle || 'Lihat Artikel Terkait'}
+                          </Text>
+                          <Ionicons name="arrow-forward" size={14} color="#1b61d1" style={{ marginLeft: 'auto' }} />
+                        </TouchableOpacity>
                       </View>
-
-                      {/* Tautan ke Artikel Terkait */}
-                      <TouchableOpacity
-                        onPress={() => router.push(`/article/${comment.articleSlug}`)}
-                        style={[styles.commentArticleLink, { borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="newspaper-outline" size={15} color="#1b61d1" />
-                        <Text style={[styles.commentArticleTitle, dyn.textMain]} numberOfLines={1}>
-                          {comment.articleTitle || 'Lihat Artikel Terkait'}
-                        </Text>
-                        <Ionicons name="arrow-forward" size={14} color="#1b61d1" style={{ marginLeft: 'auto' }} />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-          <View style={{ height: 160 }} />
-        </ScrollView>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+            <View style={{ height: 160 }} />
+          </ScrollView>
+          ) : (
+            <View style={{ flex: 1, backgroundColor: colors.background }} />
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
