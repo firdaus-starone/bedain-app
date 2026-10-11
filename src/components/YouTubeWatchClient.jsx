@@ -45,9 +45,15 @@ export default function YouTubeWatchClient() {
         const now = new Date();
         const isSched = vData.status === 'scheduled';
         let scheduledDate = null;
-        if (vData.scheduledAt) scheduledDate = new Date(vData.scheduledAt);
-        else if (vData.publishedAt?.toDate) scheduledDate = vData.publishedAt.toDate();
+        if (vData.publishedAt?.toDate) scheduledDate = vData.publishedAt.toDate();
         else if (vData.publishedAt) scheduledDate = new Date(vData.publishedAt);
+        else if (vData.scheduledAt) {
+          let s = String(vData.scheduledAt).trim();
+          if (!s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) {
+            s += '+07:00';
+          }
+          scheduledDate = new Date(s);
+        }
         const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
         const isDraft = vData.status === 'draft';
 

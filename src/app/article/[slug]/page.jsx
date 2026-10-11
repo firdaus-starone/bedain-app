@@ -59,8 +59,15 @@ export async function generateMetadata({ params }) {
   const now = new Date();
   let scheduledDate = null;
   if (article && article.status === 'scheduled') {
-    if (article.scheduledAt) scheduledDate = new Date(article.scheduledAt);
-    else if (article.publishedAt) scheduledDate = new Date(article.publishedAt);
+    if (article.publishedAt) {
+      scheduledDate = new Date(article.publishedAt);
+    } else if (article.scheduledAt) {
+      let s = String(article.scheduledAt).trim();
+      if (!s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) {
+        s += '+07:00';
+      }
+      scheduledDate = new Date(s);
+    }
   }
   const isScheduledNotYet = article && article.status === 'scheduled' && scheduledDate && scheduledDate > now;
   const isDraft = article && article.status === 'draft';

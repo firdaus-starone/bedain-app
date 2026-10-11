@@ -101,12 +101,16 @@ const ArticleDetail = () => {
           const now = new Date();
           const isSched = foundArticle.status === 'scheduled';
           let scheduledDate = null;
-          if (foundArticle.scheduledAt) {
-            scheduledDate = new Date(foundArticle.scheduledAt);
-          } else if (foundArticle.publishedAt?.toDate) {
+          if (foundArticle.publishedAt?.toDate) {
             scheduledDate = foundArticle.publishedAt.toDate();
           } else if (foundArticle.publishedAt) {
             scheduledDate = new Date(foundArticle.publishedAt);
+          } else if (foundArticle.scheduledAt) {
+            let s = String(foundArticle.scheduledAt).trim();
+            if (!s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) {
+              s += '+07:00';
+            }
+            scheduledDate = new Date(s);
           }
 
           const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
@@ -171,12 +175,16 @@ const ArticleDetail = () => {
               const now = new Date();
               const isSched = data.status === 'scheduled';
               let scheduledDate = null;
-              if (data.scheduledAt) {
-                scheduledDate = new Date(data.scheduledAt);
-              } else if (data.publishedAt?.toDate) {
+              if (data.publishedAt?.toDate) {
                 scheduledDate = data.publishedAt.toDate();
               } else if (data.publishedAt) {
                 scheduledDate = new Date(data.publishedAt);
+              } else if (data.scheduledAt) {
+                let s = String(data.scheduledAt).trim();
+                if (!s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) {
+                  s += '+07:00';
+                }
+                scheduledDate = new Date(s);
               }
               const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
               const isDraft = data.status === 'draft';
