@@ -65,7 +65,11 @@ const ArticleEditor = () => {
     content_en: '',
     title_zh: '',
     content_zh: '',
-    isBreakingNews: false
+    isBreakingNews: false,
+    facebookPostId: null,
+    facebookPostedAt: null,
+    autoShareFacebook: true,
+    originalStatus: undefined
   });
 
   useEffect(() => {
@@ -89,6 +93,8 @@ const ArticleEditor = () => {
     if (editId && currentUser) {
       if (justCreatedRef.current) {
         justCreatedRef.current = false;
+        // Artikel baru disimpan, sinkronisasi originalStatus ke status saat ini
+        setFormData(prev => ({ ...prev, originalStatus: prev.status }));
         return;
       }
       const fetchArticleToEdit = async () => {
@@ -119,6 +125,9 @@ const ArticleEditor = () => {
               content_en: data.content_en || '',
               title_zh: data.title_zh || '',
               content_zh: data.content_zh || '',
+              facebookPostId: data.facebookPostId || null,
+              facebookPostedAt: data.facebookPostedAt || null,
+              autoShareFacebook: data.autoShareFacebook !== false,
               originalStatus: data.status,
               originalPublishedAt: data.publishedAt || data.createdAt || data.updatedAt || null
             });
@@ -1102,6 +1111,9 @@ Konten Asli: ${formData.content}`;
           content_en: formData.content_en || '',
           content_zh: formData.content_zh || '',
           isBreakingNews: formData.isBreakingNews || false,
+          autoShareFacebook: formData.autoShareFacebook !== false,
+          facebookPostId: formData.facebookPostId || null,
+          facebookPostedAt: formData.facebookPostedAt || null,
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
           publishedAt: finalStatus === 'published' 
             ? (formData.originalPublishedAt ? formData.originalPublishedAt : Timestamp.now()) 
@@ -1114,6 +1126,9 @@ Konten Asli: ${formData.content}`;
           slug: finalSlug,
           coverImage: formData.imageUrl,
           status: finalStatus,
+          autoShareFacebook: formData.autoShareFacebook !== false,
+          facebookPostId: null,
+          facebookPostedAt: null,
           scheduledAt: finalStatus === 'scheduled' ? (formData.scheduledAt || '') : null,
           tags: tagsArray,
           createdAt: Timestamp.now(),
@@ -1128,6 +1143,11 @@ Konten Asli: ${formData.content}`;
         };
         const newDocRef = await addDoc(collection(db, 'articles'), articleData);
         justCreatedRef.current = true;
+        setFormData(prev => ({
+          ...prev,
+          originalStatus: finalStatus,
+          originalPublishedAt: articleData.publishedAt
+        }));
         router.replace(`/admin/editor?id=${newDocRef.id}`);
       }
       
@@ -1136,9 +1156,15 @@ Konten Asli: ${formData.content}`;
 
       const isPub = finalStatus === 'published';
       const isSched = finalStatus === 'scheduled';
-      
-      // Auto-post to Facebook if newly published or scheduled
-      if ((isPub && formData.originalStatus !== 'published') || (isSched && formData.originalStatus !== 'scheduled')) {
+      const targetDocId = editId || (typeof newDocRef !== 'undefined' ? newDocRef?.id : null);
+      const isAlreadySharedToFB = !!formData.facebookPostId;
+      const statusBecamePubOrSched = (isPub && formData.originalStatus !== 'published') || (isSched && formData.originalStatus !== 'scheduled');
+
+      // Auto-post to Facebook HANYA jika:
+      // 1. autoShareFacebook aktif (default true)
+      // 2. BELUM PERNAH diposting atau dijadwalkan ke Facebook (!isAlreadySharedToFB)
+      // 3. Status berubah menjadi published atau scheduled
+      if (formData.autoShareFacebook !== false && !isAlreadySharedToFB && statusBecamePubOrSched) {
         try {
           const isVideo = formData.category === 'Video' || formData.videoUrl || formData.youtubeUrl;
           const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${finalSlug}`;
@@ -1157,13 +1183,39 @@ Konten Asli: ${formData.content}`;
               imageUrl: formData.imageUrl || '',
               scheduledTime: scheduledTime
             })
-          }).catch(fbError => {
+          })
+          .then(res => res.json())
+          .then(async (fbData) => {
+            if (fbData.success && fbData.id && targetDocId) {
+              try {
+                const docRefToUpdate = doc(db, 'articles', targetDocId);
+                await updateDoc(docRefToUpdate, {
+                  facebookPostId: fbData.id,
+                  facebookPostedAt: Timestamp.now()
+                });
+                setFormData(prev => ({
+                  ...prev,
+                  facebookPostId: fbData.id,
+                  originalStatus: finalStatus
+                }));
+              } catch (upErr) {
+                console.warn("Gagal menyimpan facebookPostId ke Firestore:", upErr);
+              }
+            }
+          })
+          .catch(fbError => {
             console.error("Gagal auto-post ke Facebook:", fbError);
           });
         } catch (fbError) {
           console.error("Gagal auto-post ke Facebook:", fbError);
         }
       }
+
+      // Pastikan originalStatus langsung tersinkronisasi di local state
+      setFormData(prev => ({
+        ...prev,
+        originalStatus: finalStatus
+      }));
 
       setNotifModal({
         isOpen: true,
@@ -1724,6 +1776,37 @@ Konten Asli: ${formData.content}`;
                   <p style={{ margin: '6px 0 0 30px', fontSize: '11px', color: 'var(--admin-text-secondary)', lineHeight: 1.4 }}>
                     Artikel ini akan langsung tampil menonjol di teks berjalan (Ticker) paling atas. Gunakan hanya untuk berita sangat mendesak/penting.
                   </p>
+                </div>
+
+                <div style={{ marginTop: '12px', padding: '16px', background: 'rgba(24, 119, 242, 0.05)', border: '1px solid rgba(24, 119, 242, 0.25)', borderRadius: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', margin: 0 }}>
+                    <input 
+                      type="checkbox" 
+                      name="autoShareFacebook" 
+                      checked={formData.autoShareFacebook !== false} 
+                      onChange={(e) => setFormData(prev => ({ ...prev, autoShareFacebook: e.target.checked }))}
+                      style={{ width: '18px', height: '18px', accentColor: '#1877F2' }}
+                    />
+                    <span style={{ fontSize: '13px', color: '#1877F2', fontWeight: 700, lineHeight: 1.4 }}>
+                      📢 Auto-Share ke Facebook Page
+                    </span>
+                  </label>
+                  <div style={{ margin: '8px 0 0 30px', fontSize: '11px', color: 'var(--admin-text-secondary)', lineHeight: 1.4 }}>
+                    {formData.facebookPostId ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          ✓ Sudah terjadwal / dibagikan ke Facebook
+                        </span>
+                        <span style={{ opacity: 0.85, fontSize: '10.5px' }}>
+                          Post ID: {formData.facebookPostId}. Sistem otomatis mengunci agar tidak terjadi posting ganda saat artikel diedit atau disimpan ulang.
+                        </span>
+                      </div>
+                    ) : (
+                      <span>
+                        Otomatis mengirim postingan ke Halaman Facebook saat berita diterbitkan atau jam tayang otomatis tiba (hanya 1x per artikel).
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </aside>

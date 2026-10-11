@@ -187,23 +187,37 @@ const AdminArticles = () => {
           publishedAt: Timestamp.now()
         });
         
-        // Auto-post to Facebook
-        try {
-          const isVideo = article.category === 'Video' || article.videoUrl || article.youtubeUrl;
-          const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${article.slug}`;
-          fetch('/api/facebook-post', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: `Berita Baru dari Bedain News!\n\n${article.title}\n\nBaca selengkapnya di:`,
-              link: articleUrl,
-              imageUrl: article.coverImage || article.imageUrl || ''
+        // Auto-post to Facebook HANYA jika belum pernah dibagikan/dijadwalkan sebelumnya
+        if (!article.facebookPostId && article.autoShareFacebook !== false) {
+          try {
+            const isVideo = article.category === 'Video' || article.videoUrl || article.youtubeUrl;
+            const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${article.slug}`;
+            fetch('/api/facebook-post', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: `Berita Baru dari Bedain News!\n\n${article.title}\n\nBaca selengkapnya di:`,
+                link: articleUrl,
+                imageUrl: article.coverImage || article.imageUrl || ''
+              })
             })
-          }).catch(fbError => {
+            .then(res => res.json())
+            .then(async (fbData) => {
+              if (fbData.success && fbData.id) {
+                try {
+                  await updateDoc(articleRef, {
+                    facebookPostId: fbData.id,
+                    facebookPostedAt: Timestamp.now()
+                  });
+                } catch (e) {}
+              }
+            })
+            .catch(fbError => {
+              console.error("Gagal auto-post ke Facebook:", fbError);
+            });
+          } catch (fbError) {
             console.error("Gagal auto-post ke Facebook:", fbError);
-          });
-        } catch (fbError) {
-          console.error("Gagal auto-post ke Facebook:", fbError);
+          }
         }
 
         fetchArticles();

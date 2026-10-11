@@ -159,7 +159,19 @@ export default function AdminSubmissions() {
             link: articleUrl,
             imageUrl: sub.imageUrl || ''
           })
-        }).catch(fbError => {
+        })
+        .then(res => res.json())
+        .then(async (fbData) => {
+          if (fbData.success && fbData.id && newArticleRef.id) {
+            try {
+              await updateDoc(doc(db, 'articles', newArticleRef.id), {
+                facebookPostId: fbData.id,
+                facebookPostedAt: Timestamp.now()
+              });
+            } catch (e) {}
+          }
+        })
+        .catch(fbError => {
           console.error("Gagal auto-post ke Facebook:", fbError);
         });
       } catch (fbError) {
