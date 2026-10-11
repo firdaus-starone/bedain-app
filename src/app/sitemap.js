@@ -44,7 +44,12 @@ export default async function sitemap() {
             if (pubTime > new Date().getTime()) return null;
           }
 
-          return { slug, date };
+          const category = fields.category?.stringValue;
+          const videoUrl = fields.videoUrl?.stringValue;
+          const youtubeUrl = fields.youtubeUrl?.stringValue;
+          const isVideo = category === 'Video' || videoUrl || youtubeUrl;
+
+          return { slug, date, isVideo };
         })
         .filter(Boolean);
     }
@@ -53,7 +58,7 @@ export default async function sitemap() {
   }
 
   const articleUrls = articles.map((article) => ({
-    url: `${baseUrl}/article/${article.slug}`,
+    url: `${baseUrl}/${article.isVideo ? 'watch' : 'article'}/${article.slug}`,
     lastModified: article.date,
     changeFrequency: 'weekly',
     priority: 0.8,
@@ -65,12 +70,6 @@ export default async function sitemap() {
       lastModified: new Date().toISOString(),
       changeFrequency: 'daily',
       priority: 1,
-    },
-    {
-      url: `${baseUrl}/cari`,
-      lastModified: new Date().toISOString(),
-      changeFrequency: 'daily',
-      priority: 0.5,
     },
     {
       url: `${baseUrl}/kirim-tulisan`,

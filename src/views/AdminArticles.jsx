@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { 
   PlusCircle, Trash2, Edit, Search, Eye, Star, 
-  Sparkles, ExternalLink, Newspaper, Clock, CheckCircle, Bell, Send, X
+  Sparkles, ExternalLink, Newspaper, Clock, CheckCircle, Bell, Send, X, Zap
 } from 'lucide-react';
 import { functions } from '../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
@@ -162,6 +162,19 @@ const AdminArticles = () => {
     } catch (error) {
       console.error("Error updating headline status:", error);
       alert("Gagal mengubah status headline.");
+    }
+  };
+
+  const handleToggleBreakingNews = async (article) => {
+    try {
+      const articleRef = doc(db, 'articles', article.id);
+      await updateDoc(articleRef, {
+        isBreakingNews: !article.isBreakingNews
+      });
+      fetchArticles();
+    } catch (error) {
+      console.error("Error updating breaking news status:", error);
+      alert("Gagal mengubah status breaking news.");
     }
   };
 
@@ -405,6 +418,11 @@ const AdminArticles = () => {
                                     ⭐ Headline
                                   </span>
                                 )}
+                                {article.isBreakingNews && (
+                                  <span style={{ fontSize: '11px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    🚨 Breaking News
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -546,13 +564,22 @@ const AdminArticles = () => {
                             )}
 
                             {['superadmin', 'admin'].includes(userRole) && (
-                              <button 
-                                onClick={() => handleToggleHeadline(article)} 
-                                style={{ background: article.isHeadline ? 'rgba(250, 204, 21, 0.2)' : 'var(--admin-hover-bg)', color: article.isHeadline ? '#facc15' : 'var(--admin-text-secondary)', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
-                                title={article.isHeadline ? "Hapus dari Headline" : "Jadikan Headline Utama"}
-                              >
-                                <Star size={16} fill={article.isHeadline ? '#facc15' : 'none'} />
-                              </button>
+                              <>
+                                <button 
+                                  onClick={() => handleToggleBreakingNews(article)} 
+                                  style={{ background: article.isBreakingNews ? 'rgba(239, 68, 68, 0.2)' : 'var(--admin-hover-bg)', color: article.isBreakingNews ? '#ef4444' : 'var(--admin-text-secondary)', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                  title={article.isBreakingNews ? "Hapus dari Breaking News" : "Jadikan Breaking News"}
+                                >
+                                  <Zap size={16} fill={article.isBreakingNews ? '#ef4444' : 'none'} />
+                                </button>
+                                <button 
+                                  onClick={() => handleToggleHeadline(article)} 
+                                  style={{ background: article.isHeadline ? 'rgba(250, 204, 21, 0.2)' : 'var(--admin-hover-bg)', color: article.isHeadline ? '#facc15' : 'var(--admin-text-secondary)', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                  title={article.isHeadline ? "Hapus dari Headline" : "Jadikan Headline Utama"}
+                                >
+                                  <Star size={16} fill={article.isHeadline ? '#facc15' : 'none'} />
+                                </button>
+                              </>
                             )}
 
                             {/* Grup Edit & Hapus agar selalu berdampingan */}

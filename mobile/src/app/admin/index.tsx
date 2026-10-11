@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { collection, query, getCountFromServer, where } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { collection, query, getCountFromServer, where, doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function NativeAdminDashboard() {
@@ -17,6 +17,7 @@ export default function NativeAdminDashboard() {
     pendingComments: 0
   });
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -41,6 +42,18 @@ export default function NativeAdminDashboard() {
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
+      }
+      
+      try {
+        if (auth.currentUser) {
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            setUserRole(userSnap.data().role || 'reader');
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching role:", e);
       } finally {
         setLoading(false);
       }
@@ -141,7 +154,10 @@ export default function NativeAdminDashboard() {
           <Ionicons name="chevron-forward" size={20} color={dyn.textMuted.color} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.menuItem, dyn.card]} onPress={() => router.push('/admin/comments')} activeOpacity={0.7}>
+        {/* Hanya admin dan superadmin yang bisa melihat Moderasi dan Pengguna */}
+        {(userRole === 'admin' || userRole === 'superadmin') && (
+          <>
+            <TouchableOpacity style={[styles.menuItem, dyn.card]} onPress={() => router.push('/admin/comments')} activeOpacity={0.7}>
           <View style={[styles.menuIconWrapper, { backgroundColor: '#f59e0b' }]}>
             <Ionicons name="chatbox-ellipses-outline" size={22} color="#fff" />
           </View>
@@ -167,6 +183,8 @@ export default function NativeAdminDashboard() {
           </View>
           <Ionicons name="chevron-forward" size={20} color={dyn.textMuted.color} />
         </TouchableOpacity>
+          </>
+        )}
       </View>
       
       <View style={{ height: 40 }} />

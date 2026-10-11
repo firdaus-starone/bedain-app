@@ -168,8 +168,7 @@ export default function ProfileModal() {
           )}
         </View>
 
-        {/* Menu Items */}
-        {(userRole === 'admin' || userRole === 'editor') && (
+        {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'editor' || userRole === 'reporter') && (
           <View style={[styles.menuSection, dyn.menuSection]}>
             <Text style={[styles.sectionTitle, dyn.sectionTitle]}>Akses Khusus</Text>
             <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/admin')}>

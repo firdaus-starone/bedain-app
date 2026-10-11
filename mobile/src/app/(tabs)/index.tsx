@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated, ToastAndroid, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -85,73 +85,93 @@ const PulsingDot = () => {
 };
 
 /**
- * Efek "tebasan samurai" pada judul aplikasi:
- * kilatan pedang diagonal menyapu judul, disusul hentakan kecil (impact).
- * Hanya memakai Animated bawaan agar bisa dikirim via OTA tanpa build native.
+ * Efek "kilau pedang samurai" pada judul aplikasi:
+ * pantulan cahaya logam menyapu HURUF judul dari kiri ke kanan.
+ *
+ * Cara kerja (tanpa MaskedView / library native, agar bisa dikirim via OTA):
+ * beberapa "jendela" sempit ber-overflow hidden bergerak melintasi judul.
+ * Di dalam tiap jendela ada salinan teks berwarna perak/putih yang digeser
+ * berlawanan arah, sehingga posisinya tepat menimpa teks asli.
+ * Hasilnya: hanya bagian huruf yang tersapu jendela yang tampak berkilau.
  */
-const SamuraiTitle = ({ children }: { children: ReactNode }) => {
-  const slash = useRef(new Animated.Value(0)).current;
-  const impact = useRef(new Animated.Value(0)).current;
-  const [titleWidth, setTitleWidth] = useState(0);
+type SwordShineTitleProps = {
+  first: string;
+  rest?: string;
+  textStyle: any;
+  firstColor: string;
+  restColor: string;
+  isDarkMode: boolean;
+};
+
+const SwordShineTitle = ({ first, rest, textStyle, firstColor, restColor, isDarkMode }: SwordShineTitleProps) => {
+  const sweep = useRef(new Animated.Value(0)).current;
+  const [size, setSize] = useState({ w: 0, h: 0 });
 
   useEffect(() => {
-    if (!titleWidth) return;
+    if (!size.w) return;
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.delay(3500),
-        Animated.parallel([
-          // Bilah pedang menyapu dari kiri ke kanan
-          Animated.timing(slash, {
-            toValue: 1,
-            duration: 450,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          // Hentakan saat pedang "mengenai" judul
-          Animated.sequence([
-            Animated.delay(200),
-            Animated.timing(impact, { toValue: 1, duration: 80, useNativeDriver: true }),
-            Animated.spring(impact, { toValue: 0, friction: 4, tension: 140, useNativeDriver: true }),
-          ]),
-        ]),
+        Animated.delay(3000),
+        Animated.timing(sweep, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
       ])
     );
     anim.start();
     return () => anim.stop();
-  }, [titleWidth, slash, impact]);
+  }, [size.w, sweep]);
 
-  const bladeX = slash.interpolate({ inputRange: [0, 1], outputRange: [-40, titleWidth + 40] });
-  const bladeOpacity = slash.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, 1, 1, 0] });
-  const shakeX = impact.interpolate({ inputRange: [0, 1], outputRange: [0, 2.5] });
-  const scale = impact.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] });
+  const renderText = (c1: string, c2: string) => (
+    <Text style={[textStyle, { color: c1 }]} numberOfLines={1}>
+      {first}
+      {rest ? <Text style={{ color: c2 }}>{rest}</Text> : null}
+    </Text>
+  );
+
+  // Warna kilau: perak di mode terang (di atas huruf gelap), biru baja di mode gelap (di atas huruf terang)
+  const glow = isDarkMode ? '#7dd3fc' : '#cbd5e1';
+  const core = '#ffffff';
+
+  // Satu lapis jendela kilau; beberapa lapis bertumpuk = tepi kilau yang lembut
+  const renderBand = (bandWidth: number, opacity: number, color: string) => {
+    const windowX = sweep.interpolate({ inputRange: [0, 1], outputRange: [-bandWidth, size.w] });
+    const contentX = sweep.interpolate({ inputRange: [0, 1], outputRange: [bandWidth, -size.w] });
+    return (
+      <Animated.View
+        key={bandWidth}
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: bandWidth,
+          height: size.h,
+          overflow: 'hidden',
+          opacity,
+          transform: [{ translateX: windowX }],
+        }}
+      >
+        <Animated.View style={{ width: size.w, transform: [{ translateX: contentX }] }}>
+          {renderText(color, color)}
+        </Animated.View>
+      </Animated.View>
+    );
+  };
 
   return (
-    <Animated.View style={{ transform: [{ translateX: shakeX }, { scale }] }}>
-      <View
-        onLayout={e => setTitleWidth(e.nativeEvent.layout.width)}
-        style={{ flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }}
-      >
-        {children}
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: -16,
-            bottom: -16,
-            left: 0,
-            width: 16,
-            alignItems: 'center',
-            opacity: bladeOpacity,
-            transform: [{ translateX: bladeX }, { rotate: '20deg' }],
-          }}
-        >
-          {/* Jejak cahaya pedang */}
-          <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(186,230,253,0.35)' }} />
-          {/* Mata pedang yang tajam */}
-          <View style={{ width: 3, height: '100%', backgroundColor: 'rgba(255,255,255,0.95)' }} />
-        </Animated.View>
-      </View>
-    </Animated.View>
+    <View onLayout={e => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+      {renderText(firstColor, restColor)}
+      {size.w > 0 && (
+        <>
+          {renderBand(48, 0.35, glow)}
+          {renderBand(22, 0.7, glow)}
+          {renderBand(8, 1, core)}
+        </>
+      )}
+    </View>
   );
 };
 
@@ -489,7 +509,6 @@ export default function Home() {
       />
       {/* HEADER UTAMA */}
       <View style={[styles.headerContainer, dyn.card]}>
-        <SamuraiTitle>
         <View style={styles.logoContainer}>
           {siteSettings.logoUrl ? (
             <Image 
@@ -498,16 +517,15 @@ export default function Home() {
               resizeMode="contain" 
             />
           ) : null}
-          <Text style={[styles.logoText, dyn.textMain]}>
-            {siteSettings.siteName?.split(' ')[0]?.toLowerCase()}
-            {siteSettings.siteName?.split(' ').length > 1 && (
-              <Text style={styles.logoTextOrange}>
-                {siteSettings.siteName?.split(' ').slice(1).join('').toLowerCase()}
-              </Text>
-            )}
-          </Text>
+          <SwordShineTitle
+            first={siteSettings.siteName?.split(' ')[0]?.toLowerCase() || ''}
+            rest={siteSettings.siteName?.split(' ').length > 1 ? siteSettings.siteName.split(' ').slice(1).join('').toLowerCase() : ''}
+            textStyle={styles.logoText}
+            firstColor={colors.text}
+            restColor={styles.logoTextOrange.color}
+            isDarkMode={isDarkMode}
+          />
         </View>
-        </SamuraiTitle>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/search')}>
             <Ionicons name="search-outline" size={22} color={dyn.iconColor} />

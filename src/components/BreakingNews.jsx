@@ -162,6 +162,18 @@ const BreakingNews = () => {
 
   const allTickerItems = [...customTickerItems, ...topics];
 
+  useEffect(() => {
+    if (allTickerItems.length <= 1) return;
+    const interval = setInterval(() => {
+      setFade('fade-out');
+      setTimeout(() => {
+        setCurrentIndex(prev => (prev + 1) % allTickerItems.length);
+        setFade('fade-in');
+      }, 400); // Wait for fade out
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [allTickerItems.length]);
+
   const locale = lang === 'id' ? 'id-ID' : (lang === 'zh' ? 'zh-CN' : 'en-US');
   const todayFormatted = new Date().toLocaleDateString(locale, {
     weekday: 'long',
@@ -174,6 +186,8 @@ const BreakingNews = () => {
     return null;
   }
 
+  const currentItem = allTickerItems.length > 0 ? allTickerItems[currentIndex % allTickerItems.length] : null;
+
   return (
     <div className="breaking-news">
       <div className="container breaking-content">
@@ -182,28 +196,28 @@ const BreakingNews = () => {
             <Clock size={14} className="time-icon" />
             <span>{mounted && currentTime ? currentTime : `Today | ${todayFormatted}`}</span>
           </div>
-          <div className="breaking-ticker" style={{ display: 'flex', alignItems: 'center', gap: '16px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="breaking-ticker" style={{ display: 'flex', alignItems: 'center', gap: '16px', overflow: 'hidden' }}>
             <span className="breaking-label" style={{ backgroundColor: alertColor, position: 'sticky', left: 0, zIndex: 2 }}>
               {allTickerItems.some(i => i.type === 'breaking') ? 'BREAKING NEWS' : t('navigation.trending').toUpperCase()}
             </span>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', whiteSpace: 'nowrap' }}>
-              {allTickerItems.length > 0 ? allTickerItems.map((item, index) => (
-                <span key={index} className="breaking-text">
-                  {item.type === 'breaking' ? (
-                    <Link href={item.link} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+            <div className="breaking-text-container" style={{ display: 'flex', gap: '20px', alignItems: 'center', whiteSpace: 'nowrap', transition: 'opacity 0.4s ease', opacity: fade === 'fade-in' ? 1 : 0 }}>
+              {currentItem ? (
+                <span className="breaking-text">
+                  {currentItem.type === 'breaking' ? (
+                    <Link href={currentItem.link} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
                       <span style={{ color: '#ef4444', marginRight: '6px' }}>🔴</span>
-                      {item.text}
+                      {currentItem.text}
                     </Link>
-                  ) : item.type === 'topic' ? (
-                    <Link href={`/cari?q=${encodeURIComponent(item.text)}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                  ) : currentItem.type === 'topic' ? (
+                    <Link href={`/cari?q=${encodeURIComponent(currentItem.text)}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
                       <TrendingUp size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px', color: alertColor }} />
-                      #{item.text.replace(/\s+/g, '')}
+                      #{currentItem.text.replace(/\s+/g, '')}
                     </Link>
-                  ) : item.type === 'custom' ? (
-                    <span>{item.text}</span>
+                  ) : currentItem.type === 'custom' ? (
+                    <span>{currentItem.text}</span>
                   ) : null}
                 </span>
-              )) : loading ? (
+              ) : loading ? (
                 <span className="breaking-text">{lang === 'zh' ? '加载热门话题...' : lang === 'en' ? 'Loading trending topics...' : 'Memuat topik hangat...'}</span>
               ) : (
                 <span className="breaking-text">{lang === 'zh' ? '欢迎来到 BEDAIN NEWS' : lang === 'en' ? 'Welcome to BEDAIN NEWS' : 'Selamat datang di BEDAIN NEWS, Berita Berbeda Menginspirasi Semua.'}</span>

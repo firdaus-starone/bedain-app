@@ -118,7 +118,7 @@ const ArticleEditor = () => {
               title_zh: data.title_zh || '',
               content_zh: data.content_zh || '',
               originalStatus: data.status,
-              originalPublishedAt: data.publishedAt || null
+              originalPublishedAt: data.publishedAt || data.createdAt || data.updatedAt || null
             });
           } else {
             alert('Berita tidak ditemukan.');

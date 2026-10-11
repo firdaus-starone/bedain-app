@@ -75,6 +75,30 @@ const LocalNewsWidget = () => {
     return item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   };
 
+  const formatArticleDate = (item) => {
+    if (item.date) return item.date;
+    const val = item.publishedAt || item.createdAt;
+    if (!val) return 'Baru saja';
+    if (typeof val?.toDate === 'function') {
+      try {
+        return val.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch (e) {}
+    }
+    if (typeof val?.seconds === 'number') {
+      try {
+        return new Date(val.seconds * 1000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch (e) {}
+    }
+    try {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+    } catch (e) {}
+    return 'Baru saja';
+  };
+
+
   const topArticle = localArticles[0];
   const restArticles = localArticles.slice(1);
 
@@ -103,7 +127,7 @@ const LocalNewsWidget = () => {
           <div className="local-featured-info">
             <h3 className="local-featured-title">{topArticle.title}</h3>
             <div className="local-featured-date">
-              {topArticle.date || 'Baru saja'}
+              {formatArticleDate(topArticle)}
             </div>
           </div>
         </Link>
@@ -114,7 +138,7 @@ const LocalNewsWidget = () => {
             <Link href={`/article/${getSlug(article)}`} key={article.id || idx} className="local-list-item">
               <div className="local-list-region">{location ? location.region : article.category}</div>
               <h4 className="local-list-title">{article.title}</h4>
-              <div className="local-list-date">{article.date || 'Baru saja'}</div>
+              <div className="local-list-date">{formatArticleDate(article)}</div>
             </Link>
           ))}
         </div>

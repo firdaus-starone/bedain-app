@@ -1096,14 +1096,11 @@ const ArticleDetail = () => {
                 </div>
 
                 {/* Hero Image */}
-                <div className="article-main-image-wrapper hero-media-mobile-full" style={{ width: '100%', height: 'auto', aspectRatio: '16/9', overflow: 'hidden', borderRadius: '12px', marginBottom: '32px', background: 'var(--color-bg-secondary)', position: 'relative' }}>
-                  <Image 
+                <div className="article-main-image-wrapper hero-media-mobile-full" style={{ width: '100%', height: 'auto', borderRadius: '12px', marginBottom: '32px', background: 'var(--color-bg-secondary)', overflow: 'hidden' }}>
+                  <img 
                     src={article.coverImage || article.imageUrl} 
                     alt={article.title} 
-                    fill
-                    style={{ objectFit: 'cover' }} 
-                    priority
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 900px"
+                    style={{ width: '100%', height: 'auto', display: 'block' }} 
                   />
                 </div>
               </>

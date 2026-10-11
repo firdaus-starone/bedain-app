@@ -62,6 +62,42 @@ const HeadlineGrid = ({ articles, loading }) => {
     return item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   };
 
+  const formatCardDate = (item) => {
+    if (item.date) return item.date;
+    const val = item.publishedAt || item.createdAt;
+    if (!val) return 'Baru saja';
+    if (typeof val?.toDate === 'function') {
+      try {
+        return val.toDate().toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      } catch (e) {}
+    }
+    if (typeof val?.seconds === 'number') {
+      try {
+        return new Date(val.seconds * 1000).toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      } catch (e) {}
+    }
+    try {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+    } catch (e) {}
+    return 'Baru saja';
+  };
+
+
   const swipeContainerRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -126,6 +162,7 @@ const HeadlineGrid = ({ articles, loading }) => {
                     fill
                     style={{ objectFit: 'cover' }}
                     priority={index === 0}
+                    unoptimized={index === 0}
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 300px"
                   />
                   <VideoBadge article={item} />
@@ -150,7 +187,8 @@ const HeadlineGrid = ({ articles, loading }) => {
                hotTopicsText = 'TOPIK\nHANGAT'; // Keep the break for ID
             }
             const badgeText = index === 0 ? hotTopicsText : (t('home.latest_news') || 'TERKINI').toUpperCase();
-            const dateText = item.date || '8 Juli 2026';
+            const dateText = formatCardDate(item);
+
 
             return (
               <Link key={item.id || index} 
@@ -166,6 +204,7 @@ const HeadlineGrid = ({ articles, loading }) => {
                     fill
                     style={{ objectFit: 'cover' }}
                     priority={index < 2}
+                    unoptimized={index < 2}
                     sizes="(max-width: 768px) 50vw, 30vw"
                   />
                   <div className="story-card-gradient" />

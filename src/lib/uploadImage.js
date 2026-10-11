@@ -28,8 +28,8 @@ const applyWatermark = (file) => {
         const gap = img.width * 0.01;
         const totalHeight = logoHeight + gap + fontSize;
 
-        // Posisi di pojok kanan bawah
-        const padding = img.width * 0.03;
+        // Posisi di pojok kanan bawah dengan padding lebih aman (5%) agar tidak mudah terpotong
+        const padding = img.width * 0.05;
         const x = img.width - logoWidth - padding;
         const y = img.height - totalHeight - padding;
         

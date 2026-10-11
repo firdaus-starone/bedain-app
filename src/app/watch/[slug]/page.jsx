@@ -18,7 +18,7 @@ async function getArticleBySlug(slug) {
           limit: 1
         }
       }),
-      next: { revalidate: 60 } 
+      cache: 'no-store' 
     });
     
     if (!res.ok) return null;
@@ -83,6 +83,15 @@ export async function generateMetadata({ params }) {
   if (coverImg.includes('hqdefault.jpg')) {
     coverImg = coverImg.replace('hqdefault.jpg', 'maxresdefault.jpg');
   }
+  // Fix WhatsApp link preview by using our clean proxy URL instead of Firebase Storage
+  if (coverImg.includes('firebasestorage.googleapis.com')) {
+    const match = coverImg.match(/o\/(.+?)\?/);
+    if (match && match[1]) {
+      // Decode the path because our proxy expects unencoded slashes in [...path]
+      const unencodedPath = decodeURIComponent(match[1]);
+      coverImg = `https://bedainnews.com/api/og-image/${unencodedPath}`;
+    }
+  }
 
   return {
     title,
@@ -97,6 +106,7 @@ export async function generateMetadata({ params }) {
           url: coverImg,
           width: 1200,
           height: 630,
+          type: 'image/jpeg',
         }
       ],
       type: 'video.other',
@@ -111,8 +121,64 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function WatchPage({ params }) {
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
+  const article = await getArticleBySlug(slug);
+
+  let jsonLd = null;
+
+  if (article) {
+    const title = article.seoTitle || article.title;
+    const description = article.seoDescription || article.excerpt || article.content.replace(/<[^>]+>/g, '').substring(0, 160);
+    
+    let coverImg = article.coverImage;
+    let embedUrl = article.videoUrl;
+    
+    if (article.videoUrl && article.videoUrl.includes('youtu')) {
+      const match = article.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\n]+)/);
+      if (match && match[1]) {
+        const ytId = match[1];
+        if (!coverImg) {
+          coverImg = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+        }
+        embedUrl = `https://www.youtube.com/embed/${ytId}`;
+      }
+    }
+
+    if (!coverImg) {
+      coverImg = 'https://bedainnews.com/logo-bundar.png';
+    }
+    if (!coverImg.startsWith('http')) {
+      coverImg = `https://bedainnews.com${coverImg.startsWith('/') ? '' : '/'}${coverImg}`;
+    }
+
+    jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      name: title,
+      description: description,
+      thumbnailUrl: [coverImg],
+      uploadDate: article.publishedAt,
+      embedUrl: embedUrl,
+      publisher: {
+        '@type': 'Organization',
+        name: 'Bedain News',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://bedainnews.com/logo-bundar.png'
+        }
+      }
+    };
+  }
+
   return (
     <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <YouTubeWatchClient />
     </>
   );

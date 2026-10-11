@@ -12,6 +12,10 @@ export async function POST(request) {
     }
 
     if (link) {
+      // Tunggu 4 detik agar sinkronisasi/propagasi Firestore selesai
+      // (karena Next.js fetch API membaca dari replika Firestore yang butuh waktu)
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      
       // Force Facebook to scrape the URL first so the Link Preview is perfect
       try {
         const scrapeParams = new URLSearchParams({

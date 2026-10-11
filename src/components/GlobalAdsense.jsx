@@ -17,9 +17,7 @@ const GlobalAdsense = () => {
                              path.startsWith('/cari') ||
                              path.startsWith('/tag') ||
                              path.startsWith('/author') ||
-                             path.startsWith('/tentang-kami') ||
-                             path.startsWith('/redaksi') ||
-                             path.startsWith('/pedoman');
+                             path.startsWith('/page/');
 
     if (isRestrictedPage) {
       // We don't load ads on restricted pages

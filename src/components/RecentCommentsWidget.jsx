@@ -106,13 +106,7 @@ const RecentCommentsWidget = () => {
             ))}
 
             <Link
-              href="/"
-              onClick={(e) => {
-                if (typeof window !== 'undefined' && window.location.pathname === '/') {
-                  e.preventDefault();
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
+              href="/cari?q=Terbaru"
               style={{
                 display: 'block',
                 textAlign: 'center',

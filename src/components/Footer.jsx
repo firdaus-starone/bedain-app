@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useI18n } from '../hooks/useI18n';
 
 const Footer = () => {
+  const router = useRouter();
   const { t, lang } = useI18n();
   const [pages, setPages] = useState([]);
   const [footerMenus, setFooterMenus] = useState([]);
@@ -185,14 +187,44 @@ const Footer = () => {
                     <ul className="footer-links">
                       {categories.slice(0, Math.ceil(categories.length / 2)).map(cat => (
                         <li key={cat.id}>
-                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
+                          <a 
+                            href={`/#kategori-${cat.slug}`}
+                            onClick={e => {
+                              const targetId = `kategori-${cat.slug}`;
+                              const el = document.getElementById(targetId);
+                              if (el) {
+                                e.preventDefault();
+                                el.scrollIntoView({ behavior: 'smooth' });
+                              } else {
+                                e.preventDefault();
+                                router.push(`/cari?q=${encodeURIComponent(cat.name)}`);
+                              }
+                            }}
+                          >
+                            {t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}
+                          </a>
                         </li>
                       ))}
                     </ul>
                     <ul className="footer-links">
                       {categories.slice(Math.ceil(categories.length / 2)).map(cat => (
                         <li key={cat.id}>
-                          <a href={`/#kategori-${cat.slug}`}>{t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</a>
+                          <a 
+                            href={`/#kategori-${cat.slug}`}
+                            onClick={e => {
+                              const targetId = `kategori-${cat.slug}`;
+                              const el = document.getElementById(targetId);
+                              if (el) {
+                                e.preventDefault();
+                                el.scrollIntoView({ behavior: 'smooth' });
+                              } else {
+                                e.preventDefault();
+                                router.push(`/cari?q=${encodeURIComponent(cat.name)}`);
+                              }
+                            }}
+                          >
+                            {t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}
+                          </a>
                         </li>
                       ))}
                     </ul>

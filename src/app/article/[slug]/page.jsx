@@ -1,6 +1,7 @@
+import { cache } from 'react';
 import ArticleDetailClient from '../../../components/ArticleDetailClient';
 
-async function getArticleBySlug(slug) {
+const getArticleBySlug = cache(async (slug) => {
   try {
     const res = await fetch(`https://firestore.googleapis.com/v1/projects/bedain-eb6a6/databases/(default)/documents:runQuery`, {
       method: 'POST',
@@ -18,8 +19,8 @@ async function getArticleBySlug(slug) {
           limit: 1
         }
       }),
-      // Next.js cache setting. We can revalidate periodically or keep it cached
-      next: { revalidate: 60 } 
+      // We use no-store so that Facebook scraper and SEO bots always get the freshest metadata immediately after publish
+      cache: 'no-store' 
     });
     
     if (!res.ok) return null;
@@ -46,7 +47,7 @@ async function getArticleBySlug(slug) {
     console.error('Error fetching article metadata:', error);
   }
   return null;
-}
+});
 
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
@@ -73,6 +74,15 @@ export async function generateMetadata({ params }) {
   if (coverImg.includes('hqdefault.jpg')) {
     coverImg = coverImg.replace('hqdefault.jpg', 'maxresdefault.jpg');
   }
+  // Fix WhatsApp link preview by using our clean proxy URL instead of Firebase Storage
+  if (coverImg.includes('firebasestorage.googleapis.com')) {
+    const match = coverImg.match(/o\/(.+?)\?/);
+    if (match && match[1]) {
+      // Decode the path because our proxy expects unencoded slashes in [...path]
+      const unencodedPath = decodeURIComponent(match[1]);
+      coverImg = `https://bedainnews.com/api/og-image/${unencodedPath}`;
+    }
+  }
 
   return {
     title,
@@ -85,8 +95,10 @@ export async function generateMetadata({ params }) {
       images: [
         {
           url: coverImg,
+          secureUrl: coverImg,
           width: 1200,
           height: 630,
+          type: 'image/jpeg',
         }
       ],
       type: 'article',

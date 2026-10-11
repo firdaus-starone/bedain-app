@@ -573,7 +573,10 @@ const Navbar = () => {
                       className={activeCategory === menu.id ? 'active' : ''}
                       onClick={e => {
                         setActiveCategory(menu.id);
-                        if (menu.url.includes('video') || menu.label.toLowerCase().includes('video')) {
+                        let url = menu.url;
+                        if (url.startsWith('#')) url = '/' + url;
+
+                        if (url.includes('video') || menu.label.toLowerCase().includes('video')) {
                           const el = document.getElementById('kategori-video');
                           if (el) {
                             e.preventDefault();
@@ -581,23 +584,29 @@ const Navbar = () => {
                             return;
                           }
                         }
-                        if (menu.url.startsWith('/#kategori-')) {
-                          const targetId = menu.url.replace('/#', '');
+
+                        if (url.startsWith('/#')) {
+                          const targetId = url.replace('/#', '');
                           const el = document.getElementById(targetId);
+                          const elFallback = document.getElementById(`kategori-${targetId.replace('kategori-', '')}`);
+                          
                           if (el) {
                             e.preventDefault();
                             el.scrollIntoView({ behavior: 'smooth' });
+                          } else if (elFallback) {
+                            e.preventDefault();
+                            elFallback.scrollIntoView({ behavior: 'smooth' });
                           } else {
                             e.preventDefault();
                             router.push(`/cari?q=${encodeURIComponent(menu.label)}`);
                           }
-                        } else if (menu.url.startsWith('/')) {
+                        } else if (url.startsWith('/')) {
                           e.preventDefault();
-                          router.push(menu.url);
+                          router.push(url);
                         }
                       }}
                     >
-                      {t(`categories.${menu.url.replace('/#kategori-', '').replace('/', '')}`) || t(`categories.${menu.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? menu.label_en || menu.label : lang === 'zh' ? menu.label_zh || menu.label : menu.label)}
+                      {t(`categories.${menu.url.replace('/#kategori-', '').replace('/#', '').replace('/', '')}`) || t(`categories.${menu.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? menu.label_en || menu.label : lang === 'zh' ? menu.label_zh || menu.label : menu.label)}
                     </a>
                   </li>
                 ))
@@ -727,7 +736,10 @@ const Navbar = () => {
                         href={menu.url}
                         onClick={e => {
                           setIsMenuOpen(false);
-                          if (menu.url.includes('video') || menu.label.toLowerCase().includes('video')) {
+                          let url = menu.url;
+                          if (url.startsWith('#')) url = '/' + url;
+
+                          if (url.includes('video') || menu.label.toLowerCase().includes('video')) {
                             const el = document.getElementById('kategori-video');
                             if (el) {
                               e.preventDefault();
@@ -735,19 +747,25 @@ const Navbar = () => {
                               return;
                             }
                           }
-                          if (menu.url.startsWith('/#kategori-')) {
-                            const targetId = menu.url.replace('/#', '');
+
+                          if (url.startsWith('/#')) {
+                            const targetId = url.replace('/#', '');
                             const el = document.getElementById(targetId);
+                            const elFallback = document.getElementById(`kategori-${targetId.replace('kategori-', '')}`);
+                            
                             if (el) {
                               e.preventDefault();
                               el.scrollIntoView({ behavior: 'smooth' });
+                            } else if (elFallback) {
+                              e.preventDefault();
+                              elFallback.scrollIntoView({ behavior: 'smooth' });
                             } else {
                               e.preventDefault();
                               router.push(`/cari?q=${encodeURIComponent(menu.label)}`);
                             }
-                          } else if (menu.url.startsWith('/')) {
+                          } else if (url.startsWith('/')) {
                             e.preventDefault();
-                            router.push(menu.url);
+                            router.push(url);
                           }
                         }}
                       >

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc, getDoc, where } from 'firebase/firestore';
+import { db, auth } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter } from 'expo-router';
 
@@ -16,9 +16,29 @@ export default function AdminArticles() {
 
   const fetchArticles = async () => {
     try {
-      const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      let userRole = 'reporter'; // Default if fail
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          userRole = userSnap.data().role || 'reporter';
+        }
+      } catch (e) {
+        console.error("Failed to fetch role", e);
+      }
+
+      let q;
+      if (userRole === 'admin' || userRole === 'superadmin' || userRole === 'editor') {
+        q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
+      } else {
+        q = query(collection(db, 'articles'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
+      }
+
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setArticles(data);
     } catch (error) {
       console.error("Error fetching articles:", error);
