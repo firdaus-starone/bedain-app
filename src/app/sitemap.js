@@ -10,7 +10,15 @@ export default async function sitemap() {
         structuredQuery: {
           from: [{ collectionId: 'articles' }],
           select: {
-            fields: [{ fieldPath: 'slug' }, { fieldPath: 'publishedAt' }, { fieldPath: 'createdAt' }, { fieldPath: 'status' }]
+            fields: [
+              { fieldPath: 'slug' },
+              { fieldPath: 'publishedAt' },
+              { fieldPath: 'createdAt' },
+              { fieldPath: 'status' },
+              { fieldPath: 'category' },
+              { fieldPath: 'videoUrl' },
+              { fieldPath: 'youtubeUrl' }
+            ]
           },
           // You can add a where clause if you only want published articles
           // where: {
@@ -47,7 +55,7 @@ export default async function sitemap() {
           const category = fields.category?.stringValue;
           const videoUrl = fields.videoUrl?.stringValue;
           const youtubeUrl = fields.youtubeUrl?.stringValue;
-          const isVideo = category === 'Video' || videoUrl || youtubeUrl;
+          const isVideo = category === 'Video' || !!videoUrl || !!youtubeUrl || (slug && slug.startsWith('yt-'));
 
           return { slug, date, isVideo };
         })

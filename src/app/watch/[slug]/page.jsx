@@ -1,6 +1,8 @@
+import { cache } from 'react';
+import { permanentRedirect } from 'next/navigation';
 import YouTubeWatchClient from '../../../components/YouTubeWatchClient';
 
-async function getArticleBySlug(slug) {
+const getArticleBySlug = cache(async (slug) => {
   try {
     const res = await fetch(`https://firestore.googleapis.com/v1/projects/bedain-eb6a6/databases/(default)/documents:runQuery`, {
       method: 'POST',
@@ -33,6 +35,7 @@ async function getArticleBySlug(slug) {
         excerpt: doc.excerpt?.stringValue || '',
         content: doc.content?.stringValue || '',
         coverImage: doc.coverImage?.stringValue || doc.imageUrl?.stringValue || '',
+        category: doc.category?.stringValue || '',
         videoUrl: doc.videoUrl?.stringValue || doc.youtubeUrl?.stringValue || '',
         author: doc.authorName?.stringValue || doc.author?.stringValue || 'Bedain News',
         publishedAt: doc.publishedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
@@ -42,7 +45,7 @@ async function getArticleBySlug(slug) {
     console.error('Error fetching article metadata:', error);
   }
   return null;
-}
+});
 
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
@@ -96,6 +99,9 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://bedainnews.com/watch/${slug}`,
+    },
     openGraph: {
       title,
       description,
@@ -124,6 +130,10 @@ export default async function WatchPage({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const article = await getArticleBySlug(slug);
+
+  if (article && !slug.startsWith('yt-') && article.category !== 'Video' && !article.videoUrl && !article.youtubeUrl) {
+    permanentRedirect(`/article/${slug}`);
+  }
 
   let jsonLd = null;
 

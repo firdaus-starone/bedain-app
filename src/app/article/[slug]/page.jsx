@@ -106,13 +106,19 @@ export async function generateMetadata({ params }) {
     }
   }
 
+  const isVideo = (slug && slug.startsWith('yt-')) || (article && (article.category === 'Video' || article.videoUrl || article.youtubeUrl));
+  const canonicalUrl = isVideo ? `https://bedainnews.com/watch/${slug}` : `https://bedainnews.com/article/${slug}`;
+
   return {
     title,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
-      url: `https://bedainnews.com/article/${slug}`,
+      url: canonicalUrl,
       siteName,
       images: [
         {
@@ -123,7 +129,7 @@ export async function generateMetadata({ params }) {
           type: 'image/jpeg',
         }
       ],
-      type: 'article',
+      type: isVideo ? 'video.other' : 'article',
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt,
     },
@@ -137,15 +143,15 @@ export async function generateMetadata({ params }) {
 }
 
 import YouTubeWatchClient from '../../../components/YouTubeWatchClient';
-import { redirect } from 'next/navigation';
+import { redirect, permanentRedirect } from 'next/navigation';
 
 export default async function ArticlePage({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const article = await getArticleBySlug(slug);
 
-  if (article && (article.category === 'Video' || article.videoUrl || article.youtubeUrl)) {
-    redirect(`/watch/${slug}`);
+  if ((slug && slug.startsWith('yt-')) || (article && (article.category === 'Video' || article.videoUrl || article.youtubeUrl))) {
+    permanentRedirect(`/watch/${slug}`);
   }
 
   let schemaScript = null;
