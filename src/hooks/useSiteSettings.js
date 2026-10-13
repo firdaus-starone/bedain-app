@@ -49,7 +49,6 @@ export const DEFAULT_SETTINGS = {
   stickyAdRightCtaText: 'Pasang Sekarang',
   stickyAdRightUrl: '',
   stickyAdRightImage: '',
-  geminiApiKey: '',
 };
 
 const SETTINGS_DOC = 'settings/site';
@@ -65,7 +64,9 @@ if (typeof window !== 'undefined') {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
-      cachedSettingsMemory = { ...DEFAULT_SETTINGS, ...JSON.parse(cached) };
+      const parsed = JSON.parse(cached);
+      delete parsed.geminiApiKey; // Bersihkan residu API key rahasia dari cache publik lama
+      cachedSettingsMemory = { ...DEFAULT_SETTINGS, ...parsed };
     }
   } catch (e) {
     console.error('Error reading initial settings from localStorage:', e);
@@ -117,7 +118,9 @@ export const useSiteSettings = () => {
           const snap = await getDoc(docRef);
           let newSettings = DEFAULT_SETTINGS;
           if (snap.exists()) {
-            newSettings = { ...DEFAULT_SETTINGS, ...snap.data() };
+            const data = snap.data();
+            delete data.geminiApiKey; // Kunci rahasia AI tidak boleh ikut di-cache ke publik
+            newSettings = { ...DEFAULT_SETTINGS, ...data };
           }
           cachedSettingsMemory = newSettings;
           try {
@@ -153,9 +156,11 @@ export const useSiteSettings = () => {
 
 export const saveSiteSettings = async (newSettings) => {
   const docRef = doc(db, 'settings', 'site');
-  await setDoc(docRef, newSettings, { merge: true });
+  const cleanSettings = { ...newSettings };
+  delete cleanSettings.geminiApiKey; // Kunci rahasia AI dipisah ke dokumen rahasia settings/secrets
+  await setDoc(docRef, cleanSettings, { merge: true });
   
-  cachedSettingsMemory = { ...DEFAULT_SETTINGS, ...cachedSettingsMemory, ...newSettings };
+  cachedSettingsMemory = { ...DEFAULT_SETTINGS, ...cachedSettingsMemory, ...cleanSettings };
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(cachedSettingsMemory));
   } catch (err) {}

@@ -815,6 +815,25 @@ export default function YouTubeWatchClient() {
           display: flex;
           flex-direction: column;
           gap: 8px;
+          max-height: 435px;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding-right: 6px;
+          scrollbar-width: thin;
+          scrollbar-color: #383838 transparent;
+        }
+        .yt-related-list::-webkit-scrollbar {
+          width: 6px;
+        }
+        .yt-related-list::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .yt-related-list::-webkit-scrollbar-thumb {
+          background-color: #383838;
+          border-radius: 4px;
+        }
+        .yt-related-list::-webkit-scrollbar-thumb:hover {
+          background-color: #555555;
         }
         .yt-related-item {
           display: flex;
@@ -909,6 +928,9 @@ export default function YouTubeWatchClient() {
           .yt-related-thumb-wrapper {
             width: 160px;
             height: 90px;
+          }
+          .yt-related-list {
+            max-height: 485px;
           }
         }
       `}</style>

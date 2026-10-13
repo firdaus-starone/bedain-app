@@ -7,7 +7,21 @@ import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from '../components/VideoBadge';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+
+// Mode hemat kuota: cache hasil di sessionStorage selama 10 menit
+const SEARCH_CACHE_TTL = 10 * 60 * 1000;
+const readSessionCache = (key) => {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { t, data } = JSON.parse(raw);
+    return Date.now() - t < SEARCH_CACHE_TTL ? data : null;
+  } catch (e) { return null; }
+};
+const writeSessionCache = (key, data) => {
+  try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), data })); } catch (e) {}
+};
 import { db } from '../lib/firebase';
 
 import { Search, Calendar, Eye, ArrowRight, Flame, Filter, SlidersHorizontal, Sparkles, Tag } from 'lucide-react';
@@ -42,15 +56,24 @@ const SearchPage = () => {
 
   useEffect(() => {
     const fetchAllArticles = async () => {
+      const cached = readSessionCache('bedain_search_articles');
+      if (cached) { setArticles(cached); setLoading(false); return; }
       setLoading(true);
       try {
-        const snap = await getDocs(collection(db, 'articles'));
+        const snap = await getDocs(query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(300)));
         const now = new Date();
-        const fbArticles = snap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })).filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate().toISOString() : (a.publishedAt || new Date().toISOString()); return new Date(p) <= now; });
+        const fbArticles = snap.docs.map(doc => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            ...d,
+            publishedAt: d.publishedAt?.toDate ? d.publishedAt.toDate().toISOString() : d.publishedAt,
+            createdAt: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : d.createdAt,
+            updatedAt: d.updatedAt?.toDate ? d.updatedAt.toDate().toISOString() : d.updatedAt,
+          };
+        }).filter(a => new Date(a.publishedAt || now) <= now);
         setArticles(fbArticles);
+        writeSessionCache('bedain_search_articles', fbArticles);
       } catch (err) {
         console.error('Error fetching articles for search:', err);
         setArticles([]);
@@ -60,10 +83,13 @@ const SearchPage = () => {
     };
 
     const fetchCategories = async () => {
+      const cachedCats = readSessionCache('bedain_search_categories');
+      if (cachedCats) { setDbCategories(cachedCats); return; }
       try {
         const snap = await getDocs(collection(db, 'categories'));
         const cats = snap.docs.map(doc => doc.data().name).filter(Boolean);
         setDbCategories(cats);
+        writeSessionCache('bedain_search_categories', cats);
       } catch (err) {
         console.error('Error fetching categories:', err);
       }

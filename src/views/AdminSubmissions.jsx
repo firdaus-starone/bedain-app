@@ -1,26 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { 
-  Inbox, CheckCircle2, XCircle, Clock, Eye, Trash2, Edit3, Send, 
-  Search, Filter, User, Mail, Phone, Briefcase, FileText, AlertCircle,
-  ExternalLink, ArrowLeft
+  Inbox, CheckCircle2, XCircle, Clock, Eye, Trash2, Edit3, 
+  Search, Mail, Phone, ArrowLeft
 } from 'lucide-react';
 
 export default function AdminSubmissions() {
+  const router = useRouter();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'published', 'rejected'
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'approved', 'rejected'
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modal states
   const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editCategory, setEditCategory] = useState('');
-  const [editExcerpt, setEditExcerpt] = useState('');
-  const [editContent, setEditContent] = useState('');
-  const [editBio, setEditBio] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchSubmissions = async () => {
@@ -46,56 +42,19 @@ export default function AdminSubmissions() {
 
   const handleOpenDetail = (sub) => {
     setSelectedSubmission(sub);
-    setIsEditing(false);
-    setEditTitle(sub.title || '');
-    setEditCategory(sub.category || 'Opini');
-    setEditExcerpt(sub.excerpt || '');
-    setEditContent(sub.content || '');
-    setEditBio(sub.authorBio || '');
   };
 
-  const handleSaveEdit = async () => {
-    if (!selectedSubmission) return;
-    setIsProcessing(true);
-    try {
-      const subRef = doc(db, 'user_submissions', selectedSubmission.id);
-      await updateDoc(subRef, {
-        title: editTitle,
-        category: editCategory,
-        excerpt: editExcerpt,
-        content: editContent,
-        authorBio: editBio,
-        updatedAt: serverTimestamp()
-      });
-
-      // Update local state
-      setSubmissions(prev => prev.map(item => 
-        item.id === selectedSubmission.id 
-          ? { ...item, title: editTitle, category: editCategory, excerpt: editExcerpt, content: editContent, authorBio: editBio }
-          : item
-      ));
-      setSelectedSubmission(prev => ({ ...prev, title: editTitle, category: editCategory, excerpt: editExcerpt, content: editContent, authorBio: editBio }));
-      setIsEditing(false);
-      alert('Perubahan berhasil disimpan!');
-    } catch (err) {
-      console.error('Gagal menyimpan perubahan:', err);
-      alert('Gagal menyimpan perubahan.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Publish to 'articles' collection
-  const handlePublish = async (sub) => {
-    if (!window.confirm(`Terbitkan tulisan "${sub.title}" karya ${sub.authorName} ke Beranda sekarang?`)) return;
+  // Setujui kiriman dan masukkan sebagai DRAF ke koleksi 'articles' (Tetap tercatat di user_submissions)
+  const handleApprove = async (sub) => {
+    if (!window.confirm(`Setujui tulisan "${sub.title}" karya ${sub.authorName} dan masukkan ke Draf Berita?`)) return;
 
     setIsProcessing(true);
     try {
-      const titleToUse = isEditing ? editTitle : sub.title;
-      const categoryToUse = isEditing ? editCategory : sub.category;
-      const excerptToUse = isEditing ? editExcerpt : sub.excerpt;
-      const contentToUse = isEditing ? editContent : sub.content;
-      const bioToUse = isEditing ? editBio : (sub.authorBio || 'Kontributor Bedain News');
+      const titleToUse = sub.title || 'Tanpa Judul';
+      const categoryToUse = sub.category || 'Opini';
+      const excerptToUse = sub.excerpt || (sub.content ? sub.content.substring(0, 160) + '...' : '');
+      const contentToUse = sub.content || '';
+      const bioToUse = sub.authorBio || 'Kontributor Bedain News';
 
       const finalSlug = titleToUse.toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
@@ -106,12 +65,12 @@ export default function AdminSubmissions() {
         title: titleToUse,
         slug: finalSlug,
         category: categoryToUse,
-        excerpt: excerptToUse || contentToUse.substring(0, 160) + '...',
+        excerpt: excerptToUse,
         content: contentToUse,
         imageUrl: sub.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80',
         coverImage: sub.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80',
         imageCaption: `Foto kiriman: ${sub.authorName}`,
-        status: 'published',
+        status: 'draft', // DISIMPAN SEBAGAI DRAFT SESUAI ALUR REDAKSI
         isHeadline: false,
         seoTitle: titleToUse,
         seoDescription: excerptToUse,
@@ -119,9 +78,10 @@ export default function AdminSubmissions() {
         location: '',
         videoUrl: '',
         createdAt: Timestamp.now(),
-        publishedAt: Timestamp.now(),
+        publishedAt: null, // Belum dipublish ke publik
         updatedAt: Timestamp.now(),
         authorId: 'contributor_' + sub.id,
+        contributorName: sub.authorName,
         author: {
           name: sub.authorName,
           email: sub.authorEmail || '',
@@ -129,57 +89,44 @@ export default function AdminSubmissions() {
           avatar: sub.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.authorName)}&background=E62020&color=fff&size=128`,
           isContributor: true
         },
-        views: 0
+        views: 0,
+        autoShareFacebook: false
       };
 
-      // 1. Add to articles collection
+      // 1. Simpan ke koleksi articles sebagai DRAFT
       const newArticleRef = await addDoc(collection(db, 'articles'), articleData);
 
-      // 2. Update status inside user_submissions
+      // 2. TETAP TERCATAT di laporan kiriman warga (user_submissions)
       await updateDoc(doc(db, 'user_submissions', sub.id), {
-        status: 'published',
+        status: 'approved',
         publishedArticleId: newArticleRef.id,
+        articleId: newArticleRef.id,
+        approvedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      // Update local states
-      setSubmissions(prev => prev.map(item => item.id === sub.id ? { ...item, status: 'published', publishedArticleId: newArticleRef.id } : item));
+      // 3. Update state lokal
+      setSubmissions(prev => prev.map(item => 
+        item.id === sub.id 
+          ? { ...item, status: 'approved', publishedArticleId: newArticleRef.id, articleId: newArticleRef.id } 
+          : item
+      ));
       setSelectedSubmission(null);
-      alert(`🎉 Selamat! Tulisan berhasil diterbitkan ke Beranda! (ID: ${newArticleRef.id})`);
 
-      // Auto-post to Facebook
-      try {
-        const isVideo = sub.category === 'Video' || sub.videoUrl || sub.youtubeUrl;
-        const articleUrl = `https://bedainnews.com/${isVideo ? 'watch' : 'article'}/${finalSlug}`;
-        fetch('/api/facebook-post', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: `[KIRIMAN WARGA]\nBerita Baru dari Bedain News!\n\n${titleToUse}\nOleh: ${sub.authorName}\n\nBaca selengkapnya di:`,
-            link: articleUrl,
-            imageUrl: sub.imageUrl || ''
-          })
-        })
-        .then(res => res.json())
-        .then(async (fbData) => {
-          if (fbData.success && fbData.id && newArticleRef.id) {
-            try {
-              await updateDoc(doc(db, 'articles', newArticleRef.id), {
-                facebookPostId: fbData.id,
-                facebookPostedAt: Timestamp.now()
-              });
-            } catch (e) {}
-          }
-        })
-        .catch(fbError => {
-          console.error("Gagal auto-post ke Facebook:", fbError);
-        });
-      } catch (fbError) {
-        console.error("Gagal auto-post ke Facebook:", fbError);
+      // 4. Tanya apakah ingin langsung membuka di Editor Berita
+      const openEditor = window.confirm(
+        `✅ Kiriman berhasil disetujui!\nNaskah tetap tercatat di Laporan Warga dan sudah masuk sebagai DRAF di Daftar Berita.\n\nApakah Anda ingin langsung membuka halaman Editor Berita sekarang untuk mengedit naskah ini?`
+      );
+      if (openEditor) {
+        if (router?.push) {
+          router.push(`/admin/editor?id=${newArticleRef.id}`);
+        } else {
+          window.location.href = `/admin/editor?id=${newArticleRef.id}`;
+        }
       }
     } catch (err) {
-      console.error('Gagal menerbitkan tulisan:', err);
-      alert('Terjadi kesalahan saat menerbitkan tulisan.');
+      console.error('Gagal menyetujui kiriman tulisan:', err);
+      alert('Terjadi kesalahan saat menyetujui kiriman tulisan.');
     } finally {
       setIsProcessing(false);
     }
@@ -207,7 +154,7 @@ export default function AdminSubmissions() {
 
   // Delete permanently
   const handleDelete = async (subId) => {
-    if (!window.confirm('Hapus permanen kiriman tulisan ini? Tindakan ini tidak dapat dibatalkan.')) return;
+    if (!window.confirm('Hapus permanen kiriman tulisan ini dari Laporan Warga? Tindakan ini tidak dapat dibatalkan.')) return;
     try {
       await deleteDoc(doc(db, 'user_submissions', subId));
       setSubmissions(prev => prev.filter(item => item.id !== subId));
@@ -221,7 +168,9 @@ export default function AdminSubmissions() {
 
   // Filter & Search
   const filteredSubmissions = submissions.filter(item => {
-    const matchesStatus = item.status === activeTab;
+    const matchesStatus = activeTab === 'approved'
+      ? (item.status === 'approved' || item.status === 'published')
+      : item.status === activeTab;
     const matchesSearch = !searchQuery.trim() || 
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.authorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -230,7 +179,7 @@ export default function AdminSubmissions() {
   });
 
   const pendingCount = submissions.filter(s => s.status === 'pending').length;
-  const publishedCount = submissions.filter(s => s.status === 'published').length;
+  const approvedCount = submissions.filter(s => s.status === 'approved' || s.status === 'published').length;
   const rejectedCount = submissions.filter(s => s.status === 'rejected').length;
 
   return (
@@ -246,7 +195,7 @@ export default function AdminSubmissions() {
               <span>Moderasi Kiriman Warga</span>
             </h1>
             <p style={{ color: 'var(--admin-text-secondary)', margin: 0, fontSize: '0.95rem' }}>
-              Tinjau, sunting, dan terbitkan opini serta reportase jurnalistik dari masyarakat luas
+              Tinjau dan setujui opini serta reportase masyarakat ke Draf Berita untuk disunting redaksi
             </p>
           </div>
 
@@ -294,13 +243,13 @@ export default function AdminSubmissions() {
           </button>
 
           <button
-            onClick={() => setActiveTab('published')}
+            onClick={() => setActiveTab('approved')}
             style={{
               padding: '0.6rem 1.25rem',
               borderRadius: '10px',
-              border: activeTab === 'published' ? '1px solid #22c55e' : '1px solid var(--admin-border)',
-              backgroundColor: activeTab === 'published' ? 'rgba(34, 197, 94, 0.15)' : 'var(--admin-card-bg)',
-              color: activeTab === 'published' ? '#22c55e' : 'var(--admin-text-secondary)',
+              border: activeTab === 'approved' ? '1px solid #22c55e' : '1px solid var(--admin-border)',
+              backgroundColor: activeTab === 'approved' ? 'rgba(34, 197, 94, 0.15)' : 'var(--admin-card-bg)',
+              color: activeTab === 'approved' ? '#22c55e' : 'var(--admin-text-secondary)',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -308,7 +257,7 @@ export default function AdminSubmissions() {
             }}
           >
             <CheckCircle2 size={16} />
-            <span>Sudah Diterbitkan ({publishedCount})</span>
+            <span>Sudah Disetujui ({approvedCount})</span>
           </button>
 
           <button
@@ -346,9 +295,11 @@ export default function AdminSubmissions() {
             color: 'var(--admin-text-secondary)'
           }}>
             <Inbox size={48} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
-            <h3 style={{ color: 'var(--admin-text-primary)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Belum Ada Kiriman {activeTab === 'pending' ? 'Baru' : activeTab === 'published' ? 'Diterbitkan' : 'Ditolak'}</h3>
+            <h3 style={{ color: 'var(--admin-text-primary)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+              Belum Ada Kiriman {activeTab === 'pending' ? 'Baru' : activeTab === 'approved' ? 'Disetujui' : 'Ditolak'}
+            </h3>
             <p style={{ maxWidth: '400px', margin: '0 auto' }}>
-              Saat masyarakat atau kontributor mengirimkan opini/reportase melalui form publik, daftar akan muncul di antrean ini.
+              Saat masyarakat atau kontributor mengirimkan opini/reportase melalui form publik, catatan akan muncul di antrean ini.
             </p>
           </div>
         ) : (
@@ -373,10 +324,16 @@ export default function AdminSubmissions() {
                   <div style={{ position: 'absolute', top: '1rem', left: '1rem', backgroundColor: '#E62020', color: 'var(--admin-text-primary)', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700 }}>
                     {sub.category}
                   </div>
-                  {sub.status === 'published' && (
-                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.9)', color: 'var(--admin-text-primary)', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  {(sub.status === 'approved' || sub.status === 'published') && (
+                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', backgroundColor: 'rgba(34, 197, 94, 0.9)', color: '#ffffff', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <CheckCircle2 size={13} />
-                      <span>Tayang</span>
+                      <span>Disetujui (Draf)</span>
+                    </div>
+                  )}
+                  {sub.status === 'rejected' && (
+                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', backgroundColor: 'rgba(239, 68, 68, 0.9)', color: '#ffffff', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <XCircle size={13} />
+                      <span>Ditolak</span>
                     </div>
                   )}
                 </div>
@@ -419,16 +376,16 @@ export default function AdminSubmissions() {
                       }}
                     >
                       <Eye size={16} />
-                      <span>Tinjau / Edit</span>
+                      <span>Tinjau</span>
                     </button>
 
                     {sub.status === 'pending' && (
                       <button
-                        onClick={() => handlePublish(sub)}
+                        onClick={() => handleApprove(sub)}
                         disabled={isProcessing}
                         style={{
                           backgroundColor: '#22c55e',
-                          color: 'var(--admin-text-primary)',
+                          color: '#ffffff',
                           border: 'none',
                           padding: '0.6rem 1rem',
                           borderRadius: '8px',
@@ -438,11 +395,33 @@ export default function AdminSubmissions() {
                           display: 'flex', alignItems: 'center', gap: '0.4rem',
                           transition: 'all 0.2s'
                         }}
-                        title="Terbitkan ke Beranda"
+                        title="Setujui dan masukkan ke Draf Berita"
                       >
-                        <Send size={15} />
-                        <span>Terbitkan</span>
+                        <CheckCircle2 size={15} />
+                        <span>Setujui</span>
                       </button>
+                    )}
+
+                    {(sub.status === 'approved' || sub.status === 'published') && (sub.publishedArticleId || sub.articleId) && (
+                      <Link
+                        href={`/admin/editor?id=${sub.publishedArticleId || sub.articleId}`}
+                        style={{
+                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                          color: '#60a5fa',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          padding: '0.6rem 0.9rem',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          textDecoration: 'none',
+                          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Buka dan edit di Editor Berita"
+                      >
+                        <Edit3 size={15} />
+                        <span>Buka Editor</span>
+                      </Link>
                     )}
 
                     <button
@@ -456,7 +435,7 @@ export default function AdminSubmissions() {
                         cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}
-                      title="Hapus Permanen"
+                      title="Hapus Permanen dari Laporan Warga"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -471,7 +450,7 @@ export default function AdminSubmissions() {
         {selectedSubmission && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'var(--admin-bg)',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
             backdropFilter: 'blur(8px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 9999,
@@ -495,32 +474,27 @@ export default function AdminSubmissions() {
                     <ArrowLeft size={20} />
                   </button>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--admin-text-primary)', margin: 0 }}>
-                    {isEditing ? 'Sunting Kiriman Warga' : 'Tinjauan Detail Kiriman'}
+                    Tinjauan Detail Kiriman Warga
                   </h3>
                 </div>
-                
-                <div style={{ display: 'flex', gap: '0.6rem' }}>
-                  <button
-                    onClick={() => setIsEditing(!isEditing)}
-                    style={{
-                      backgroundColor: isEditing ? '#E62020' : 'var(--admin-border)',
-                      color: 'var(--admin-text-primary)',
-                      border: 'none',
-                      padding: '0.45rem 1rem',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '0.4rem'
-                    }}
-                  >
-                    <Edit3 size={15} />
-                    <span>{isEditing ? 'Batal Edit' : 'Edit Isi Tulisan'}</span>
-                  </button>
-                </div>
+
+                <button
+                  onClick={() => setSelectedSubmission(null)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: 'var(--admin-text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '1.5rem',
+                    lineHeight: 1,
+                    padding: '0.2rem 0.5rem'
+                  }}
+                >
+                  &times;
+                </button>
               </div>
 
-              {/* Modal Body */}
+              {/* Modal Body (Clean Read-Only Preview) */}
               <div style={{ padding: '1.75rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 
                 {/* Author Info Banner */}
@@ -544,121 +518,95 @@ export default function AdminSubmissions() {
                   </div>
                 </div>
 
-                {/* Article Content Area */}
-                {isEditing ? (
-                  /* Edit Form Inside Modal */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Judul Artikel</label>
-                      <input
-                        type="text"
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '1rem', fontWeight: 600, boxSizing: 'border-box' }}
-                      />
+                {/* Banner if already approved */}
+                {(selectedSubmission.status === 'approved' || selectedSubmission.status === 'published') && (
+                  <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '10px', padding: '0.9rem 1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#93c5fd', fontSize: '0.9rem' }}>
+                      <CheckCircle2 size={18} color="#60a5fa" />
+                      <span>Kiriman ini telah disetujui & tercatat di sistem sebagai Draf Berita. Silakan sunting melalui Editor Berita.</span>
                     </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Kategori</label>
-                        <input
-                          type="text"
-                          value={editCategory}
-                          onChange={(e) => setEditCategory(e.target.value)}
-                          style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Profesi / Bio Penulis</label>
-                        <input
-                          type="text"
-                          value={editBio}
-                          onChange={(e) => setEditBio(e.target.value)}
-                          style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Excerpt / Ringkasan</label>
-                      <input
-                        type="text"
-                        value={editExcerpt}
-                        onChange={(e) => setEditExcerpt(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-text-secondary)', marginBottom: '0.4rem' }}>Isi Tulisan Lengkap</label>
-                      <textarea
-                        rows="12"
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        style={{ width: '100%', padding: '0.85rem', backgroundColor: 'var(--admin-bg)', border: '1px solid var(--admin-border)', borderRadius: '8px', color: 'var(--admin-text-primary)', fontSize: '0.95rem', lineHeight: 1.7, boxSizing: 'border-box', fontFamily: 'inherit' }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={handleSaveEdit}
-                        disabled={isProcessing}
-                        style={{ backgroundColor: '#E62020', color: 'var(--admin-text-primary)', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                    {(selectedSubmission.publishedArticleId || selectedSubmission.articleId) && (
+                      <Link
+                        href={`/admin/editor?id=${selectedSubmission.publishedArticleId || selectedSubmission.articleId}`}
+                        style={{ backgroundColor: '#3b82f6', color: '#fff', padding: '0.45rem 1rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
                       >
-                        Simpan Perubahan
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* Read Only View Inside Modal */
-                  <div>
-                    <div style={{ borderRadius: '12px', overflow: 'hidden', maxHeight: '350px', marginBottom: '1.5rem' }}>
-                      <img src={selectedSubmission.imageUrl} alt={selectedSubmission.title} style={{ width: '100%', height: 'auto', display: 'block' }} />
-                    </div>
-
-                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: '0 0 0.5rem', lineHeight: 1.3 }}>
-                      {selectedSubmission.title}
-                    </h2>
-                    
-                    <div style={{ display: 'inline-block', backgroundColor: '#E62020', color: 'var(--admin-text-primary)', padding: '0.3rem 0.85rem', borderRadius: '50px', fontSize: '0.82rem', fontWeight: 700, marginBottom: '1.5rem' }}>
-                      Kategori: {selectedSubmission.category}
-                    </div>
-
-                    <div style={{ color: 'var(--admin-text-primary)', lineHeight: 1.8, fontSize: '1.05rem', whiteSpace: 'pre-wrap', backgroundColor: 'var(--admin-bg)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
-                      {selectedSubmission.content}
-                    </div>
+                        <Edit3 size={14} />
+                        <span>Buka di Editor</span>
+                      </Link>
+                    )}
                   </div>
                 )}
+
+                {/* Read-Only Article View */}
+                <div>
+                  {selectedSubmission.imageUrl && (
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', maxHeight: '350px', marginBottom: '1.5rem', backgroundColor: 'var(--admin-bg)' }}>
+                      <img src={selectedSubmission.imageUrl} alt={selectedSubmission.title} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} />
+                    </div>
+                  )}
+
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--admin-text-primary)', margin: '0 0 0.5rem', lineHeight: 1.3 }}>
+                    {selectedSubmission.title}
+                  </h2>
+                  
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-block', backgroundColor: '#E62020', color: 'var(--admin-text-primary)', padding: '0.3rem 0.85rem', borderRadius: '50px', fontSize: '0.82rem', fontWeight: 700 }}>
+                      Kategori: {selectedSubmission.category}
+                    </span>
+                    {selectedSubmission.excerpt && (
+                      <span style={{ color: 'var(--admin-text-secondary)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                        Excerpt: "{selectedSubmission.excerpt}"
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ color: 'var(--admin-text-primary)', lineHeight: 1.8, fontSize: '1.02rem', whiteSpace: 'pre-wrap', backgroundColor: 'var(--admin-bg)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--admin-border)' }}>
+                    {selectedSubmission.content}
+                  </div>
+                </div>
 
               </div>
 
               {/* Modal Footer Actions */}
               <div style={{ padding: '1.25rem 1.75rem', borderTop: '1px solid var(--admin-border)', backgroundColor: 'var(--admin-card-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ color: 'var(--admin-text-secondary)', fontSize: '0.85rem' }}>
-                  Status saat ini: <strong style={{ color: selectedSubmission.status === 'published' ? '#22c55e' : selectedSubmission.status === 'rejected' ? '#ef4444' : '#fbbf24', textTransform: 'uppercase' }}>{selectedSubmission.status}</strong>
+                  Status di Laporan Warga:{' '}
+                  <strong style={{ color: (selectedSubmission.status === 'approved' || selectedSubmission.status === 'published') ? '#22c55e' : selectedSubmission.status === 'rejected' ? '#ef4444' : '#fbbf24', textTransform: 'uppercase' }}>
+                    {selectedSubmission.status === 'approved' ? 'Disetujui (Draf)' : selectedSubmission.status === 'published' ? 'Sudah Diterbitkan' : selectedSubmission.status === 'rejected' ? 'Ditolak' : 'Menunggu Moderasi'}
+                  </strong>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  {selectedSubmission.status !== 'rejected' && (
-                    <button
-                      onClick={() => handleReject(selectedSubmission.id)}
-                      disabled={isProcessing}
-                      style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    >
-                      <XCircle size={18} />
-                      <span>Tolak Kiriman</span>
-                    </button>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  {selectedSubmission.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleReject(selectedSubmission.id)}
+                        disabled={isProcessing}
+                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '10px', fontWeight: 600, cursor: isProcessing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                      >
+                        <XCircle size={18} />
+                        <span>Tolak Kiriman</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleApprove(selectedSubmission)}
+                        disabled={isProcessing}
+                        style={{ backgroundColor: '#22c55e', color: '#ffffff', border: 'none', padding: '0.75rem 1.75rem', borderRadius: '10px', fontWeight: 700, cursor: isProcessing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)' }}
+                      >
+                        <CheckCircle2 size={18} />
+                        <span>Setujui & Jadikan Draf Berita</span>
+                      </button>
+                    </>
                   )}
 
-                  {selectedSubmission.status !== 'published' && (
-                    <button
-                      onClick={() => handlePublish(selectedSubmission)}
-                      disabled={isProcessing}
-                      style={{ backgroundColor: '#22c55e', color: 'var(--admin-text-primary)', border: 'none', padding: '0.75rem 1.75rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)' }}
+                  {(selectedSubmission.status === 'approved' || selectedSubmission.status === 'published') && (selectedSubmission.publishedArticleId || selectedSubmission.articleId) && (
+                    <Link
+                      href={`/admin/editor?id=${selectedSubmission.publishedArticleId || selectedSubmission.articleId}`}
+                      style={{ backgroundColor: '#3b82f6', color: '#ffffff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)' }}
                     >
-                      <Send size={18} />
-                      <span>Terbitkan ke Beranda Sekarang</span>
-                    </button>
+                      <Edit3 size={18} />
+                      <span>Buka di Editor Berita</span>
+                    </Link>
                   )}
                 </div>
               </div>

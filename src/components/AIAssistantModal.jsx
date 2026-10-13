@@ -6,6 +6,7 @@ import {
   AlertCircle, ShieldCheck
 } from 'lucide-react';
 import { useSiteSettings, saveSiteSettings } from '../hooks/useSiteSettings';
+import { getGeminiApiKey, saveGeminiApiKey } from '../lib/geminiSecrets';
 
 const AIAssistantModal = ({ 
   isOpen, 
@@ -34,34 +35,25 @@ const AIAssistantModal = ({
   const [copied, setCopied] = useState(false);
   const [applied, setApplied] = useState('');
 
-  // Load API key from Firestore site settings, localStorage, or env
+  // Load API key securely from Firestore vault rahasia (settings/secrets), localStorage, or env
   useEffect(() => {
-    const siteKey = settings?.geminiApiKey;
-    const localKey = typeof window !== 'undefined' ? localStorage.getItem('bedain_gemini_api_key') : null;
-    const envKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY);
-    
-    if (siteKey && siteKey.trim() !== '') {
-      setApiKey(siteKey.trim());
-    } else if (localKey && localKey.trim() !== '') {
-      setApiKey(localKey.trim());
-    } else if (envKey && envKey !== 'YOUR_GEMINI_API_KEY') {
-      setApiKey(envKey);
+    if (isOpen) {
+      getGeminiApiKey().then(key => {
+        if (key) setApiKey(key);
+      }).catch(e => {});
     }
-  }, [isOpen, settings?.geminiApiKey]);
+  }, [isOpen]);
 
   const saveApiKey = async (key) => {
     const cleanKey = (key || '').trim();
     setSavingKey(true);
     setApiKey(cleanKey);
-    try {
-      localStorage.setItem('bedain_gemini_api_key', cleanKey);
-    } catch (e) {}
 
     try {
-      // Sync to global Firestore site settings so all editors & computers receive it
-      await saveSiteSettings({ geminiApiKey: cleanKey });
+      // Sync to protected Firestore vault rahasia (settings/secrets)
+      await saveGeminiApiKey(cleanKey);
     } catch (err) {
-      console.warn('Gagal menyimpan geminiApiKey ke Firestore settings/site:', err);
+      console.warn('Gagal menyimpan geminiApiKey ke vault rahasia:', err);
     } finally {
       setSavingKey(false);
       setShowKeyInput(false);

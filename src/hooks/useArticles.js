@@ -62,6 +62,19 @@ export const useArticles = (options = {}) => {
       try {
         if (articles.length === 0) setLoading(true);
         const articlesRef = collection(db, 'articles');
+
+        // Mode hemat kuota: lewati fetch jika cache masih segar (< 5 menit)
+        let cacheFresh = false;
+        try {
+          const ts = Number(localStorage.getItem(`${cacheKey}_ts`) || 0);
+          cacheFresh = articles.length > 0 && Date.now() - ts < 5 * 60 * 1000;
+        } catch (e) {}
+        if (cacheFresh) {
+          displayedArticleIdsRef.current = new Set(articles.map(a => a.id));
+          initialLoadTimeRef.current = Date.now();
+          setupLive(articlesRef);
+          return;
+        }
         
         let q = query(articlesRef, orderBy('publishedAt', 'desc'));
         
@@ -88,11 +101,23 @@ export const useArticles = (options = {}) => {
           setArticles(articlesData);
           try {
             localStorage.setItem(cacheKey, JSON.stringify(articlesData));
+            localStorage.setItem(`${cacheKey}_ts`, String(Date.now()));
           } catch(e) {}
           
           displayedArticleIdsRef.current = new Set(articlesData.map(a => a.id));
           initialLoadTimeRef.current = Date.now();
-          
+          setupLive(articlesRef);
+        }
+      } catch (err) {
+        console.error("Error fetching articles:", err);
+        if (isMounted) setError(err.message);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    const setupLive = (articlesRef) => {
+          if (!isMounted) return;
           // Setup real-time listener for newly added or published articles (top 5)
           let liveQuery = query(articlesRef, orderBy('publishedAt', 'desc'), limit(5));
           if (options.category) {
@@ -126,13 +151,6 @@ export const useArticles = (options = {}) => {
           }, (err) => {
             console.warn("Live articles snapshot warning:", err);
           });
-        }
-      } catch (err) {
-        console.error("Error fetching articles:", err);
-        if (isMounted) setError(err.message);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
     };
 
     fetchArticles();

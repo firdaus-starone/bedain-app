@@ -12,6 +12,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import AIAssistantModal from '../components/AIAssistantModal';
 import AIGeneratorModal from '../components/AIGeneratorModal';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { getGeminiApiKey } from '../lib/geminiSecrets';
 
 const ArticleEditor = () => {
   const router = useRouter();
@@ -23,6 +24,7 @@ const ArticleEditor = () => {
   
   const { currentUser, userRole, loading: authLoading } = useAuth();
   const { settings: siteSettings } = useSiteSettings();
+  const [secretGeminiKey, setSecretGeminiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [fetchingEdit, setFetchingEdit] = useState(!!editId);
@@ -88,6 +90,9 @@ const ArticleEditor = () => {
       }
     };
     fetchCategories();
+    getGeminiApiKey().then(k => {
+      if (k) setSecretGeminiKey(k);
+    }).catch(e => {});
   }, []);
 
   useEffect(() => {
@@ -425,6 +430,9 @@ const ArticleEditor = () => {
   };
 
   const getGeminiKey = () => {
+    if (secretGeminiKey && secretGeminiKey.trim() !== '') {
+      return secretGeminiKey.trim();
+    }
     if (siteSettings?.geminiApiKey && siteSettings.geminiApiKey.trim() !== '') {
       return siteSettings.geminiApiKey.trim();
     }

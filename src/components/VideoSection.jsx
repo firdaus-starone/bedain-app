@@ -94,7 +94,7 @@ const VideoSection = () => {
   return (
     <section className="video-section-inline" id="kategori-video">
       <div className="video-header">
-          <h2 className="video-section-title" style={{ color: '#e63946', borderLeft: '4px solid #e63946', paddingLeft: '12px', letterSpacing: '2px', fontSize: '1.4rem', fontWeight: 800 }}>Video</h2>
+          <h2 className="video-section-title" style={{ color: '#e63946' }}>Video</h2>
           <Link href="/cari?q=video" className="video-section-link">Lihat Semua Video &rarr;</Link>
         </div>
         

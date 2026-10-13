@@ -5,6 +5,7 @@ import { auth } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { uploadAndCompressImage } from '../lib/uploadImage';
 import { useSiteSettings, saveSiteSettings, DEFAULT_SETTINGS } from '../hooks/useSiteSettings';
+import { getGeminiApiKey, saveGeminiApiKey } from '../lib/geminiSecrets';
 import {
   LayoutDashboard, PenTool, Globe, LogOut, Users, Image as ImageIcon,
   Settings, Save, RefreshCw, UploadCloud, Check, AlertCircle, FileText,
@@ -73,10 +74,16 @@ const AdminSettings = () => {
   const leftAdInputRef = useRef(null);
   const rightAdInputRef = useRef(null);
 
-  // Initialize form when settings load
+  // Initialize form when settings load and fetch secret key from vault
   React.useEffect(() => {
     if (!settingsLoading && savedSettings) {
       setForm({ ...savedSettings });
+      // Ambil API key dari vault rahasia terproteksi (settings/secrets)
+      getGeminiApiKey().then(secretKey => {
+        if (secretKey) {
+          setForm(prev => ({ ...prev, geminiApiKey: secretKey }));
+        }
+      }).catch(err => console.warn('Could not load secret key:', err));
     }
   }, [settingsLoading, savedSettings]);
 
@@ -88,6 +95,12 @@ const AdminSettings = () => {
     setSaving(true);
     setSaveStatus(null);
     try {
+      // 1. Simpan Gemini API Key ke Vault Rahasia terproteksi (settings/secrets)
+      if (form.geminiApiKey !== undefined) {
+        await saveGeminiApiKey(form.geminiApiKey);
+      }
+
+      // 2. Simpan Pengaturan Publik ke settings/site (kunci API otomatis tidak disimpan di dokumen publik)
       await saveSiteSettings(form);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000);
@@ -382,8 +395,8 @@ const AdminSettings = () => {
           {/* Integrasi Google Gemini AI */}
           <Section title="🤖 Integrasi Google Gemini AI" icon={<Sparkles size={18} style={{ color: 'var(--color-accent)' }} />}>
             <Field 
-              label="Google Gemini API Key (Sinkronisasi Global)" 
-              hint="Kunci API Gemini dari Google AI Studio (AIzaSy...). Kunci ini otomatis tersinkronisasi dan aktif di seluruh editor artikel dan Asisten AI Bedain News di semua komputer/perangkat tim redaksi (Mac, Windows, dll)."
+              label="Google Gemini API Key (Tersimpan Aman di Vault Redaksi)" 
+              hint="Kunci API Gemini dari Google AI Studio (AIzaSy...). Kunci ini otomatis tersimpan di Vault Rahasia terenkripsi (hanya akun Redaksi & Admin yang dapat mengaksesnya, 100% aman dan tidak pernah bocor ke publik/pengunjung)."
             >
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input 
@@ -442,7 +455,9 @@ const AdminSettings = () => {
                   borderRadius: '50%', 
                   backgroundColor: form.geminiApiKey ? '#4ade80' : '#f4a261' 
                 }} />
-                {form.geminiApiKey ? 'API Key terpasang secara terpusat dan aktif di seluruh editor.' : 'Belum ada API Key (Asisten AI akan berjalan dalam mode simulasi).'}
+                {form.geminiApiKey 
+                  ? '🔒 API Key tersimpan di Vault Rahasia terenkripsi (Terkunci khusus Redaksi & Admin. 100% aman dari publik).' 
+                  : 'Belum ada API Key (Asisten AI akan berjalan dalam mode simulasi).'}
               </div>
             </Field>
           </Section>

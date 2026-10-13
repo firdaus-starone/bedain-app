@@ -19,8 +19,8 @@ const getArticleBySlug = cache(async (slug) => {
           limit: 1
         }
       }),
-      // We use no-store so that Facebook scraper and SEO bots always get the freshest metadata immediately after publish
-      cache: 'no-store' 
+      // Mode hemat kuota: cache 60 detik (metadata tetap segar ≤1 menit setelah publish/edit)
+      next: { revalidate: 60 }
     });
     
     if (!res.ok) return null;

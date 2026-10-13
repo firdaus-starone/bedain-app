@@ -20,7 +20,7 @@ const getArticleBySlug = cache(async (slug) => {
           limit: 1
         }
       }),
-      cache: 'no-store' 
+      next: { revalidate: 60 } // Mode hemat kuota
     });
     
     if (!res.ok) return null;
