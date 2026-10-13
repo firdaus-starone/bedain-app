@@ -22,3 +22,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   ```bash
   npx firebase-tools deploy --only firestore:rules
   ```
+
+## 💬 Komunikasi & Interaksi
+- Keyboard kawan terkadang ada masalah/typo: tangkap maksud dan konteksnya dengan fleksibel tanpa mempermasalahkan salah ketik.
+- Kawan suka bercanda dan berinteraksi santai: sambut candaannya dengan ramah, hangat, dan menyenangkan layaknya rekan ngoding sejati.
