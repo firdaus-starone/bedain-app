@@ -5,18 +5,50 @@ import { collection, query, where, orderBy, getDocs, limit } from 'firebase/fire
 import { db } from '../lib/firebase';
 import { MessageCircle } from 'lucide-react';
 
+const RECENT_COMMENTS_CACHE_TTL = 15 * 60 * 1000;
+const readRecentCommentsCache = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem('bedain_recent_comments_cache');
+    const ts = Number(sessionStorage.getItem('bedain_recent_comments_ts') || 0);
+    if (raw && Date.now() - ts < RECENT_COMMENTS_CACHE_TTL) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+  return null;
+};
+const writeRecentCommentsCache = (data) => {
+  if (typeof window === 'undefined' || !data) return;
+  try {
+    sessionStorage.setItem('bedain_recent_comments_cache', JSON.stringify(data));
+    sessionStorage.setItem('bedain_recent_comments_ts', String(Date.now()));
+  } catch (e) {}
+};
+
 const RecentCommentsWidget = () => {
-  const [recentComments, setRecentComments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [recentComments, setRecentComments] = useState(() => {
+    return readRecentCommentsCache() || [];
+  });
+  const [loading, setLoading] = useState(() => {
+    return !readRecentCommentsCache();
+  });
 
   useEffect(() => {
     let isMounted = true;
+    const cached = readRecentCommentsCache();
+    if (cached) {
+      setRecentComments(cached);
+      setLoading(false);
+      return;
+    }
+
     const fetchRecentComments = async () => {
       try {
+        // Mode hemat kuota: Pangkas dari limit 50 ke limit 15
         const q = query(
           collection(db, 'comments'),
           orderBy('createdAt', 'desc'),
-          limit(50)
+          limit(15)
         );
         const snap = await getDocs(q);
 
@@ -41,6 +73,7 @@ const RecentCommentsWidget = () => {
 
         if (isMounted) {
           setRecentComments(uniqueArticles);
+          writeRecentCommentsCache(uniqueArticles);
           setLoading(false);
         }
       } catch (err) {

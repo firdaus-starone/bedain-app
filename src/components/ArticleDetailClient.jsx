@@ -26,13 +26,13 @@ import { useI18n } from '../hooks/useI18n';
 import { useAuth } from '../hooks/useAuth';
 import { getPublicArticleUrl, isMobileDevice, shareArticleWithImage } from '../lib/shareHelper';
 
-const ArticleDetail = () => {
+const ArticleDetail = ({ initialArticle = null }) => {
   const { currentUser } = useAuth();
   const { lang, t } = useI18n();
   const { slug } = useParams();
   const router = useRouter();
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [article, setArticle] = useState(initialArticle);
+  const [loading, setLoading] = useState(!initialArticle);
   const [error, setError] = useState(null);
   const [scheduledNotice, setScheduledNotice] = useState(null);
   const [isEditorialPreview, setIsEditorialPreview] = useState(false);
@@ -45,7 +45,7 @@ const ArticleDetail = () => {
   const [isClient, setIsClient] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
-  const [realCommentCount, setRealCommentCount] = useState(0);
+  const [realCommentCount, setRealCommentCount] = useState(() => initialArticle?.commentCount || 0);
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [recommendedArticles, setRecommendedArticles] = useState([]);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
@@ -86,6 +86,14 @@ const ArticleDetail = () => {
   useEffect(() => {
     setIsClient(true);
     window.scrollTo(0, 0);
+
+    // Mode hemat kuota: Jika artikel sudah diambil dari SSR, lewati fetch client-side
+    if (initialArticle && (initialArticle.slug === slug || !slug || initialArticle.title)) {
+      setArticle(initialArticle);
+      setLoading(false);
+      return;
+    }
+
     const fetchArticle = async () => {
       setLoading(true);
       setError(null);
@@ -357,25 +365,27 @@ const ArticleDetail = () => {
 
   useEffect(() => {
     if (!article?.category) return;
+    const cacheKey = `bedain_related_${article.category}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setRelatedArticles(JSON.parse(cached));
+        return;
+      }
+    } catch(e) {}
+
     const fetchRelated = async () => {
       try {
-        const q = query(collection(db, 'articles'), where('category', '==', article.category), limit(7));
+        const q = query(collection(db, 'articles'), where('category', '==', article.category), limit(6));
         const snap = await getDocs(q);
         const now = new Date();
         let related = snap.docs.map(d => ({ id: d.id, ...d.data() }))
           .filter(a => a.id !== article.id && a.title !== article.title)
           .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
         
-        // If related articles < 6, fetch from other categories to fill up the slots
-        if (related.length < 6) {
-          const fallbackQ = query(collection(db, 'articles'), limit(10));
-          const fallbackSnap = await getDocs(fallbackQ);
-          const fallbackDocs = fallbackSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-            .filter(a => a.id !== article.id && a.title !== article.title && !related.find(r => r.id === a.id))
-            .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
-          related = [...related, ...fallbackDocs];
-        }
-        setRelatedArticles(related.slice(0, 6));
+        const finalRelated = related.slice(0, 6);
+        setRelatedArticles(finalRelated);
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(finalRelated)); } catch(e) {}
       } catch (e) {
         console.error("Error fetching related:", e);
         setRelatedArticles([]);
@@ -386,16 +396,27 @@ const ArticleDetail = () => {
 
   useEffect(() => {
     if (!article?.title) return;
+    const cacheKey = 'bedain_recommended_cache';
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setRecommendedArticles(JSON.parse(cached));
+        return;
+      }
+    } catch(e) {}
+
     const fetchRecommended = async () => {
       try {
-        const q = query(collection(db, 'articles'), limit(10));
+        const q = query(collection(db, 'articles'), limit(8));
         const snap = await getDocs(q);
         const now = new Date();
         let recs = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(a => a.id !== article.id && a.title !== article.title)
           .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
-        setRecommendedArticles(recs.slice(0, 6));
+        const finalRecs = recs.slice(0, 6);
+        setRecommendedArticles(finalRecs);
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(finalRecs)); } catch(e) {}
       } catch (e) {
         console.error("Error fetching recommended:", e);
         setRecommendedArticles([]);
@@ -406,12 +427,17 @@ const ArticleDetail = () => {
 
   useEffect(() => {
     if (!slug) return;
+    if (typeof article?.commentCount === 'number') {
+      setRealCommentCount(article.commentCount);
+      return;
+    }
     const fetchCommentCount = async () => {
       try {
         const q = query(
           collection(db, 'comments'),
           where('articleSlug', '==', slug),
-          where('status', '==', 'approved')
+          where('status', '==', 'approved'),
+          limit(20)
         );
         const snap = await getDocs(q);
         setRealCommentCount(snap.size);
@@ -420,7 +446,7 @@ const ArticleDetail = () => {
       }
     };
     fetchCommentCount();
-  }, [slug]);
+  }, [slug, article?.commentCount]);
 
   useEffect(() => {
     let ticking = false;

@@ -17,6 +17,26 @@ import { ThumbsUp, MessageSquare } from 'lucide-react';
 let cachedSidebarMemory = null;
 let fetchSidebarPromise = null;
 
+const SIDEBAR_CACHE_TTL = 15 * 60 * 1000; // 15 menit hemat kuota
+const readSidebarCache = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('bedain_sidebar_cache');
+    const ts = Number(localStorage.getItem('bedain_sidebar_ts') || 0);
+    if (raw && Date.now() - ts < SIDEBAR_CACHE_TTL) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+  return null;
+};
+const writeSidebarCache = (data) => {
+  if (typeof window === 'undefined' || !data) return;
+  try {
+    localStorage.setItem('bedain_sidebar_cache', JSON.stringify(data));
+    localStorage.setItem('bedain_sidebar_ts', String(Date.now()));
+  } catch (e) {}
+};
+
 const Sidebar = () => {
   const { t } = useI18n();
   const fallbackTrending = [
@@ -27,10 +47,22 @@ const Sidebar = () => {
     { id: 5, title: 'Tips Menjaga Kesehatan Mental di Tengah Padatnya Pekerjaan', slug: 'tips-menjaga-kesehatan-mental-pekerjaan', category: 'Kesehatan', publishedAt: new Date(Date.now() - 48*3600*1000) }
   ];
 
-  const [trending, setTrending] = useState(() => cachedSidebarMemory?.trending || []);
-  const [featuredOpinion, setFeaturedOpinion] = useState(() => cachedSidebarMemory?.opinion || null);
-  const [hotTopics, setHotTopics] = useState(() => cachedSidebarMemory?.hotTopics || ['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget', 'StartUp', 'Kripto', 'Otomotif']);
-  const [loading, setLoading] = useState(() => !cachedSidebarMemory);
+  const [trending, setTrending] = useState(() => {
+    const disk = readSidebarCache();
+    return disk?.trending || cachedSidebarMemory?.trending || [];
+  });
+  const [featuredOpinion, setFeaturedOpinion] = useState(() => {
+    const disk = readSidebarCache();
+    return disk?.opinion || cachedSidebarMemory?.opinion || null;
+  });
+  const [hotTopics, setHotTopics] = useState(() => {
+    const disk = readSidebarCache();
+    return disk?.hotTopics || cachedSidebarMemory?.hotTopics || ['Teknologi AI', 'Bisnis Digital', 'Produktivitas', 'Investasi', 'Green Tech', 'Karir', 'Review Gadget', 'StartUp', 'Kripto', 'Otomotif'];
+  });
+  const [loading, setLoading] = useState(() => {
+    const disk = readSidebarCache();
+    return !(disk || cachedSidebarMemory);
+  });
   const [email, setEmail] = useState('');
   const [subscribing, setSubscribing] = useState(false);
 
@@ -62,6 +94,16 @@ const Sidebar = () => {
 
   useEffect(() => {
     let isMounted = true;
+    const diskData = readSidebarCache();
+    if (diskData) {
+      cachedSidebarMemory = diskData;
+      setTrending(diskData.trending || []);
+      if (diskData.opinion) setFeaturedOpinion(diskData.opinion);
+      if (diskData.hotTopics) setHotTopics(diskData.hotTopics);
+      setLoading(false);
+      return;
+    }
+
     if (cachedSidebarMemory) {
       setTrending(cachedSidebarMemory.trending || []);
       if (cachedSidebarMemory.opinion) setFeaturedOpinion(cachedSidebarMemory.opinion);
@@ -83,11 +125,11 @@ const Sidebar = () => {
 
     const promise = (async () => {
       try {
-        // Fetch more articles sorted by date to ensure we get the latest ones (bypassing composite index issue)
+        // Mode hemat kuota: Pangkas dari limit 100 menjadi limit 20
         const q = query(
           collection(db, 'articles'),
           orderBy('publishedAt', 'desc'),
-          limit(100)
+          limit(20)
         );
         const snap = await getDocs(q);
         const now = new Date();
@@ -105,12 +147,13 @@ const Sidebar = () => {
             return dateB - dateA;
         });
 
-        // Fetch Opini explicitly to avoid being cut off by the 100 limit of trending articles
+        // Fetch Opini explicitly (limit 5 hemat kuota)
         let opinion = null;
         try {
           const opiniQuery = query(
             collection(db, 'articles'),
-            where('category', 'in', ['Opini', 'Kolom', 'Tajuk', 'Editorial', 'opini', 'kolom'])
+            where('category', 'in', ['Opini', 'Kolom', 'Tajuk', 'Editorial', 'opini', 'kolom']),
+            limit(5)
           );
           const opiniSnap = await getDocs(opiniQuery);
           const opiniDocs = opiniSnap.docs
@@ -128,7 +171,7 @@ const Sidebar = () => {
           opinion = opiniDocs.length > 0 ? opiniDocs[0] : null;
         } catch (e) {
           console.error('Error fetching opini explicitly:', e);
-          // Fallback to checking within the 100 latest articles if explicit query fails
+          // Fallback to checking within the articles if explicit query fails
           opinion = sortedByDate.find(a => 
             a.category && (a.category.toLowerCase().includes('opini') || a.category.toLowerCase().includes('kolom') || a.category.toLowerCase().includes('tajuk') || a.category.toLowerCase().includes('editorial'))
           );
@@ -150,7 +193,7 @@ const Sidebar = () => {
         const topicCounts = {};
         const tagDisplays = {};
         
-        articles.slice(0, 50).forEach((article) => {
+        articles.slice(0, 20).forEach((article) => {
            const rawTags = article.tags || [];
            const tags = typeof rawTags === 'string' ? rawTags.split(',') : rawTags;
            if (Array.isArray(tags)) {
@@ -177,6 +220,7 @@ const Sidebar = () => {
 
         const resultData = { trending: trendingResult, opinion: opinion, hotTopics: finalHotTopics };
         cachedSidebarMemory = resultData;
+        writeSidebarCache(resultData);
         return resultData;
       } catch (err) {
         console.error('Error fetching sidebar data:', err);

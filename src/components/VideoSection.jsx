@@ -9,12 +9,46 @@ import { getYouTubeId, getArticleCardImage, getArticleVideoData } from '../lib/v
 let cachedVideosMemory = null;
 let fetchVideosPromise = null;
 
+const VIDEOS_CACHE_TTL = 15 * 60 * 1000; // 15 menit hemat kuota
+const readVideosCache = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('bedain_videos_cache');
+    const ts = Number(localStorage.getItem('bedain_videos_ts') || 0);
+    if (raw && Date.now() - ts < VIDEOS_CACHE_TTL) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+  return null;
+};
+const writeVideosCache = (data) => {
+  if (typeof window === 'undefined' || !data) return;
+  try {
+    localStorage.setItem('bedain_videos_cache', JSON.stringify(data));
+    localStorage.setItem('bedain_videos_ts', String(Date.now()));
+  } catch (e) {}
+};
+
 const VideoSection = () => {
-  const [videoArticles, setVideoArticles] = useState(() => cachedVideosMemory || []);
-  const [loading, setLoading] = useState(() => !cachedVideosMemory);
+  const [videoArticles, setVideoArticles] = useState(() => {
+    const disk = readVideosCache();
+    return disk || cachedVideosMemory || [];
+  });
+  const [loading, setLoading] = useState(() => {
+    const disk = readVideosCache();
+    return !(disk || cachedVideosMemory);
+  });
 
   useEffect(() => {
     let isMounted = true;
+    const diskVideos = readVideosCache();
+    if (diskVideos && diskVideos.length > 0) {
+      cachedVideosMemory = diskVideos;
+      setVideoArticles(diskVideos);
+      setLoading(false);
+      return;
+    }
+
     if (cachedVideosMemory) {
       setVideoArticles(cachedVideosMemory);
       setLoading(false);
@@ -33,10 +67,11 @@ const VideoSection = () => {
 
     const promise = (async () => {
       try {
+        // Mode hemat kuota: Pangkas dari limit 50 menjadi limit 15
         const q = query(
           collection(db, 'articles'),
           orderBy('publishedAt', 'desc'),
-          limit(50)
+          limit(15)
         );
         const snap = await getDocs(q);
         const now = new Date();
@@ -47,6 +82,7 @@ const VideoSection = () => {
           .slice(0, 4);
         
         cachedVideosMemory = videos;
+        writeVideosCache(videos);
         return videos;
       } catch (error) {
         console.error('Error fetching video articles:', error);

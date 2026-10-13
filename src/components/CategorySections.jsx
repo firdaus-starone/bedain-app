@@ -14,13 +14,47 @@ let cachedCategories = null;
 let categoriesPromise = null;
 const categoryArticlesCache = new Map();
 
+const CAT_SECTIONS_CACHE_TTL = 10 * 60 * 1000; // 10 menit hemat kuota
+const readCatSectionsCache = (key) => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(`bedain_cat_sections_${key}`);
+    const ts = Number(localStorage.getItem(`bedain_cat_sections_ts_${key}`) || 0);
+    if (raw && Date.now() - ts < CAT_SECTIONS_CACHE_TTL) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+  return null;
+};
+const writeCatSectionsCache = (key, data) => {
+  if (typeof window === 'undefined' || !data) return;
+  try {
+    localStorage.setItem(`bedain_cat_sections_${key}`, JSON.stringify(data));
+    localStorage.setItem(`bedain_cat_sections_ts_${key}`, String(Date.now()));
+  } catch (e) {}
+};
+
 const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
+  const cacheKey = `${startIndex}_${endIndex ?? 'all'}`;
   const { t, lang } = useI18n();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState(() => {
+    const disk = readCatSectionsCache(cacheKey);
+    return disk || [];
+  });
+  const [loading, setLoading] = useState(() => {
+    const disk = readCatSectionsCache(cacheKey);
+    return !disk;
+  });
 
   useEffect(() => {
     let isMounted = true;
+    const diskCats = readCatSectionsCache(cacheKey);
+    if (diskCats && diskCats.length > 0) {
+      setCategories(diskCats);
+      setLoading(false);
+      return;
+    }
+
     const fetchCategoriesAndArticles = async () => {
       try {
         // Fetch categories (cached globally across multiple instances on the page)
@@ -65,10 +99,11 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
              if (categoryArticlesCache.has(cat.name)) {
                articles = categoryArticlesCache.get(cat.name);
              } else {
+               // Mode hemat kuota: Pangkas dari limit 8 ke limit 5
                const artQ = query(
                  collection(db, 'articles'), 
                  where('category', '==', cat.name),
-                 limit(8)
+                 limit(5)
                );
                const artSnap = await getDocs(artQ);
                const now = new Date();
@@ -115,7 +150,9 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
       
       if (!isMounted) return;
       // Filter out categories with 0 articles
-      setCategories(catsWithArticles.filter(c => c.articles.length > 0));
+      const filtered = catsWithArticles.filter(c => c.articles.length > 0);
+      setCategories(filtered);
+      writeCatSectionsCache(cacheKey, filtered);
     } catch (err) {
       console.error("Error fetching category blocks:", err);
     } finally {
@@ -127,7 +164,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
   return () => {
     isMounted = false;
   };
-}, [startIndex, endIndex]);
+}, [startIndex, endIndex, cacheKey]);
 
   const getSlug = (item) => {
     if (item.slug && item.slug !== '#') return item.slug;

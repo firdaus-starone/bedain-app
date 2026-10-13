@@ -198,7 +198,7 @@ export default async function ArticlePage({ params }) {
   return (
     <>
       {schemaScript}
-      <ArticleDetailClient />
+      <ArticleDetailClient initialArticle={article} />
     </>
   );
 }

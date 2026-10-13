@@ -7,7 +7,8 @@ import { useArticles } from '../hooks/useArticles';
 import { getArticleCardImage } from '../lib/videoHelpers';
 
 const LocalNewsWidget = () => {
-  const { articles, loading } = useArticles({ limit: 50 }); // Fetch more to increase chances of matching
+  // Mode hemat kuota: limit 16 berbagi cache langsung dengan HomeClient (0 extra read)
+  const { articles, loading } = useArticles({ limit: 16 });
   const [location, setLocation] = useState(null);
   const [localArticles, setLocalArticles] = useState([]);
   const [isDetecting, setIsDetecting] = useState(true);
