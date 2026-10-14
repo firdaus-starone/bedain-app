@@ -180,8 +180,25 @@ export default async function ArticlePage({ params }) {
     permanentRedirect(`/watch/${slug}`);
   }
 
+  const now = new Date();
+  let scheduledDate = null;
+  if (article && article.status === 'scheduled') {
+    if (article.publishedAt) {
+      scheduledDate = new Date(article.publishedAt);
+    } else if (article.scheduledAt) {
+      let s = String(article.scheduledAt).trim();
+      if (!s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) {
+        s += '+07:00';
+      }
+      scheduledDate = new Date(s);
+    }
+  }
+  const isScheduledNotYet = article && article.status === 'scheduled' && scheduledDate && scheduledDate > now;
+  const isDraft = article && article.status === 'draft';
+  const isPubliclyAvailable = article && !isDraft && !isScheduledNotYet;
+
   let schemaScript = null;
-  if (article) {
+  if (isPubliclyAvailable) {
     const siteName = 'Bedain News';
     const title = article.title;
     const description = article.seoDescription || article.excerpt || article.content.replace(/<[^>]+>/g, '').substring(0, 160);
@@ -224,7 +241,7 @@ export default async function ArticlePage({ params }) {
   return (
     <>
       {schemaScript}
-      <ArticleDetailClient initialArticle={article} />
+      <ArticleDetailClient initialArticle={isPubliclyAvailable ? article : null} />
     </>
   );
 }

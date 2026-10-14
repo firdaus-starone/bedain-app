@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import LazyImage from './LazyImage';
 import { getYouTubeId, getArticleCardImage, getArticleVideoData } from '../lib/videoHelpers';
 import Script from 'next/script';
@@ -27,12 +27,13 @@ import { useAuth } from '../hooks/useAuth';
 import { getPublicArticleUrl, isMobileDevice, shareArticleWithImage } from '../lib/shareHelper';
 
 const ArticleDetail = ({ initialArticle = null }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { lang, t } = useI18n();
   const { slug } = useParams();
   const router = useRouter();
-  const [article, setArticle] = useState(initialArticle);
-  const [loading, setLoading] = useState(!initialArticle);
+  const isInitialDraftOrSched = initialArticle?.status === 'draft' || initialArticle?.status === 'scheduled';
+  const [article, setArticle] = useState(isInitialDraftOrSched ? null : initialArticle);
+  const [loading, setLoading] = useState(isInitialDraftOrSched ? true : !initialArticle);
   const [error, setError] = useState(null);
   const [scheduledNotice, setScheduledNotice] = useState(null);
   const [isEditorialPreview, setIsEditorialPreview] = useState(false);
@@ -93,8 +94,25 @@ const ArticleDetail = ({ initialArticle = null }) => {
     setIsClient(true);
     window.scrollTo(0, 0);
 
-    // Mode hemat kuota: Jika artikel sudah diambil dari SSR dan memiliki ID dokumen, gunakan
-    if (initialArticle && initialArticle.id && (initialArticle.slug === slug || !slug)) {
+    const now = new Date();
+    const isSched = initialArticle?.status === 'scheduled';
+    let scheduledDate = null;
+    if (initialArticle?.publishedAt?.toDate) {
+      scheduledDate = initialArticle.publishedAt.toDate();
+    } else if (initialArticle?.publishedAt) {
+      scheduledDate = new Date(initialArticle.publishedAt);
+    } else if (initialArticle?.scheduledAt) {
+      let s = String(initialArticle.scheduledAt).trim();
+      if (!s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) {
+        s += '+07:00';
+      }
+      scheduledDate = new Date(s);
+    }
+    const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
+    const isDraft = initialArticle?.status === 'draft';
+
+    // Mode hemat kuota: Hanya gunakan initialArticle jika sudah tayang publik dan memiliki ID dokumen
+    if (!isDraft && !isNotYetPublished && initialArticle && initialArticle.id && (initialArticle.slug === slug || !slug)) {
       setArticle(initialArticle);
       setLoading(false);
       return;
@@ -129,9 +147,13 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
           const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
           const isDraft = foundArticle.status === 'draft';
+          const activeUser = currentUser || auth?.currentUser;
 
           // Jika pengunjung umum dan berita belum waktunya tayang / masih draf:
-          if ((isNotYetPublished || isDraft) && !currentUser) {
+          if ((isNotYetPublished || isDraft) && !activeUser) {
+            if (authLoading) {
+              return; // Tunggu proses verifikasi login selesai
+            }
             if (isNotYetPublished) {
               const timeFormatted = scheduledDate.toLocaleString('id-ID', {
                 weekday: 'long',
@@ -202,8 +224,12 @@ const ArticleDetail = ({ initialArticle = null }) => {
               }
               const isNotYetPublished = isSched && scheduledDate && scheduledDate > now;
               const isDraft = data.status === 'draft';
+              const activeUser = currentUser || auth?.currentUser;
 
-              if ((isNotYetPublished || isDraft) && !currentUser) {
+              if ((isNotYetPublished || isDraft) && !activeUser) {
+                if (authLoading) {
+                  return;
+                }
                 if (isNotYetPublished) {
                   const timeFormatted = scheduledDate.toLocaleString('id-ID', {
                     weekday: 'long',
@@ -248,7 +274,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
       setDismissNextArticle(false);
       fetchArticle();
     }
-  }, [slug]);
+  }, [slug, currentUser, authLoading]);
 
   const [dismissNextArticle, setDismissNextArticle] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -1082,7 +1108,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
               }}>
                 <span style={{ fontSize: '22px', flexShrink: 0 }}>🔒</span>
                 <div>
-                  <strong>Mode Pratinjau Redaksi:</strong> Artikel ini berstatus <em>{article.status === 'scheduled' ? `Terjadwal (${article.scheduledAt ? article.scheduledAt.replace('T', ' ') : 'Belum Tayang'})` : 'Draf'}</em>. Pengunjung publik yang membuka link ini saat ini akan melihat informasi jadwal tayang.
+                  <strong>Mode Pratinjau Redaksi:</strong> Artikel ini berstatus <em>{article.status === 'scheduled' ? `Terjadwal (${article.scheduledAt ? article.scheduledAt.replace('T', ' ') : 'Belum Tayang'})` : 'Draf'}</em>. Artikel ini belum diterbitkan untuk umum (pengunjung biasa tidak dapat melihat isi artikel ini).
                 </div>
               </div>
             )}
