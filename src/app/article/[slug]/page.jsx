@@ -28,21 +28,47 @@ const getArticleBySlug = cache(async (slug) => {
     
     if (data && data.length > 0 && data[0].document) {
       const doc = data[0].document.fields;
+      const id = data[0].document.name ? data[0].document.name.split('/').pop() : '';
+
+      const reactions = { like: 0, insightful: 0, fire: 0, love: 0 };
+      if (doc.reactions?.mapValue?.fields) {
+        for (const [k, v] of Object.entries(doc.reactions.mapValue.fields)) {
+          reactions[k] = parseInt(v.integerValue || v.doubleValue || '0', 10);
+        }
+      }
+
+      const tags = doc.tags?.arrayValue?.values?.map(v => v.stringValue).filter(Boolean) || [];
+
       return {
+        id,
+        slug: doc.slug?.stringValue || slug,
         title: doc.title?.stringValue || '',
         seoTitle: doc.seoTitle?.stringValue || '',
         seoDescription: doc.seoDescription?.stringValue || '',
         excerpt: doc.excerpt?.stringValue || '',
         content: doc.content?.stringValue || '',
         coverImage: doc.coverImage?.stringValue || doc.imageUrl?.stringValue || '',
+        imageUrl: doc.imageUrl?.stringValue || doc.coverImage?.stringValue || '',
+        imageCaption: doc.imageCaption?.stringValue || '',
         category: doc.category?.stringValue || '',
         videoUrl: doc.videoUrl?.stringValue || '',
         youtubeUrl: doc.youtubeUrl?.stringValue || '',
         author: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
+        authorName: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
+        contributorName: doc.contributorName?.stringValue || '',
+        location: doc.location?.stringValue || '',
         status: doc.status?.stringValue || 'published',
         scheduledAt: doc.scheduledAt?.stringValue || '',
         publishedAt: doc.publishedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
         updatedAt: doc.updatedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
+        reactions,
+        tags,
+        views: parseInt(doc.views?.integerValue || doc.views?.doubleValue || '0', 10),
+        commentCount: parseInt(doc.commentCount?.integerValue || doc.commentCount?.doubleValue || '0', 10),
+        title_en: doc.title_en?.stringValue || '',
+        content_en: doc.content_en?.stringValue || '',
+        title_zh: doc.title_zh?.stringValue || '',
+        content_zh: doc.content_zh?.stringValue || '',
       };
     }
   } catch (error) {

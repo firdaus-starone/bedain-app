@@ -39,7 +39,13 @@ const ArticleDetail = ({ initialArticle = null }) => {
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState('normal'); // 'normal', 'large', 'xlarge'
   const [reaction, setReaction] = useState(null);
-  const [reactionCounts, setReactionCounts] = useState({ like: 0, insightful: 0, fire: 0, love: 0 });
+  const [reactionCounts, setReactionCounts] = useState(() => ({
+    like: 0,
+    insightful: 0,
+    fire: 0,
+    love: 0,
+    ...(initialArticle?.reactions || {})
+  }));
   const [scrolled, setScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isClient, setIsClient] = useState(false);
@@ -87,8 +93,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
     setIsClient(true);
     window.scrollTo(0, 0);
 
-    // Mode hemat kuota: Jika artikel sudah diambil dari SSR, lewati fetch client-side
-    if (initialArticle && (initialArticle.slug === slug || !slug || initialArticle.title)) {
+    // Mode hemat kuota: Jika artikel sudah diambil dari SSR dan memiliki ID dokumen, gunakan
+    if (initialArticle && initialArticle.id && (initialArticle.slug === slug || !slug)) {
       setArticle(initialArticle);
       setLoading(false);
       return;
@@ -721,35 +727,55 @@ const ArticleDetail = ({ initialArticle = null }) => {
   };
 
   const handleReaction = async (type) => {
-    if (!article?.id) return;
+    let targetId = article?.id;
+    if (!targetId && (article?.slug || slug)) {
+      try {
+        const q = query(collection(db, 'articles'), where('slug', '==', article?.slug || slug), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          targetId = snap.docs[0].id;
+          setArticle(prev => (prev ? { ...prev, id: targetId } : { id: targetId }));
+        }
+      } catch (e) {
+        console.error('Error finding article id for reaction:', e);
+      }
+    }
+    if (!targetId) return;
+
     const oldReaction = reaction;
     
     if (oldReaction === type) {
       setReaction(null);
       setReactionCounts(prev => ({ ...prev, [type]: Math.max(0, (prev[type] || 1) - 1) }));
       try {
-        localStorage.removeItem(`reaction_${article.id}`);
-        await updateDoc(doc(db, 'articles', article.id), {
+        localStorage.removeItem(`reaction_${targetId}`);
+        await updateDoc(doc(db, 'articles', targetId), {
           [`reactions.${type}`]: increment(-1)
         });
-      } catch (err) { /* ignore */ }
+      } catch (err) {
+        console.error('Error removing reaction in Firestore:', err);
+      }
     } else {
       if (oldReaction) {
         setReactionCounts(prev => ({ ...prev, [oldReaction]: Math.max(0, (prev[oldReaction] || 1) - 1) }));
         try {
-          await updateDoc(doc(db, 'articles', article.id), {
+          await updateDoc(doc(db, 'articles', targetId), {
             [`reactions.${oldReaction}`]: increment(-1)
           });
-        } catch (err) { /* ignore */ }
+        } catch (err) {
+          console.error('Error decreasing old reaction in Firestore:', err);
+        }
       }
       setReaction(type);
       setReactionCounts(prev => ({ ...prev, [type]: (prev[type] || 0) + 1 }));
       try {
-        localStorage.setItem(`reaction_${article.id}`, type);
-        await updateDoc(doc(db, 'articles', article.id), {
+        localStorage.setItem(`reaction_${targetId}`, type);
+        await updateDoc(doc(db, 'articles', targetId), {
           [`reactions.${type}`]: increment(1)
         });
-      } catch (err) { /* ignore */ }
+      } catch (err) {
+        console.error('Error saving reaction in Firestore:', err);
+      }
     }
   };
 
@@ -757,7 +783,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
     if (!article) return;
     try {
       const stored = JSON.parse(localStorage.getItem('bedain_bookmarks') || '[]');
-      const existsIndex = stored.findIndex(item => item.id === article.id || item.slug === article.slug);
+      const existsIndex = stored.findIndex(item => (article.id && item.id === article.id) || (article.slug && item.slug === article.slug) || (slug && item.slug === slug));
       let updated;
       if (existsIndex >= 0) {
         updated = stored.filter((_, idx) => idx !== existsIndex);
@@ -765,8 +791,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
       } else {
         updated = [
           {
-            id: article.id,
-            slug: article.slug,
+            id: article.id || article.slug || slug,
+            slug: article.slug || slug,
             title: article.title,
             coverImage: article.coverImage || article.imageUrl,
             category: article.category || 'Berita',
