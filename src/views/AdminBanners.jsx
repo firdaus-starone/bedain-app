@@ -303,12 +303,12 @@ const AdminBanners = () => {
               }}
             >
               <div>
-                <div style={{ position: 'relative', height: '150px', background: '#0d0d10' }}>
+                <div style={{ position: 'relative', height: '180px', background: '#0d0d10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {b.imageUrl ? (
                     <img
                       src={b.imageUrl}
                       alt={b.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
