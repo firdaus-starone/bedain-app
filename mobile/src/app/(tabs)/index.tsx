@@ -183,7 +183,6 @@ export default function Home() {
   const [hotTopics, setHotTopics] = useState<string[]>(HOT_TOPICS);
   const [refreshing, setRefreshing] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
-  const [recentComments, setRecentComments] = useState<any[]>([]);
   const [dbRedaksiArticles, setDbRedaksiArticles] = useState<any[]>([]);
 
   const headerBanners = banners.filter(b => b.slot === 'header');
@@ -265,16 +264,6 @@ export default function Home() {
       const allComments = snapComments.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const validComments = allComments.filter((c: any) => c.status === 'approved');
       setAllApprovedComments(validComments);
-      const uniqueArts: any[] = [];
-      const slugs = new Set();
-      for (const c of validComments as any[]) {
-        if (!slugs.has(c.articleSlug)) {
-          slugs.add(c.articleSlug);
-          uniqueArts.push({ articleSlug: c.articleSlug, articleTitle: c.articleTitle || 'Artikel Tanpa Judul', latestComment: c });
-          if (uniqueArts.length === 2) break;
-        }
-      }
-      setRecentComments(uniqueArts);
 
       await fetchRedaksi();
 
@@ -388,16 +377,6 @@ export default function Home() {
         const allComments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const validComments = allComments.filter((c: any) => c.status === 'approved');
         setAllApprovedComments(validComments);
-        const uniqueArts: any[] = [];
-        const slugs = new Set();
-        for (const c of validComments as any[]) {
-          if (!slugs.has(c.articleSlug)) {
-            slugs.add(c.articleSlug);
-            uniqueArts.push({ articleSlug: c.articleSlug, articleTitle: c.articleTitle || 'Artikel Tanpa Judul', latestComment: c });
-            if (uniqueArts.length === 2) break;
-          }
-        }
-        setRecentComments(uniqueArts);
       } catch (e) {
         console.error('Error fetching comments:', e);
       }
@@ -420,7 +399,6 @@ export default function Home() {
     FEATURED_ARTICLE,
     RELATED_ARTICLES,
     BERITA_LIST,
-    BERITA_PILIHAN,
     LATEST_NEWS,
     BREAKING_NEWS,
     VIDEO_ARTICLES,
@@ -431,15 +409,8 @@ export default function Home() {
     const allMapped = rawArticles.map(mapArticle);
     const breaking = rawArticles.filter(a => a.isBreakingNews).map(mapArticle);
     
-    // Berita Populer: Diambil dari semua artikel, diurut views terbanyak
-    const pilihan = [...allMapped]
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 5);
-
     // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish)
-    // Saring agar berita populer tidak muncul dua kali di feed utama
-    const pilihanIds = new Set(pilihan.map(p => p.id));
-    const mainFeed = allMapped.filter(a => !pilihanIds.has(a.id));
+    const mainFeed = allMapped;
 
     const terkini = mainFeed.slice(0, 5);
     const featured = mainFeed[5];
@@ -479,7 +450,6 @@ export default function Home() {
       FEATURED_ARTICLE: featured || null,
       RELATED_ARTICLES: related || [],
       BERITA_LIST: list || [],
-      BERITA_PILIHAN: pilihan || [],
       LATEST_NEWS: latest || [],
       BREAKING_NEWS: breaking || [],
       VIDEO_ARTICLES: videoArticles || [],
@@ -868,27 +838,6 @@ export default function Home() {
           </View>
         )}
 
-        {/* SECTION SEPERTI PALING ATAS (Korusel Mungil) */}
-        <View style={styles.bottomSectionHeader}>
-          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Populer</Text>
-        </View>
-        <ScrollView horizontal nestedScrollEnabled={true} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.terkiniScroll, { paddingVertical: 0, paddingBottom: 8 }]}>
-          {BERITA_PILIHAN.map((item) => (
-            <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`bottom-${item.id}`} style={styles.bottomCard} activeOpacity={0.9}>
-              <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
-                <View style={styles.bottomOverlay}>
-                  <View style={[styles.terkiniBadge, { backgroundColor: '#f97316' }]}>
-                    <Text style={styles.terkiniBadgeText}>POPULER</Text>
-                  </View>
-                  <View style={[styles.bottomTextContainer, dyn.bottomBanner]}>
-                    <Text style={[styles.bottomTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
-                    <Text style={styles.bottomDate}>{item.date}</Text>
-                  </View>
-                </View>
-              </ImageBackground>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
         
         {/* SECTION BERITA TERBARU (MIXED LAYOUT) */}
         <View style={styles.bottomSectionHeader}>
@@ -1002,48 +951,6 @@ export default function Home() {
           })}
         </View>
 
-        {/* SECTION KOMENTAR TERBARU */}
-        {recentComments.length > 0 && (
-          <View style={{ paddingHorizontal: 16, marginTop: 10, paddingBottom: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
-              <Ionicons name="chatbubbles-outline" size={20} color="#1b61d1" />
-              <Text style={[styles.bottomSectionTitle, dyn.textMain, { marginBottom: 0 }]}>Komentar Terbaru</Text>
-            </View>
-            <View style={{ backgroundColor: dyn.mixedCardBg.backgroundColor, borderRadius: 12, padding: 16 }}>
-              {recentComments.map((article, index) => (
-                <TouchableOpacity
-                  key={article.articleSlug}
-                  onPress={() => router.push(`/article/${article.articleSlug}`)}
-                  style={{
-                    marginBottom: index < recentComments.length - 1 ? 16 : 0,
-                    borderBottomWidth: index < recentComments.length - 1 ? 1 : 0,
-                    borderBottomColor: dyn.borderBottom.borderBottomColor,
-                    paddingBottom: index < recentComments.length - 1 ? 16 : 0,
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: 'bold', color: dyn.textMain.color, marginBottom: 8, lineHeight: 18 }} numberOfLines={2}>
-                    {article.articleTitle}
-                  </Text>
-                  
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 }}>
-                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#1b61d1', alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
-                        {(article.latestComment.authorName || 'A').charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: dyn.textMain.color }}>
-                      {article.latestComment.authorName || 'Anonim'}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 12, color: dyn.textMuted.color, lineHeight: 18, fontStyle: 'italic' }} numberOfLines={2}>
-                    "{article.latestComment.content}"
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
             <View style={{ height: 160 }} />
           </Animated.ScrollView>
         </View>
