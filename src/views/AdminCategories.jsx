@@ -267,7 +267,7 @@ const AdminCategories = () => {
                           </div>
                           {cat.homeLayout && cat.homeLayout !== 'none' && (
                             <div style={{ display:'flex', alignItems:'center', gap:'5px', marginTop:'6px', background:'rgba(59,130,246,0.1)', color:'#3b82f6', padding:'2px 6px', borderRadius:'4px', fontSize:'10px', fontWeight:'700', width:'fit-content' }}>
-                              <LayoutTemplate size={10} /> Beranda: {cat.homeLayout === 'zigzag' ? 'Zigzag (1+4)' : 'Grid (5)'}
+                              <LayoutTemplate size={10} /> Beranda: {cat.homeLayout === 'zigzag' ? 'Zigzag (1+4)' : 'Grid (6)'}
                             </div>
                           )}
                         </div>
@@ -444,7 +444,7 @@ const AdminCategories = () => {
                   <option value="none" style={{ background:'var(--admin-card-bg)', color:'var(--admin-text-primary)' }}>❌ Sembunyikan dari Beranda</option>
                   <option value="zigzag" style={{ background:'var(--admin-card-bg)', color:'var(--admin-text-primary)' }}>📐 Model Zigzag (1 Besar + 4 Kecil)</option>
                   <option value="mixed-top-3" style={{ background:'var(--admin-card-bg)', color:'var(--admin-text-primary)' }}>📰 Model List (3 Kecil Atas + 1 Besar Bawah)</option>
-                  <option value="grid" style={{ background:'var(--admin-card-bg)', color:'var(--admin-text-primary)' }}>🔲 Model Grid (4 Berjejer)</option>
+                  <option value="grid" style={{ background:'var(--admin-card-bg)', color:'var(--admin-text-primary)' }}>🔲 Model Grid (6 Kartu)</option>
                 </select>
                 <p style={{ margin:'6px 0 0', fontSize:'11px', color:'var(--admin-text-secondary)' }}>Pilih bagaimana berita dari kategori ini ditampilkan di halaman Home.</p>
               </div>

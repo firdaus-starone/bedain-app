@@ -122,8 +122,15 @@ const Footer = () => {
             <div className="footer-socials-wrapper">
               <span className="socials-title">Connect With Us</span>
               <div className="footer-socials">
-                {settings?.contactWhatsapp && (
-                  <a href={`https://wa.me/${settings.contactWhatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="social-icon social-wa" aria-label="WhatsApp" title="WhatsApp">
+                {(settings?.waChannelUrl || settings?.contactWhatsapp) && (
+                  <a 
+                    href={settings?.waChannelUrl || `https://wa.me/${settings?.contactWhatsapp?.replace(/\D/g, '')}`} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="social-icon social-wa" 
+                    aria-label="WhatsApp Channel" 
+                    title={settings?.waChannelUrl ? "Saluran WhatsApp Bedain News" : "WhatsApp"}
+                  >
                     <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.45 15.34L2 22l4.82-1.46A10 10 0 1 0 12 2zm0 18a7.92 7.92 0 0 1-4.06-1.12l-.29-.17-3 .91.93-2.88-.19-.31A7.95 7.95 0 1 1 12 20zm4.56-5.95c-.25-.13-1.48-.73-1.71-.81-.23-.09-.4-.13-.56.13-.17.25-.65.81-.8 98-.15.17-.3.19-.55.06a6.94 6.94 0 0 1-2.04-1.26 7.64 7.64 0 0 1-1.41-1.76c-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.44.13-.15.17-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.72 4.31 3.81.6.26 1.07.42 1.44.54.61.19 1.16.16 1.6.1.49-.07 1.48-.6 1.69-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.18-.48-.3z"/></svg>
                   </a>
                 )}

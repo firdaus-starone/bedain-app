@@ -1,7 +1,62 @@
 import { cache } from 'react';
 import ArticleDetailClient from '../../../components/ArticleDetailClient';
 
+function mapFirestoreDocToArticle(rawDoc, fallbackSlug) {
+  if (!rawDoc || !rawDoc.fields) return null;
+  const doc = rawDoc.fields;
+  const id = rawDoc.name ? rawDoc.name.split('/').pop() : '';
+
+  const reactions = { like: 0, insightful: 0, fire: 0, love: 0 };
+  if (doc.reactions?.mapValue?.fields) {
+    for (const [k, v] of Object.entries(doc.reactions.mapValue.fields)) {
+      reactions[k] = parseInt(v.integerValue || v.doubleValue || '0', 10);
+    }
+  }
+
+  const tags = doc.tags?.arrayValue?.values?.map(v => v.stringValue).filter(Boolean) || [];
+
+  return {
+    id,
+    slug: doc.slug?.stringValue || fallbackSlug,
+    title: doc.title?.stringValue || '',
+    seoTitle: doc.seoTitle?.stringValue || '',
+    seoDescription: doc.seoDescription?.stringValue || '',
+    excerpt: doc.excerpt?.stringValue || '',
+    content: doc.content?.stringValue || '',
+    coverImage: doc.coverImage?.stringValue || doc.imageUrl?.stringValue || '',
+    imageUrl: doc.imageUrl?.stringValue || doc.coverImage?.stringValue || '',
+    imageCaption: doc.imageCaption?.stringValue || '',
+    category: doc.category?.stringValue || '',
+    videoUrl: doc.videoUrl?.stringValue || '',
+    youtubeUrl: doc.youtubeUrl?.stringValue || '',
+    author: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
+    authorName: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
+    contributorName: doc.contributorName?.stringValue || '',
+    location: doc.location?.stringValue || '',
+    status: doc.status?.stringValue || 'published',
+    scheduledAt: doc.scheduledAt?.stringValue || '',
+    publishedAt: doc.publishedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
+    updatedAt: doc.updatedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
+    reactions,
+    tags,
+    views: parseInt(doc.views?.integerValue || doc.views?.doubleValue || '0', 10),
+    commentCount: parseInt(doc.commentCount?.integerValue || doc.commentCount?.doubleValue || '0', 10),
+    title_en: doc.title_en?.stringValue || '',
+    content_en: doc.content_en?.stringValue || '',
+    title_zh: doc.title_zh?.stringValue || '',
+    content_zh: doc.content_zh?.stringValue || '',
+  };
+}
+
 const getArticleBySlug = cache(async (slug) => {
+  if (!slug) return null;
+
+  // 1. Alias link lama / judul awal yang pernah beredar
+  const cleanSlug = String(slug).toLowerCase().trim();
+  if (cleanSlug.includes('bukan-cuma-timbang-balita') || cleanSlug.includes('posyandu-mentari-layani-ibu-hamil')) {
+    return getArticleBySlug('posyandu-mentari-bukittinggi-terapkan-integrasi-layanan-primer');
+  }
+
   try {
     const res = await fetch(`https://firestore.googleapis.com/v1/projects/bedain-eb6a6/databases/(default)/documents:runQuery`, {
       method: 'POST',
@@ -23,53 +78,24 @@ const getArticleBySlug = cache(async (slug) => {
       next: { revalidate: 60 }
     });
     
-    if (!res.ok) return null;
-    const data = await res.json();
-    
-    if (data && data.length > 0 && data[0].document) {
-      const doc = data[0].document.fields;
-      const id = data[0].document.name ? data[0].document.name.split('/').pop() : '';
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.length > 0 && data[0].document) {
+        return mapFirestoreDocToArticle(data[0].document, slug);
+      }
+    }
 
-      const reactions = { like: 0, insightful: 0, fire: 0, love: 0 };
-      if (doc.reactions?.mapValue?.fields) {
-        for (const [k, v] of Object.entries(doc.reactions.mapValue.fields)) {
-          reactions[k] = parseInt(v.integerValue || v.doubleValue || '0', 10);
+    // 2. Fallback: jika slug adalah ID dokumen Firestore (misal link internal)
+    if (/^[a-zA-Z0-9_-]{20}$/.test(slug)) {
+      const docRes = await fetch(`https://firestore.googleapis.com/v1/projects/bedain-eb6a6/databases/(default)/documents/articles/${slug}`, {
+        next: { revalidate: 60 }
+      });
+      if (docRes.ok) {
+        const rawDoc = await docRes.json();
+        if (rawDoc && rawDoc.fields) {
+          return mapFirestoreDocToArticle(rawDoc, slug);
         }
       }
-
-      const tags = doc.tags?.arrayValue?.values?.map(v => v.stringValue).filter(Boolean) || [];
-
-      return {
-        id,
-        slug: doc.slug?.stringValue || slug,
-        title: doc.title?.stringValue || '',
-        seoTitle: doc.seoTitle?.stringValue || '',
-        seoDescription: doc.seoDescription?.stringValue || '',
-        excerpt: doc.excerpt?.stringValue || '',
-        content: doc.content?.stringValue || '',
-        coverImage: doc.coverImage?.stringValue || doc.imageUrl?.stringValue || '',
-        imageUrl: doc.imageUrl?.stringValue || doc.coverImage?.stringValue || '',
-        imageCaption: doc.imageCaption?.stringValue || '',
-        category: doc.category?.stringValue || '',
-        videoUrl: doc.videoUrl?.stringValue || '',
-        youtubeUrl: doc.youtubeUrl?.stringValue || '',
-        author: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
-        authorName: doc.authorName?.stringValue || doc.author?.stringValue || 'Redaksi Bedain News',
-        contributorName: doc.contributorName?.stringValue || '',
-        location: doc.location?.stringValue || '',
-        status: doc.status?.stringValue || 'published',
-        scheduledAt: doc.scheduledAt?.stringValue || '',
-        publishedAt: doc.publishedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
-        updatedAt: doc.updatedAt?.timestampValue || doc.createdAt?.timestampValue || new Date().toISOString(),
-        reactions,
-        tags,
-        views: parseInt(doc.views?.integerValue || doc.views?.doubleValue || '0', 10),
-        commentCount: parseInt(doc.commentCount?.integerValue || doc.commentCount?.doubleValue || '0', 10),
-        title_en: doc.title_en?.stringValue || '',
-        content_en: doc.content_en?.stringValue || '',
-        title_zh: doc.title_zh?.stringValue || '',
-        content_zh: doc.content_zh?.stringValue || '',
-      };
     }
   } catch (error) {
     console.error('Error fetching article metadata:', error);
@@ -169,15 +195,25 @@ export async function generateMetadata({ params }) {
 }
 
 import YouTubeWatchClient from '../../../components/YouTubeWatchClient';
-import { redirect, permanentRedirect } from 'next/navigation';
+import { redirect, permanentRedirect, notFound } from 'next/navigation';
 
 export default async function ArticlePage({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const article = await getArticleBySlug(slug);
 
+  // Jika artikel tidak ditemukan atau draft, respon dengan 404 murni (bukan soft-404)
+  if (!article || article.status === 'draft') {
+    notFound();
+  }
+
   if ((slug && slug.startsWith('yt-')) || (article && (article.category === 'Video' || article.videoUrl || article.youtubeUrl))) {
     permanentRedirect(`/watch/${slug}`);
+  }
+
+  // Jika URL yang diakses adalah slug lama atau alias, otomatis redirect ke URL resmi saat ini
+  if (article && article.slug && article.slug !== slug) {
+    permanentRedirect(`/article/${article.slug}`);
   }
 
   const now = new Date();

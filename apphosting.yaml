@@ -1,0 +1,8 @@
+# Firebase App Hosting Configuration for Bedainapp
+# Menghemat biaya compute dengan minInstances: 0 (scale to zero saat tidak ada request)
+runConfig:
+  minInstances: 0
+  maxInstances: 2
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512

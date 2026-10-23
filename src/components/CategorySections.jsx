@@ -18,8 +18,8 @@ const CAT_SECTIONS_CACHE_TTL = 10 * 60 * 1000; // 10 menit hemat kuota
 const readCatSectionsCache = (key) => {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(`bedain_cat_sections_${key}`);
-    const ts = Number(localStorage.getItem(`bedain_cat_sections_ts_${key}`) || 0);
+    const raw = localStorage.getItem(`bedain_cat_sections_v2_${key}`);
+    const ts = Number(localStorage.getItem(`bedain_cat_sections_v2_ts_${key}`) || 0);
     if (raw && Date.now() - ts < CAT_SECTIONS_CACHE_TTL) {
       return JSON.parse(raw);
     }
@@ -29,8 +29,8 @@ const readCatSectionsCache = (key) => {
 const writeCatSectionsCache = (key, data) => {
   if (typeof window === 'undefined' || !data) return;
   try {
-    localStorage.setItem(`bedain_cat_sections_${key}`, JSON.stringify(data));
-    localStorage.setItem(`bedain_cat_sections_ts_${key}`, String(Date.now()));
+    localStorage.setItem(`bedain_cat_sections_v2_${key}`, JSON.stringify(data));
+    localStorage.setItem(`bedain_cat_sections_v2_ts_${key}`, String(Date.now()));
   } catch (e) {}
 };
 
@@ -99,11 +99,12 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
              if (categoryArticlesCache.has(cat.name)) {
                articles = categoryArticlesCache.get(cat.name);
              } else {
-               // Mode hemat kuota: Pangkas dari limit 8 ke limit 5
+               // Grid butuh 6 kartu (2 baris x 3 kolom), layout lain butuh 5
+               const targetLimit = cat.homeLayout === 'grid' ? 6 : 5;
                const artQ = query(
                  collection(db, 'articles'), 
                  where('category', '==', cat.name),
-                 limit(5)
+                 limit(cat.homeLayout === 'grid' ? 8 : 6)
                );
                const artSnap = await getDocs(artQ);
                const now = new Date();
@@ -126,7 +127,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                return tB - tA;
              });
              
-             articles = published.slice(0, 5).map(data => ({
+             articles = published.slice(0, targetLimit).map(data => ({
                  id: data.id,
                  title: (lang === 'en' && data.title_en ? data.title_en : data.title) || '',
                  slug: data.slug,

@@ -58,7 +58,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const savedTheme = await AsyncStorage.getItem('appTheme');
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setTheme(savedTheme);
-        } else if (systemColorScheme) {
+        } else if (systemColorScheme === 'light' || systemColorScheme === 'dark') {
           setTheme(systemColorScheme);
         }
       } catch (e) {

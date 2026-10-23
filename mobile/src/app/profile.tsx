@@ -168,9 +168,9 @@ export default function ProfileModal() {
           )}
         </View>
 
-        {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'editor' || userRole === 'reporter') && (
+        {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'editor' || userRole === 'reporter' || __DEV__) && (
           <View style={[styles.menuSection, dyn.menuSection]}>
-            <Text style={[styles.sectionTitle, dyn.sectionTitle]}>Akses Khusus</Text>
+            <Text style={[styles.sectionTitle, dyn.sectionTitle]}>Akses Khusus {__DEV__ && !user ? '(Mode Dev)' : ''}</Text>
             <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/admin')}>
               <View style={[styles.menuIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
                 <Ionicons name="settings-outline" size={20} color="#ef4444" />

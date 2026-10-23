@@ -171,7 +171,7 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, i
       
       {(isActive && !ytId && embedUrl) && (
         <WebView
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: 'transparent' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}
           javaScriptEnabled={true}
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}

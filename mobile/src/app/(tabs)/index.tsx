@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { doc, getDoc, collection, query, orderBy, limit, getDocs, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 
 const HOT_TOPICS = [
   '#Teknologi AI', 
@@ -71,6 +72,7 @@ const mapArticle = (a: any) => {
     slug: a.slug || a.id,
     videoUrl: hasVideo,
     views: a.views || 0,
+    commentCount: typeof a.commentCount === 'number' ? a.commentCount : (a.commentsCount || 0),
   };
 };
 
@@ -184,6 +186,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
   const [dbRedaksiArticles, setDbRedaksiArticles] = useState<any[]>([]);
+  const [dbCommentedArticles, setDbCommentedArticles] = useState<any[]>([]);
 
   const headerBanners = banners.filter(b => b.slot === 'header');
   const feedBanners = banners.filter(b => b.slot === 'sidebar');
@@ -240,6 +243,23 @@ export default function Home() {
     }
   };
 
+  const fetchCommentedArticles = async () => {
+    try {
+      const qC = query(
+        collection(db, 'articles'),
+        where('commentCount', '>', 0),
+        orderBy('commentCount', 'desc'),
+        limit(15)
+      );
+      const snapC = await getDocs(qC);
+      const docs = snapC.docs.map(d => ({ id: d.id, ...d.data() }));
+      const valid = docs.filter(filterPublished).map(mapArticle);
+      setDbCommentedArticles(valid);
+    } catch (err) {
+      console.error('Error fetching commented articles:', err);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -259,13 +279,14 @@ export default function Home() {
       const snapBanners = await getDocs(qBanners);
       setBanners(snapBanners.docs.map(d => ({ id: d.id, ...d.data() })));
       
-      const qComments = query(collection(db, 'comments'), orderBy('createdAt', 'desc'), limit(50));
+      const qComments = query(collection(db, 'comments'), orderBy('createdAt', 'desc'), limit(100));
       const snapComments = await getDocs(qComments);
       const allComments = snapComments.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const validComments = allComments.filter((c: any) => c.status === 'approved');
       setAllApprovedComments(validComments);
 
       await fetchRedaksi();
+      await fetchCommentedArticles();
 
       await new Promise(resolve => setTimeout(resolve, 1500));
       if (Platform.OS === 'android') {
@@ -298,7 +319,7 @@ export default function Home() {
         const q = query(
           collection(db, 'articles'), 
           orderBy('publishedAt', 'desc'), 
-          limit(50)
+          limit(60)
         );
         unsubscribeArticles = onSnapshot(q, (snapshot) => {
           const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -372,7 +393,7 @@ export default function Home() {
 
     const fetchComments = async () => {
       try {
-        const q = query(collection(db, 'comments'), orderBy('createdAt', 'desc'), limit(50));
+        const q = query(collection(db, 'comments'), orderBy('createdAt', 'desc'), limit(100));
         const snap = await getDocs(q);
         const allComments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const validComments = allComments.filter((c: any) => c.status === 'approved');
@@ -387,6 +408,7 @@ export default function Home() {
     fetchBanners();
     fetchComments();
     fetchRedaksi();
+    fetchCommentedArticles();
     fetchArticlesRealtime();
 
     return () => {
@@ -404,7 +426,9 @@ export default function Home() {
     VIDEO_ARTICLES,
     REKOMENDASI_ARTICLES,
     POPULER_ARTICLES,
-    REDAKSI_ARTICLES
+    REDAKSI_ARTICLES,
+    MOST_COMMENTED_ARTICLES,
+    EXTRA_ARTICLES
   } = useMemo(() => {
     const allMapped = rawArticles.map(mapArticle);
     const breaking = rawArticles.filter(a => a.isBreakingNews).map(mapArticle);
@@ -417,6 +441,7 @@ export default function Home() {
     const related = mainFeed.slice(6, 8);
     const list = mainFeed.slice(8, 13);
     const latest = mainFeed.slice(13, 28);
+    const extra = mainFeed.slice(28, 38);
     
     // Video Articles: Diambil dari artikel yang memiliki video
     const filteredVideos = allMapped.filter(a => a.videoUrl);
@@ -444,6 +469,41 @@ export default function Home() {
       }
     });
     const redaksiArticles = Array.from(combinedRedaksiMap.values());
+
+    // 5 Artikel dengan Komentar Terbanyak (Hanya yang memiliki komentar > 0)
+    const commentCountMap: Record<string, number> = {};
+    (allApprovedComments || []).forEach((c: any) => {
+      const key = c.articleSlug || c.articleId;
+      if (key) {
+        commentCountMap[key] = (commentCountMap[key] || 0) + 1;
+      }
+    });
+
+    // Gabungkan artikel dari query komentar dan feed utama
+    const articlePoolMap = new Map();
+    [...dbCommentedArticles, ...allMapped].forEach(item => {
+      if (item && item.id && !articlePoolMap.has(item.id)) {
+        articlePoolMap.set(item.id, item);
+      }
+    });
+
+    const articlesWithComments = Array.from(articlePoolMap.values()).map(item => {
+      const fromComments = Math.max(
+        commentCountMap[item.slug] || 0,
+        commentCountMap[item.id] || 0
+      );
+      const totalComments = Math.max(item.commentCount || 0, fromComments);
+      return {
+        ...item,
+        commentCount: totalComments,
+      };
+    });
+
+    // Filter HANYA artikel yang benar-benar memiliki komentar (> 0)
+    const mostCommentedArticles = articlesWithComments
+      .filter(item => (item.commentCount || 0) > 0)
+      .sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0))
+      .slice(0, 5);
     
     return {
       BERITA_TERKINI: terkini || [],
@@ -455,9 +515,11 @@ export default function Home() {
       VIDEO_ARTICLES: videoArticles || [],
       REKOMENDASI_ARTICLES: rekomendasiArticles || [],
       POPULER_ARTICLES: populerArticles || [],
-      REDAKSI_ARTICLES: redaksiArticles || []
+      REDAKSI_ARTICLES: redaksiArticles || [],
+      MOST_COMMENTED_ARTICLES: mostCommentedArticles || [],
+      EXTRA_ARTICLES: extra || []
     };
-  }, [rawArticles, dbRedaksiArticles]);
+  }, [rawArticles, dbRedaksiArticles, dbCommentedArticles, allApprovedComments]);
 
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -569,21 +631,23 @@ export default function Home() {
       color: isDarkMode ? '#f1f5f9' : '#0f172a',
     },
     tabBarBg: {
-      backgroundColor: isDarkMode ? colors.card : '#1b61d1',
-      borderBottomColor: isDarkMode ? colors.border : '#1550ac',
+      backgroundColor: isDarkMode ? colors.card : '#f1f5f9',
+      borderBottomColor: isDarkMode ? colors.border : '#e2e8f0',
     },
     tabBarItemActive: {
-      backgroundColor: isDarkMode ? '#2563eb' : '#ffffff',
+      backgroundColor: 'transparent',
+      borderBottomColor: isDarkMode ? '#60a5fa' : '#1b61d1',
     },
     tabBarItemInactive: {
-      backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.18)',
+      backgroundColor: 'transparent',
+      borderBottomColor: 'transparent',
     },
     tabTextActive: {
-      color: isDarkMode ? '#ffffff' : '#1b61d1',
+      color: isDarkMode ? '#60a5fa' : '#1b61d1',
       fontWeight: '800' as const,
     },
     tabTextInactive: {
-      color: isDarkMode ? '#94a3b8' : 'rgba(255,255,255,0.92)',
+      color: isDarkMode ? '#94a3b8' : '#64748b',
       fontWeight: '600' as const,
     },
   };
@@ -617,12 +681,13 @@ export default function Home() {
             <Ionicons name="search-outline" size={22} color={dyn.iconColor} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/profile')}>
-            <Ionicons name="person-outline" size={20} color={dyn.iconColor} />
+            <Ionicons name="person-circle-outline" size={38} color={dyn.iconColor} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* NAVIGASI TAB UTAMA (Pengganti Menu Kategori Atas) */}
+
+      {/* NAVIGASI TAB UTAMA */}
       <View style={[styles.tabBarContainer, dyn.tabBarBg]}>
         <ScrollView 
           ref={tabBarScrollRef}
@@ -720,23 +785,15 @@ export default function Home() {
 
         {/* HEADER BANNER */}
         {headerBanners.length > 0 && (
-          <View style={{ marginBottom: 16 }}>
-            {headerBanners.map((b, index) => {
-              // Calculate a simple parallax translation for the banner
-              // The banner is near the top (offset maybe ~100-200), so we just map scrollY
-              const translateY = scrollY.interpolate({
-                inputRange: [-100, 0, 400],
-                outputRange: [-20, 0, 80],
-                extrapolate: 'clamp',
-              });
-              
-              return (
-                <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: index === headerBanners.length - 1 ? 0 : 10, overflow: 'hidden', backgroundColor: '#e2e8f0' }}>
-                  <Animated.Image source={{ uri: b.imageUrl }} style={{ width: '100%', aspectRatio: 4 / 3, transform: [{ translateY }, { scale: 1.2 }] }} resizeMode="cover" />
-                  <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>SPONSOR</Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={{ paddingHorizontal: 16, marginTop: 10, marginBottom: 16 }}>
+            {headerBanners.map((b, index) => (
+              <DynamicSponsorBanner
+                key={b.id || `header-banner-${index}`}
+                banner={b}
+                badgeText="SPONSOR"
+                containerStyle={{ marginBottom: index === headerBanners.length - 1 ? 0 : 12 }}
+              />
+            ))}
           </View>
         )}
 
@@ -829,11 +886,13 @@ export default function Home() {
         {/* FEED BANNER (Diterjemahkan dari Sidebar Web) */}
         {feedBanners.length > 0 && (
           <View style={{ paddingHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
-            {feedBanners.map(b => (
-              <TouchableOpacity key={b.id} onPress={() => b.targetUrl && Linking.openURL(b.targetUrl)} activeOpacity={0.9} style={{ marginBottom: 10 }}>
-                <Image source={{ uri: b.imageUrl }} style={{ width: '100%', height: 90, borderRadius: 8, backgroundColor: '#e2e8f0' }} resizeMode="cover" />
-                <Text style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 9, paddingHorizontal: 4, borderRadius: 4 }}>IKLAN SPONSOR</Text>
-              </TouchableOpacity>
+            {feedBanners.map((b, index) => (
+              <DynamicSponsorBanner
+                key={b.id || `feed-banner-${index}`}
+                banner={b}
+                badgeText="IKLAN SPONSOR"
+                containerStyle={{ marginBottom: index === feedBanners.length - 1 ? 0 : 12 }}
+              />
             ))}
           </View>
         )}
@@ -861,7 +920,7 @@ export default function Home() {
                     <Image source={{ uri: item.image }} style={styles.mixedCardFirstImage} />
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={styles.mixedListItem} activeOpacity={0.7}>
+                  <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} key={`latest-${item.id}`} style={[styles.mixedListItem, index === LATEST_NEWS.length - 1 && { marginBottom: 4 }]} activeOpacity={0.7}>
                     <Image source={{ uri: item.image }} style={styles.mixedListImage} />
                     <View style={styles.mixedListText}>
                       <Text style={[styles.mixedListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
@@ -951,8 +1010,99 @@ export default function Home() {
           })}
         </View>
 
-            <View style={{ height: 160 }} />
-          </Animated.ScrollView>
+        {/* SECTION KOMENTAR TERBANYAK (5 ARTIKEL DENGAN KOMENTAR TERBANYAK) */}
+        {MOST_COMMENTED_ARTICLES && MOST_COMMENTED_ARTICLES.length > 0 && (
+          <View style={styles.mostCommentedSection}>
+            <View style={styles.mostCommentedHeaderRow}>
+              <View style={styles.mostCommentedTitleWrap}>
+                <View style={styles.mostCommentedIconBadge}>
+                  <Ionicons name="chatbubbles" size={15} color="#ffffff" />
+                </View>
+                <View>
+                  <Text style={[styles.mostCommentedTitle, dyn.textMain]}>Komentar Terbanyak</Text>
+                  <Text style={[styles.mostCommentedSub, dyn.textMuted]}>Topik diskusi terhangat pembaca</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                onPress={() => handleTabChange('komentar')} 
+                style={[styles.mostCommentedTabLink, dyn.videoMoreBtn]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.mostCommentedTabLinkText, dyn.videoMoreTxt]}>Semua</Text>
+                <Ionicons name="chevron-forward" size={12} color={dyn.videoMoreTxt.color} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.mostCommentedCardGroup, dyn.card]}>
+              {MOST_COMMENTED_ARTICLES.map((item: any, idx: number) => {
+                const isLast = idx === MOST_COMMENTED_ARTICLES.length - 1;
+                return (
+                  <TouchableOpacity
+                    key={`most-comment-${item.id || idx}`}
+                    style={[
+                      styles.mostCommentedRow,
+                      !isLast && { borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#334155' : '#f1f5f9' }
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                  >
+                    {/* Kiri: Jumlah Komentar */}
+                    <View style={styles.mostCommentedPill}>
+                      <Ionicons name="chatbubble-ellipses" size={18} color="#7c3aed" />
+                      <Text style={styles.mostCommentedPillText}>
+                        {item.commentCount || 0}
+                      </Text>
+                    </View>
+
+                    {/* Kanan: Judul Artikel */}
+                    <Text style={[styles.mostCommentedCardTitle, dyn.textMain]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* SECTION BERITA LAINNYA (10 ARTIKEL TAMBAHAN) */}
+        {EXTRA_ARTICLES && EXTRA_ARTICLES.length > 0 && (
+          <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+            <View style={[styles.bottomSectionHeader, { paddingHorizontal: 0, marginTop: 0, marginBottom: 14 }]}>
+              <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Lainnya</Text>
+            </View>
+            <View>
+              {EXTRA_ARTICLES.map((item: any, idx: number) => {
+                const isLast = idx === EXTRA_ARTICLES.length - 1;
+                return (
+                  <TouchableOpacity
+                    key={`extra-news-${item.id || idx}`}
+                    style={[styles.mixedListItem, isLast && { marginBottom: 0 }]}
+                    activeOpacity={0.7}
+                    onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                  >
+                    <Image source={{ uri: item.image }} style={styles.mixedListImage} />
+                    <View style={styles.mixedListText}>
+                      <Text style={[styles.mixedListTitle, dyn.textMain]} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#1b61d1' }}>
+                          {item.category?.toUpperCase() || 'BERITA'}
+                        </Text>
+                        <Text style={[styles.videoCardDot, dyn.textMuted]}>•</Text>
+                        <Text style={styles.mixedListDate}>{item.date}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        <View style={{ height: 160 }} />
+      </Animated.ScrollView>
         </View>
 
         {/* TAB 2: REKOMENDASI */}
@@ -1302,9 +1452,10 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   logoText: {
-    fontSize: 26,
-    fontWeight: '900', // Tambah tebal agar seimbang dengan ukuran baru
+    fontSize: 30,
+    fontWeight: '900',
     color: '#000',
+    letterSpacing: -0.5,
   },
   logoTextOrange: {
     color: '#1b61d1',
@@ -1567,7 +1718,7 @@ const styles = StyleSheet.create({
   mixedListContainer: {
     paddingHorizontal: 16,
     marginTop: 24,
-    paddingBottom: 20,
+    paddingBottom: 0,
   },
   mixedCardFirst: {
     flexDirection: 'row',
@@ -1777,23 +1928,24 @@ const styles = StyleSheet.create({
   },
   // TAB BAR NAVIGATION
   tabBarContainer: {
-    paddingVertical: 10,
+    paddingTop: 4,
+    paddingBottom: 0,
     borderBottomWidth: 1,
   },
   tabBarScroll: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 12,
     alignItems: 'center',
   },
   tabBarItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 2.5,
   },
   tabBarText: {
-    fontSize: 13,
+    fontSize: 13.5,
     letterSpacing: 0.1,
   },
   // TAB CONTENT COMMON
@@ -2081,5 +2233,94 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
+  },
+  // MOST COMMENTED SECTION
+  mostCommentedSection: {
+    paddingHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 10,
+  },
+  mostCommentedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  mostCommentedTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  mostCommentedIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#7c3aed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  mostCommentedTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  mostCommentedSub: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  mostCommentedTabLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 2,
+  },
+  mostCommentedTabLinkText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  mostCommentedCardGroup: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  mostCommentedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  mostCommentedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 6,
+    flexShrink: 0,
+  },
+  mostCommentedPillText: {
+    color: '#7c3aed',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  mostCommentedCardTitle: {
+    flex: 1,
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 19,
   }
 });

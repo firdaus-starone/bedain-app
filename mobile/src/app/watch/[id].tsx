@@ -9,6 +9,7 @@ import { db } from '../../lib/firebase';
 import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
@@ -133,7 +134,7 @@ export default function VideoDetail() {
           setArticle(articleData);
           
           // Fetch Comments
-          const slug = articleData.slug || articleData.id;
+          const slug = (articleData as any).slug || articleData.id;
           const qComments = query(
             collection(db, 'comments'),
             where('articleSlug', '==', slug),
@@ -500,7 +501,7 @@ export default function VideoDetail() {
                   }
                   
                   let pCount = 0;
-                  const newHtml = cleanHtml.replace(/<\/p>/g, (match) => {
+                  const newHtml = cleanHtml.replace(/<\/p>/g, (match: string) => {
                     pCount++;
                     let injected = match;
                     
@@ -686,21 +687,10 @@ export default function VideoDetail() {
                   // Pilih banner kedua jika ada, jika tidak pakai yang pertama
                   const banner = articleBanners.length > 1 ? articleBanners[1] : articleBanners[0];
                   return (
-                    <TouchableOpacity 
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        if (banner.targetUrl) {
-                          Linking.openURL(banner.targetUrl).catch(e => console.log('Error opening link:', e));
-                        }
-                      }}
-                    >
-                      <Image 
-                        source={{ uri: banner.imageUrl }} 
-                        style={{ width: '100%', height: Math.min(width * 0.4, 200), backgroundColor: '#e2e8f0', borderRadius: 8 }} 
-                        resizeMode="cover"
-                      />
-                      <Text style={{ fontSize: 10, color: '#94a3b8', marginTop: 8, textAlign: 'center' }}>IKLAN SPONSOR</Text>
-                    </TouchableOpacity>
+                    <DynamicSponsorBanner
+                      banner={banner}
+                      badgeText="IKLAN SPONSOR"
+                    />
                   );
                 })()}
               </View>

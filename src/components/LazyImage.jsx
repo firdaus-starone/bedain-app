@@ -71,7 +71,7 @@ const LazyImage = ({ src, alt, className = '', style = {}, onClick, fetchPriorit
               opacity: 0.45
             }}>
               <img 
-                src="/logo.png" 
+                src="/logo.webp" 
                 alt="watermark" 
                 style={{ width: '30%', minWidth: '40px', maxWidth: '70px', objectFit: 'contain' }} 
               />

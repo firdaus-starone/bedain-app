@@ -44,6 +44,9 @@ export const metadata = {
       '/splash.png',
     ],
   },
+  other: {
+    'google-adsense-account': 'ca-pub-0471041173994802',
+  },
 };
 
 export const viewport = {
@@ -57,6 +60,7 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={locale}>
       <head>
+        <meta name="google-adsense-account" content="ca-pub-0471041173994802" />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-1YDVGEPDH6"
           strategy="lazyOnload"

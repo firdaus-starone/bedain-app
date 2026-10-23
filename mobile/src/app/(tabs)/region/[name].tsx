@@ -68,7 +68,7 @@ export default function RegionPage() {
           snap = await getDocs(qFallback);
           
           const allData = snap.docs.map(doc => mapArticleData(doc));
-          const filtered = allData.filter(a => 
+          const filtered = allData.filter((a: any) => 
             a.location?.toLowerCase() === rName.toLowerCase() || 
             a.lokasi?.toLowerCase() === rName.toLowerCase() ||
             a.region?.toLowerCase() === rName.toLowerCase()

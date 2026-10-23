@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { permanentRedirect } from 'next/navigation';
+import { permanentRedirect, notFound } from 'next/navigation';
 import YouTubeWatchClient from '../../../components/YouTubeWatchClient';
 
 const getArticleBySlug = cache(async (slug) => {
@@ -55,7 +55,11 @@ export async function generateMetadata({ params }) {
   if (!article) {
     return {
       title: 'Video Tidak Ditemukan - Bedain News',
-      description: 'Video yang Anda cari tidak ditemukan.'
+      description: 'Video yang Anda cari tidak ditemukan.',
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -130,6 +134,10 @@ export default async function WatchPage({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const article = await getArticleBySlug(slug);
+
+  if (!article) {
+    notFound();
+  }
 
   if (article && !slug.startsWith('yt-') && article.category !== 'Video' && !article.videoUrl && !article.youtubeUrl) {
     permanentRedirect(`/article/${slug}`);

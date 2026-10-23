@@ -106,8 +106,8 @@ export default function AdminArticles() {
     <View style={[styles.articleCard, dyn.card]}>
       <View style={styles.cardContent}>
         <View style={styles.imageContainer}>
-          {item.thumbnailUrl ? (
-            <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} />
+          {item.coverImage || item.imageUrl || item.thumbnailUrl ? (
+            <Image source={{ uri: item.coverImage || item.imageUrl || item.thumbnailUrl }} style={styles.thumbnail} />
           ) : (
             <View style={[styles.thumbnailPlaceholder, { backgroundColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
               <Ionicons name="image-outline" size={24} color={dyn.textMuted.color} />

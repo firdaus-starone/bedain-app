@@ -397,25 +397,49 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
   useEffect(() => {
     if (!article?.category) return;
-    const cacheKey = `bedain_related_${article.category}`;
+    const cacheKey = `bedain_related_v2_${article.category}_${article.id || ''}`;
     try {
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
-        setRelatedArticles(JSON.parse(cached));
-        return;
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length >= 6) {
+          setRelatedArticles(parsed);
+          return;
+        }
       }
     } catch(e) {}
 
     const fetchRelated = async () => {
       try {
-        const q = query(collection(db, 'articles'), where('category', '==', article.category), limit(6));
+        const q = query(collection(db, 'articles'), where('category', '==', article.category), limit(10));
         const snap = await getDocs(q);
         const now = new Date();
         let related = snap.docs.map(d => ({ id: d.id, ...d.data() }))
           .filter(a => a.id !== article.id && a.title !== article.title)
-          .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
+          .filter(a => { 
+            if (a.status === 'draft') return false;
+            const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); 
+            return p <= now; 
+          });
         
-        const finalRelated = related.slice(0, 6);
+        let finalRelated = related.slice(0, 6);
+
+        // Jika artikel dalam kategori yang sama kurang dari 6, lengkapi dengan artikel terbaru agar selalu penuh 6 kartu
+        if (finalRelated.length < 6) {
+          try {
+            const fallbackQ = query(collection(db, 'articles'), limit(10));
+            const fallbackSnap = await getDocs(fallbackQ);
+            const fallbackArticles = fallbackSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+              .filter(a => a.id !== article.id && a.title !== article.title && !finalRelated.some(r => r.id === a.id))
+              .filter(a => { 
+                if (a.status === 'draft') return false;
+                const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); 
+                return p <= now; 
+              });
+            finalRelated = [...finalRelated, ...fallbackArticles].slice(0, 6);
+          } catch(err) {}
+        }
+
         setRelatedArticles(finalRelated);
         try { sessionStorage.setItem(cacheKey, JSON.stringify(finalRelated)); } catch(e) {}
       } catch (e) {

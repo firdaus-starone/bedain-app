@@ -154,8 +154,8 @@ export default function NativeAdminDashboard() {
           <Ionicons name="chevron-forward" size={20} color={dyn.textMuted.color} />
         </TouchableOpacity>
 
-        {/* Hanya admin dan superadmin yang bisa melihat Moderasi dan Pengguna */}
-        {(userRole === 'admin' || userRole === 'superadmin') && (
+        {/* Hanya admin dan superadmin yang bisa melihat Moderasi dan Pengguna (dibuka di DEV untuk pengujian) */}
+        {(userRole === 'admin' || userRole === 'superadmin' || __DEV__) && (
           <>
             <TouchableOpacity style={[styles.menuItem, dyn.card]} onPress={() => router.push('/admin/comments')} activeOpacity={0.7}>
           <View style={[styles.menuIconWrapper, { backgroundColor: '#f59e0b' }]}>

@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { useTheme } from '../context/ThemeContext';
 
-WebBrowser.maybeCompleteAuthSession();
+// Safely require GoogleSignin to avoid crashing in Expo Go where native bridge is not available
+let GoogleSignin: any = null;
+let statusCodes: any = null;
+try {
+  const gModule = require('@react-native-google-signin/google-signin');
+  GoogleSignin = gModule.GoogleSignin;
+  statusCodes = gModule.statusCodes;
+} catch (e) {
+  // Running in Expo Go or native module not linked
+}
 
-GoogleSignin.configure({
-  webClientId: '649905383675-hkik1akqmv10g3shuikdagfrt90si53e.apps.googleusercontent.com', // Web Client ID
-});
+try {
+  WebBrowser.maybeCompleteAuthSession();
+} catch (e) {}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -24,6 +32,18 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (GoogleSignin && typeof GoogleSignin.configure === 'function') {
+        GoogleSignin.configure({
+          webClientId: '649905383675-hkik1akqmv10g3shuikdagfrt90si53e.apps.googleusercontent.com',
+        });
+      }
+    } catch (e) {
+      console.log('GoogleSignin tidak aktif di lingkungan saat ini:', e);
+    }
+  }, []);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -64,11 +84,19 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
     try {
+      if (!GoogleSignin || typeof GoogleSignin.hasPlayServices !== 'function') {
+        Alert.alert(
+          'Mode Expo Go',
+          'Login Google memerlukan Google Play Services native dan sertifikat SHA-1 (tersedia di build APK mandiri). Di Expo Go, silakan gunakan Login Email & Password.'
+        );
+        return;
+      }
+
+      setLoading(true);
       await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      const idToken = userInfo.idToken || userInfo.data?.idToken; // handle both v10 and v11+ of the library
+      const userInfo: any = await GoogleSignin.signIn();
+      const idToken = userInfo?.idToken || userInfo?.data?.idToken;
       
       if (!idToken) {
         throw new Error("No ID Token found");
@@ -89,15 +117,15 @@ export default function LoginScreen() {
       }
       router.back();
     } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+      if (statusCodes && error.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled the login flow
-      } else if (error.code === statusCodes.IN_PROGRESS) {
+      } else if (statusCodes && error.code === statusCodes.IN_PROGRESS) {
         // operation (e.g. sign in) is in progress already
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      } else if (statusCodes && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert('Gagal', 'Layanan Google Play tidak tersedia.');
       } else {
         console.error(error);
-        Alert.alert('Gagal', 'Terjadi kesalahan saat masuk dengan Google.');
+        Alert.alert('Gagal', error?.message || 'Terjadi kesalahan saat masuk dengan Google.');
       }
     } finally {
       setLoading(false);
@@ -112,7 +140,8 @@ export default function LoginScreen() {
       backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc',
       color: isDarkMode ? '#f8fafc' : '#0f172a',
       borderColor: isDarkMode ? '#334155' : '#e2e8f0'
-    }
+    },
+    borderColor: isDarkMode ? '#334155' : '#e2e8f0'
   };
 
   return (

@@ -19,11 +19,7 @@ export default async function sitemap() {
               { fieldPath: 'videoUrl' },
               { fieldPath: 'youtubeUrl' }
             ]
-          },
-          // You can add a where clause if you only want published articles
-          // where: {
-          //   fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'published' } }
-          // }
+          }
         }
       }),
       next: { revalidate: 3600 } 
@@ -31,15 +27,31 @@ export default async function sitemap() {
     
     if (res.ok) {
       const data = await res.json();
+      const seenSlugs = new Set();
+
       articles = data
         .filter(item => item.document && item.document.fields && item.document.fields.slug)
         .map(item => {
           const fields = item.document.fields;
           const status = fields.status?.stringValue;
-          if (status === 'draft') return null;
           
-          const slug = fields.slug.stringValue;
-          // Fallback to current time if no date field is found
+          // Abaikan draft, arsip, atau sampah
+          if (status === 'draft' || status === 'archived' || status === 'trash' || status === 'deleted') {
+            return null;
+          }
+          
+          const rawSlug = fields.slug?.stringValue;
+          if (!rawSlug || typeof rawSlug !== 'string' || !rawSlug.trim()) {
+            return null;
+          }
+          const slug = rawSlug.trim();
+
+          // Hindari duplikasi URL di sitemap
+          if (seenSlugs.has(slug)) {
+            return null;
+          }
+          seenSlugs.add(slug);
+          
           let date = new Date().toISOString();
           if (fields.publishedAt && fields.publishedAt.timestampValue) {
             date = fields.publishedAt.timestampValue;
@@ -49,13 +61,13 @@ export default async function sitemap() {
           
           if (status === 'scheduled') {
             const pubTime = new Date(date).getTime();
-            if (pubTime > new Date().getTime()) return null;
+            if (pubTime > Date.now()) return null;
           }
 
           const category = fields.category?.stringValue;
           const videoUrl = fields.videoUrl?.stringValue;
           const youtubeUrl = fields.youtubeUrl?.stringValue;
-          const isVideo = category === 'Video' || !!videoUrl || !!youtubeUrl || (slug && slug.startsWith('yt-'));
+          const isVideo = category === 'Video' || !!videoUrl || !!youtubeUrl || slug.startsWith('yt-');
 
           return { slug, date, isVideo };
         })
@@ -77,10 +89,22 @@ export default async function sitemap() {
       url: baseUrl,
       lastModified: new Date().toISOString(),
       changeFrequency: 'daily',
-      priority: 1,
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/video`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'daily',
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/kirim-tulisan`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/kontak`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'monthly',
       priority: 0.5,

@@ -44,11 +44,16 @@ export async function GET() {
           if (pubTime > new Date().getTime()) return;
         }
 
+        const videoUrl = fields.videoUrl?.stringValue;
+        const youtubeUrl = fields.youtubeUrl?.stringValue;
+        const isVideo = category === 'Video' || !!videoUrl || !!youtubeUrl || (slug && slug.startsWith('yt-'));
+        const itemUrl = `${siteUrl}/${isVideo ? 'watch' : 'article'}/${slug}`;
+
         rssItems += `
     <item>
       <title><![CDATA[${title}]]></title>
-      <link>${siteUrl}/article/${slug}</link>
-      <guid isPermaLink="true">${siteUrl}/article/${slug}</guid>
+      <link>${itemUrl}</link>
+      <guid isPermaLink="true">${itemUrl}</guid>
       <pubDate>${new Date(publishedAt).toUTCString()}</pubDate>
       <description><![CDATA[${excerpt}]]></description>
       <category><![CDATA[${category}]]></category>
