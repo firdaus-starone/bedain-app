@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getYouTubeId, getArticleCardImage, getArticleVideoData } from '../lib/videoHelpers';
 
@@ -57,8 +57,8 @@ const VideoSection = () => {
 
     if (fetchVideosPromise) {
       fetchVideosPromise.then((videos) => {
-        if (isMounted && videos) {
-          setVideoArticles(videos);
+        if (isMounted) {
+          setVideoArticles(videos || []);
           setLoading(false);
         }
       });
@@ -67,14 +67,27 @@ const VideoSection = () => {
 
     const promise = (async () => {
       try {
-        const q = query(
-          collection(db, 'articles'),
-          where('category', '==', 'Video'),
-          where('status', '==', 'published'),
-          orderBy('publishedAt', 'desc'),
-          limit(8)
-        );
-        const snap = await getDocs(q);
+        let snap;
+        try {
+          const q = query(
+            collection(db, 'articles'),
+            where('category', '==', 'Video'),
+            where('status', '==', 'published'),
+            orderBy('publishedAt', 'desc'),
+            limit(8)
+          );
+          snap = await getDocs(q);
+        } catch (idxErr) {
+          console.warn('Query category Video dengan orderBy gagal, menggunakan query umum:', idxErr);
+          const fallbackQ = query(
+            collection(db, 'articles'),
+            where('status', '==', 'published'),
+            orderBy('publishedAt', 'desc'),
+            limit(15)
+          );
+          snap = await getDocs(fallbackQ);
+        }
+
         const now = new Date();
         const articles = snap.docs.map(d => ({ id: d.id, ...d.data() }))
           .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
@@ -87,14 +100,14 @@ const VideoSection = () => {
         return videos;
       } catch (error) {
         console.error('Error fetching video articles:', error);
-        return null;
+        return [];
       }
     })();
 
     fetchVideosPromise = promise;
     promise.then((videos) => {
-      if (isMounted && videos) {
-        setVideoArticles(videos);
+      if (isMounted) {
+        setVideoArticles(videos || []);
         setLoading(false);
       }
       fetchVideosPromise = null;
