@@ -71,11 +71,18 @@ const AIAssistantModal = ({
   };
 
   const getCleanArticleText = () => {
-    const cleanContent = stripHtml(currentContent);
-    return `Judul Saat Ini: ${currentTitle || '(Belum ada judul)'}\nRingkasan Saat Ini: ${currentExcerpt || '(Belum ada ringkasan)'}\nIsi Berita:\n${cleanContent || '(Belum ada isi berita)'}`;
+    let cleanContent = stripHtml(currentContent);
+    // Bersihkan residu prompt sistem, header AI, atau catatan drafting jika teks editor sebelumnya sempat terkontaminasi
+    cleanContent = cleanContent
+      .replace(/Editor (?:Kepala|Senior) Jurnalistik[\s\S]*?(?=(?:[A-Z]{3,}\s*[-–—]|<p>|$))/gi, '')
+      .replace(/(?:Drafting|Correction\*|Tokoh\*|Peristiwa\*|Self-Correction)[\s\S]*?(?=(?:[A-Z]{3,}\s*[-–—]|<p>|$))/gi, '')
+      .replace(/\*\s*Bahasa Indonesia Baku\?[\s\S]*?(?=(?:[A-Z]{3,}\s*[-–—]|<p>|$))/gi, '')
+      .trim();
+
+    return `Judul Saat Ini: ${currentTitle || '(Belum ada judul)'}\nRingkasan Saat Ini: ${currentExcerpt || '(Belum ada ringkasan)'}\nIsi Berita Asli:\n${cleanContent || '(Belum ada isi berita)'}`;
   };
 
-  // Call Google Gemini API (gemini-1.5-flash)
+  // Call Google Gemini API
   const callGeminiAPI = async (promptText, targetTab = activeTab) => {
     setLoading(true);
     setError('');
@@ -103,19 +110,24 @@ const AIAssistantModal = ({
 
     try {
       const modelsToTry = [
-        'gemini-1.5-flash',
+        'gemini-flash-latest',
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-pro-latest',
         'gemini-2.0-flash',
+        'gemini-1.5-flash',
         'gemini-1.5-pro',
         'gemini-pro'
       ];
 
       const isJsonMode = targetTab === 'antiplagiat';
       const systemInstructionText = `Anda adalah Editor Kepala dan Jurnalis Senior Berita Nasional Indonesia di portal Bedain News (bedainnews.com).
-ATURAN MUTLAK & WAJIB:
-1. BAHASA: Seluruh respons WAJIB 100% menggunakan BAHASA INDONESIA BAKU yang kaya, lugas, elegan, dan profesional sesuai standar jurnalistik PUEBI/KBBI. DILARANG KERAS MENGGUNAKAN BAHASA INGGRIS ATAU BAHASA LAIN.
-2. BENTUK TULISAN: Hasilkan tulisan dalam bentuk ARTIKEL BERITA UTUH siap terbit (bukan outline atau poin-poin ringkasan mentah seperti "*Event:* ...", "*Key Person:* ..."). Susun dalam paragraf narasi berita yang mengalir dengan struktur piramida terbalik (Lead 5W+1H, tubuh berita detail dan kontekstual, kutipan narasumber, dan penutup).
-3. FORMAT PARAGRAF: Kembalikan teks dalam format paragraf HTML rapi menggunakan tag <p> dan </p>. Jangan gunakan markdown asterisks (* atau **) untuk penebalan di dalam paragraf, gunakan tag HTML seperti <strong> dan <em> jika perlu.
-4. JANGAN SERTAKAN PEMBUKA/PENUTUP BASA-BASI: Jangan tulis "Tentu, ini artikelnya...", langsung berikan hasil tulisan yang siap dipakai redaksi.`;
+ATURAN MUTLAK & TIDAK DAPAT DITAWAR:
+1. BAHASA: Seluruh respons WAJIB 100% menggunakan BAHASA INDONESIA BAKU yang kaya, lugas, elegan, dan profesional sesuai standar jurnalistik PUEBI/KBBI. DILARANG KERAS MENGGUNAKAN BAHASA INGGRIS ATAU CAMPURAN.
+2. DILARANG KERAS MENAMPILKAN PROSES BERPIKIR (CHAIN OF THOUGHT), DRAFTING/RANCANGAN PER PARAGRAF, SELF-CORRECTION, ANALISIS TOKOH/PERISTIWA, MAUPUN CHECKLIST EVALUASI (seperti "Drafting Paragraf...", "Correction*:", "* Bahasa Indonesia Baku? Ya").
+3. JANGAN PERNAH MENGULANG INSTRUKSI ATAU PROMPT DI DALAM RESPONS.
+4. BENTUK TULISAN: Hasilkan HANYA tulisan akhir berupa ARTIKEL BERITA UTUH NARATIF siap terbit dengan struktur Piramida Terbalik (Lead 5W+1H, tubuh berita detail dan kontekstual, kutipan narasumber, dan penutup).
+5. FORMAT OUTPUT: Bungkus seluruh hasil naskah artikel akhir di dalam tag <artikel>...</artikel>. Di dalam tag <artikel>, gunakan tag paragraf HTML rapi <p> dan </p>. Jangan letakkan teks atau catatan apapun di luar tag <artikel>.`;
 
       const requestPayload = {
         contents: [{ role: 'user', parts: [{ text: promptText }] }],
@@ -238,9 +250,46 @@ ATURAN MUTLAK & WAJIB:
     }
   };
 
+  const extractTitleAndBody = (htmlText) => {
+    let title = '';
+    let body = htmlText || '';
+    const titleMatch = body.match(/^(?:<p>)?<strong>(.*?)<\/strong>(?:<\/p>)?\s*/i);
+    if (titleMatch && titleMatch[1].length < 150) {
+      title = titleMatch[1].replace(/<[^>]+>/g, '').trim();
+      body = body.substring(titleMatch[0].length).trim();
+    }
+    return { title, body };
+  };
+
   const cleanArticleContent = (rawText) => {
     if (!rawText) return '';
-    let cleaned = rawText
+
+    // 1. Ekstrak tag pembungkus resmi <artikel>...</artikel> jika disediakan AI
+    const artikelMatch = rawText.match(/<artikel>([\s\S]*?)<\/artikel>/i);
+    let cleaned = artikelMatch ? artikelMatch[1] : rawText;
+
+    // 2. Jika model sempat mengeluarkan drafting/proses berpikir sebelum artikel
+    // Cari apakah ada dateline standar jurnalistik (cth: 'KUBU RAYA - ...' atau 'JAKARTA - ...')
+    const datelineRegex = /(?:<p>|\n\n|^)([A-Z\s]{3,25}\s*[-–—]\s*[A-Z][\s\S]*$)/;
+    const matchDateline = cleaned.match(datelineRegex);
+    if (matchDateline && (cleaned.includes('Drafting') || cleaned.includes('Correction*') || cleaned.includes('Editor Kepala') || cleaned.includes('Bahasa Indonesia Baku?'))) {
+      const beforeDateline = cleaned.substring(0, cleaned.indexOf(matchDateline[1])).trim();
+      const beforeLines = beforeDateline.split('\n').map(l => l.trim()).filter(Boolean);
+      const lastBeforeLine = beforeLines[beforeLines.length - 1];
+      
+      // Jika baris terakhir sebelum dateline adalah calon judul berita tebal
+      if (lastBeforeLine && !lastBeforeLine.includes('?') && !lastBeforeLine.includes('*') && !lastBeforeLine.toLowerCase().includes('correction') && lastBeforeLine.length > 15 && lastBeforeLine.length < 150) {
+        cleaned = `<p><strong>${lastBeforeLine}</strong></p>\n\n${matchDateline[1]}`;
+      } else {
+        cleaned = matchDateline[1];
+      }
+    }
+
+    // 3. Bersihkan sisa-sisa prompt sistem, self-correction, drafting, atau checklist jika masih ada
+    cleaned = cleaned
+      .replace(/^Editor (?:Kepala|Senior)[\s\S]*?(?=(?:<p>|[A-Z]{3,}\s*[-–—]|$))/gi, '')
+      .replace(/(?:Drafting|Correction\*|Tokoh\*|Peristiwa\*|Self-Correction)[\s\S]*?(?=(?:<p>|[A-Z]{3,}\s*[-–—]|$))/gi, '')
+      .replace(/\*+\s*Bahasa Indonesia[\s\S]*?(?=(?:<p>|[A-Z]{3,}\s*[-–—]|$))/gi, '')
       .replace(/\[Catatan.*?\]/gis, '')
       .replace(/\(Catatan.*?\)/gis, '')
       .replace(/^Tentu, berikut.*?:\n+/gis, '')
@@ -248,28 +297,22 @@ ATURAN MUTLAK & WAJIB:
       .replace(/^Berikut.*?:\n+/gis, '')
       .trim();
 
-    // Convert markdown bold **text** to <strong>text</strong>
+    // 4. Konversi markdown formatting ke HTML
     cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Convert markdown italic *text* (excluding bullet lists) to <em>text</em>
     cleaned = cleaned.replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3');
-
-    // Convert bullet lists like "* item" or "- item" to clean readable paragraph
     cleaned = cleaned.replace(/^[*\-]\s+(.*)$/gm, '<p>• $1</p>');
-
-    // Fix glued sentences where punctuation is immediately followed by a capital letter without space
     cleaned = cleaned.replace(/([a-z0-9])\.\s*([A-Z])/g, '$1. $2');
 
-    // If text already has <p> tags, clean and return
+    // Jika teks sudah terbungkus tag <p>, kembalikan langsung
     if (cleaned.includes('<p>')) {
       return cleaned;
     }
 
-    // Split by newlines (single or multiple) into distinct paragraphs
+    // Pisahkan baris menjadi paragraf HTML rapi
     const paragraphs = cleaned
       .split(/\n+/)
       .map(p => p.trim())
-      .filter(p => p.length > 0);
+      .filter(p => p.length > 0 && !p.startsWith('*') && !p.toLowerCase().startsWith('drafting') && !p.toLowerCase().startsWith('correction'));
 
     if (paragraphs.length > 0) {
       return paragraphs.map(p => `<p>${p}</p>`).join('');
@@ -395,7 +438,7 @@ ATURAN MUTLAK & WAJIB:
 1. WAJIB 100% BAHASA INDONESIA. DILARANG MENGGUNAKAN BAHASA INGGRIS.
 2. PERTAHANKAN SELURUH PANJANG DAN KELENGKAPAN INFORMASI BERITA (JANGAN DIRINGKAS ATAU DIPOTONG).
 3. Hasilkan tulisan dalam bentuk ARTIKEL BERITA UTUH NARATIF (bukan outline atau poin-poin mentah seperti "*Event:*").
-4. Tuliskan dalam format HTML menggunakan tag <p> dan </p> untuk setiap paragraf. Jangan sertakan teks catatan, komentar pendahuluan, atau penjelasan apapun di dalam respons.
+4. BUNGKUS SELURUH HASIL AKHIR HANYA DI DALAM TAG <artikel>...</artikel> DENGAN TAG PARAGRAF HTML <p> DAN </p>. DILARANG MENULISKAN DRAFTING, CATATAN, CHECKLIST, ATAU PENJELASAN DI LUAR TAG <artikel>.
 
 Bahan Berita Saat Ini:
 ${articleInfo}`;
@@ -439,7 +482,7 @@ ATURAN MUTLAK & WAJIB:
 1. WAJIB 100% BAHASA INDONESIA.
 2. ARTIKEL HARUS MENJADI LEBIH PANJANG DAN MENDALAM. JANGAN MERINGKAS ARTIKEL.
 3. Hasilkan dalam bentuk artikel narasi berita utuh dengan alur piramida terbalik yang mengalir.
-4. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF. Jangan sertakan catatan atau komentar pendahuluan AI:
+4. BUNGKUS SELURUH HASIL AKHIR HANYA DI DALAM TAG <artikel>...</artikel> DENGAN TAG PARAGRAF HTML <p> DAN </p>. DILARANG MENULISKAN DRAFTING, CATATAN, ATAU CHECKLIST DI LUAR TAG <artikel>.
 
 Bahan Berita Saat Ini:
 ${articleInfo}`;
@@ -450,7 +493,7 @@ ATURAN MUTLAK & WAJIB:
 1. WAJIB 100% BAHASA INDONESIA.
 2. TUGAS UTAMA: Jika terdapat kalimat atau paragraf yang terlalu panjang, PECAH dan susun ulang menjadi beberapa alinea baru yang ideal (30 hingga 50 kata per paragraf).
 3. PERTAHANKAN SELURUH DETAIL INFORMASI (JANGAN DIRINGKAS).
-4. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF. Jangan sertakan teks catatan atau pengantar AI:
+4. BUNGKUS SELURUH HASIL AKHIR HANYA DI DALAM TAG <artikel>...</artikel> DENGAN TAG PARAGRAF HTML <p> DAN </p>. DILARANG MENULISKAN DRAFTING, CATATAN, ATAU CHECKLIST DI LUAR TAG <artikel>.
 
 Bahan Berita Saat Ini:
 ${articleInfo}`;
@@ -459,8 +502,8 @@ ${articleInfo}`;
         prompt = `Bertindaklah sebagai Editor Berita Senior. Ringkas artikel berita yang bertele-tele berikut menjadi tulisan yang padat, lugas, ringkas, dan to the point tanpa menghilangkan substansi atau fakta utama (5W+1H).
 ATURAN MUTLAK & WAJIB:
 1. WAJIB 100% BAHASA INDONESIA.
-2. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF.
-3. Pastikan selalu ada spasi setelah tanda baca titik (.) atau koma (,). Jangan sertakan teks pengantar AI:
+2. BUNGKUS SELURUH HASIL AKHIR HANYA DI DALAM TAG <artikel>...</artikel> DENGAN TAG PARAGRAF HTML <p> DAN </p>.
+3. Pastikan selalu ada spasi setelah tanda baca titik (.) atau koma (,). DILARANG MENULISKAN DRAFTING ATAU CATATAN DI LUAR TAG <artikel>.
 
 Bahan Berita Saat Ini:
 ${articleInfo}`;
@@ -487,7 +530,7 @@ ATURAN MUTLAK & WAJIB:
 1. WAJIB 100% BAHASA INDONESIA BAKU & JURNALISTIK SESUAI PUEBI/KBBI. DILARANG KERAS MENGGUNAKAN BAHASA INGGRIS ATAU BAHASA LAIN.
 2. Hasilkan tulisan dalam bentuk ARTIKEL BERITA UTUH NARATIF yang rapi, padat, dan mengalir (BUKAN outline atau poin-poin mentah seperti "*Event:*", "*Key Person:*").
 3. JANGAN MEMANGKAS ATAU MERINGKAS ARTIKEL KECUALI DIMINTA DALAM INSTRUKSI. PERTAHANKAN SELURUH ISI DAN NAMA TOKOH/LOKASI.
-4. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF. Jangan sertakan catatan atau pengantar AI:
+4. BUNGKUS SELURUH HASIL AKHIR HANYA DI DALAM TAG <artikel>...</artikel> DENGAN TAG PARAGRAF HTML <p> DAN </p>. DILARANG MENAMPILKAN PROSES BERPIKIR, DRAFTING, CHECKLIST, ATAU CATATAN DI LUAR TAG <artikel>.
 
 Bahan Berita Saat Ini:
 ${articleInfo}`;
@@ -1188,7 +1231,11 @@ ${articleInfo}`;
               <button
                 onClick={() => {
                   const contentToApply = parsedAntiplagiat?.content || cleanArticleContent(result);
-                  if (onApplyContent) onApplyContent(contentToApply);
+                  const { title: detectedTitle, body: cleanBody } = extractTitleAndBody(contentToApply);
+                  if (detectedTitle && onApplyTitle && (!currentTitle || currentTitle.trim() === '')) {
+                    onApplyTitle(detectedTitle);
+                  }
+                  if (onApplyContent) onApplyContent(cleanBody || contentToApply);
                   setApplied('Konten Artikel (Bersih tanpa catatan AI)');
                   setTimeout(() => { if (onClose) onClose(); }, 800);
                 }}
