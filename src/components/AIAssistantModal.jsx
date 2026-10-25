@@ -103,23 +103,39 @@ const AIAssistantModal = ({
 
     try {
       const modelsToTry = [
-        'gemini-1.5-pro',
         'gemini-1.5-flash',
-        'gemini-2.0-flash-exp',
         'gemini-2.0-flash',
+        'gemini-1.5-pro',
         'gemini-pro'
       ];
 
-      const requestBody = JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+      const isJsonMode = targetTab === 'antiplagiat';
+      const systemInstructionText = `Anda adalah Editor Kepala dan Jurnalis Senior Berita Nasional Indonesia di portal Bedain News (bedainnews.com).
+ATURAN MUTLAK & WAJIB:
+1. BAHASA: Seluruh respons WAJIB 100% menggunakan BAHASA INDONESIA BAKU yang kaya, lugas, elegan, dan profesional sesuai standar jurnalistik PUEBI/KBBI. DILARANG KERAS MENGGUNAKAN BAHASA INGGRIS ATAU BAHASA LAIN.
+2. BENTUK TULISAN: Hasilkan tulisan dalam bentuk ARTIKEL BERITA UTUH siap terbit (bukan outline atau poin-poin ringkasan mentah seperti "*Event:* ...", "*Key Person:* ..."). Susun dalam paragraf narasi berita yang mengalir dengan struktur piramida terbalik (Lead 5W+1H, tubuh berita detail dan kontekstual, kutipan narasumber, dan penutup).
+3. FORMAT PARAGRAF: Kembalikan teks dalam format paragraf HTML rapi menggunakan tag <p> dan </p>. Jangan gunakan markdown asterisks (* atau **) untuk penebalan di dalam paragraf, gunakan tag HTML seperti <strong> dan <em> jika perlu.
+4. JANGAN SERTAKAN PEMBUKA/PENUTUP BASA-BASI: Jangan tulis "Tentu, ini artikelnya...", langsung berikan hasil tulisan yang siap dipakai redaksi.`;
+
+      const requestPayload = {
+        contents: [{ role: 'user', parts: [{ text: promptText }] }],
+        systemInstruction: {
+          parts: [{ text: systemInstructionText }]
+        },
+        generationConfig: { 
+          temperature: 0.7, 
+          maxOutputTokens: 8192,
+          ...(isJsonMode ? { responseMimeType: 'application/json' } : {})
+        },
         safetySettings: [
           { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
         ]
-      });
+      };
+
+      const requestBody = JSON.stringify(requestPayload);
 
       let response;
       let data;
@@ -229,9 +245,19 @@ const AIAssistantModal = ({
       .replace(/\(Catatan.*?\)/gis, '')
       .replace(/^Tentu, berikut.*?:\n+/gis, '')
       .replace(/^Berikut adalah.*?:\n+/gis, '')
+      .replace(/^Berikut.*?:\n+/gis, '')
       .trim();
 
-    // Fix glued sentences where punctuation is immediately followed by a capital letter without space (e.g., '.Pelimpahan' -> '. Pelimpahan')
+    // Convert markdown bold **text** to <strong>text</strong>
+    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert markdown italic *text* (excluding bullet lists) to <em>text</em>
+    cleaned = cleaned.replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, '$1<em>$2</em>$3');
+
+    // Convert bullet lists like "* item" or "- item" to clean readable paragraph
+    cleaned = cleaned.replace(/^[*\-]\s+(.*)$/gm, '<p>• $1</p>');
+
+    // Fix glued sentences where punctuation is immediately followed by a capital letter without space
     cleaned = cleaned.replace(/([a-z0-9])\.\s*([A-Z])/g, '$1. $2');
 
     // If text already has <p> tags, clean and return
@@ -281,12 +307,28 @@ const AIAssistantModal = ({
       setParsedSEO({ seoTitle: title, seoDescription: desc || text.substring(0, 160) });
     } else if (tab === 'antiplagiat') {
       try {
-        const jsonStr = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const data = JSON.parse(jsonStr);
-        setParsedAntiplagiat({ title: data.judul, excerpt: data.ringkasan, content: data.isi });
+        let clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const match = clean.match(/\{[\s\S]*\}/);
+        if (match) clean = match[0];
+        const data = JSON.parse(clean);
+        if (data.judul || data.isi) {
+          setParsedAntiplagiat({ 
+            title: data.judul || currentTitle, 
+            excerpt: data.ringkasan || data.excerpt || currentExcerpt, 
+            content: cleanArticleContent(data.isi || data.content || text) 
+          });
+          return;
+        }
       } catch (e) {
-        setResult(text);
+        console.warn('JSON parse antiplagiat gagal, menggunakan fallback artikel bersih:', e);
       }
+
+      // Fallback: If not JSON or failed parsing, populate parsedAntiplagiat with cleaned content so user still gets structured view & apply buttons
+      setParsedAntiplagiat({
+        title: currentTitle,
+        excerpt: currentExcerpt,
+        content: cleanArticleContent(text)
+      });
     }
   };
 
@@ -348,31 +390,107 @@ const AIAssistantModal = ({
     let prompt = '';
     switch (tabType) {
       case 'grammar':
-        prompt = `Bertindaklah sebagai Editor Kepala Jurnalistik Media Nasional Indonesia. Perbaiki tata bahasa, ejaan (PUEBI/KBBI), struktur kalimat, dan tanda baca dari teks berita berikut agar lugas, baku, tajam, dan profesional. ATURAN WAJIB:\n1. PERTAHANKAN SELURUH PANJANG DAN KELENGKAPAN INFORMASI BERITA (JANGAN DIRINGKAS ATAU DIPOTONG).\n2. TULISKAN HASILNYA DALAM FORMAT HTML DENGAN MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF.\n3. Jangan sertakan catatan, komentar pendahuluan, atau penjelasan apapun di dalam respons. Hanya kembalikan artikel hasil perbaikan dalam tag <p>:\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Editor Kepala Jurnalistik Media Nasional Indonesia di Bedain News. Perbaiki tata bahasa, ejaan (PUEBI/KBBI), struktur kalimat, dan tanda baca dari teks berita berikut agar lugas, baku, tajam, dan profesional.
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA. DILARANG MENGGUNAKAN BAHASA INGGRIS.
+2. PERTAHANKAN SELURUH PANJANG DAN KELENGKAPAN INFORMASI BERITA (JANGAN DIRINGKAS ATAU DIPOTONG).
+3. Hasilkan tulisan dalam bentuk ARTIKEL BERITA UTUH NARATIF (bukan outline atau poin-poin mentah seperti "*Event:*").
+4. Tuliskan dalam format HTML menggunakan tag <p> dan </p> untuk setiap paragraf. Jangan sertakan teks catatan, komentar pendahuluan, atau penjelasan apapun di dalam respons.
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'headlines':
-        prompt = `Bertindaklah sebagai Pakar SEO & Editor Berita Media Nasional. Berdasarkan berita berikut, buatkan 3 pilihan Judul Berita (Headline) yang sangat menarik, spesifik, akurat, dan mencerminkan inti atau fakta utama dari berita tersebut. HINDARI menggunakan template generik seperti "Fakta Lengkap:" atau "Analisis Mendalam:". Judul harus memicu rasa penasaran tanpa clickbait murahan, serta berpotensi tinggi masuk Google News & viral. Tuliskan HANYA dalam format daftar bernomor 1 sampai 3 tanpa penjelasan lain:\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Pakar SEO & Editor Berita Media Nasional. Berdasarkan berita berikut, buatkan 3 pilihan Judul Berita (Headline) yang sangat menarik, spesifik, akurat, dan mencerminkan inti fakta utama.
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA.
+2. HINDARI template generik seperti "Fakta Lengkap:" atau "Analisis Mendalam:".
+3. Judul harus memicu rasa penasaran tanpa clickbait murahan, serta berpotensi tinggi masuk Google News.
+4. Tuliskan HANYA dalam format daftar bernomor 1 sampai 3 tanpa penjelasan lain:
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'excerpt':
-        prompt = `Bertindaklah sebagai Editor Berita Senior. Buatkan ringkasan inti berita (lead / excerpt) sebanyak 2 kalimat (maksimal 30 kata) yang spesifik menyebutkan subjek/tokoh utama, fakta penting, dan memikat untuk dibaca. Hindari ringkasan yang terlalu generik:\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Editor Berita Senior. Buatkan ringkasan inti berita (lead / excerpt) sebanyak 2 kalimat (maksimal 30 kata) yang spesifik menyebutkan subjek/tokoh utama, fakta penting, dan memikat untuk dibaca.
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA.
+2. Berikan langsung teks ringkasannya tanpa basa-basi:
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'seo':
-        prompt = `Bertindaklah sebagai Pakar SEO Media Siber. Berdasarkan berita berikut, buatkan:\n1. SEO Title (Maksimal 60 karakter)\n2. SEO Description / Meta Description (Maksimal 155 karakter)\n\nTuliskan dengan format:\nSEO Title: [judul]\nSEO Description: [deskripsi]\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Pakar SEO Media Siber. Berdasarkan berita berikut, buatkan:
+1. SEO Title (Maksimal 60 karakter)
+2. SEO Description / Meta Description (Maksimal 155 karakter)
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA.
+2. Format persis:
+SEO Title: [judul]
+SEO Description: [deskripsi]
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'expand':
-        prompt = `Bertindaklah sebagai Jurnalis Senior. Kembangkan dan lengkapi narasi berita berikut agar lebih kaya informasi, mengalir rapi, dan komprehensif dengan menambahkan analisis konteks jurnalistik yang relevan. ATURAN WAJIB:\n1. ARTIKEL HARUS MENJADI LEBIH PANJANG DAN MENDALAM. JANGAN PERNAH MERINGKAS ARTIKEL.\n2. TULISKAN HASILNYA DALAM FORMAT HTML DENGAN MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF.\n3. Jangan sertakan catatan atau komentar pendahuluan AI, berikan langsung teks artikel hasil pengembangan dalam tag <p>:\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Jurnalis Senior Bedain News. Kembangkan dan lengkapi narasi berita berikut agar lebih kaya informasi, mengalir rapi, dan komprehensif dengan menambahkan analisis konteks jurnalistik yang relevan.
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA.
+2. ARTIKEL HARUS MENJADI LEBIH PANJANG DAN MENDALAM. JANGAN MERINGKAS ARTIKEL.
+3. Hasilkan dalam bentuk artikel narasi berita utuh dengan alur piramida terbalik yang mengalir.
+4. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF. Jangan sertakan catatan atau komentar pendahuluan AI:
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'rewrite':
-        prompt = `Bertindaklah sebagai Editor Jurnalistik Profesional. Perbaiki teks berita berikut sesuai aturan penulisan (PUEBI/KBBI) dan buat bahasanya menjadi lebih memikat dan menarik bagi pembaca. TUGAS UTAMA: Jika terdapat kalimat atau paragraf yang terlalu panjang, PECAH dan susun ulang menjadi beberapa paragraf (alinea) baru. Pastikan setiap paragraf berisi sekitar 30 hingga 50 kata agar sangat nyaman dibaca di layar HP.\n\nATURAN WAJIB:\n1. PERTAHANKAN SELURUH DETAIL INFORMASI (JANGAN DIRINGKAS, HANYA DIPERBAIKI DAN DIPANJANGKAN).\n2. TULISKAN HASILNYA DALAM FORMAT HTML DENGAN MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF.\n3. Jangan sertakan catatan, komentar pendahuluan, atau penjelasan apapun di dalam respons. Hanya kembalikan teks hasil perbaikan dalam tag <p>:\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Editor Jurnalistik Profesional. Perbaiki teks berita berikut sesuai aturan penulisan (PUEBI/KBBI) dan buat bahasanya menjadi lebih memikat dan nyaman dibaca di layar HP.
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA.
+2. TUGAS UTAMA: Jika terdapat kalimat atau paragraf yang terlalu panjang, PECAH dan susun ulang menjadi beberapa alinea baru yang ideal (30 hingga 50 kata per paragraf).
+3. PERTAHANKAN SELURUH DETAIL INFORMASI (JANGAN DIRINGKAS).
+4. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF. Jangan sertakan teks catatan atau pengantar AI:
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'summarize':
-        prompt = `Bertindaklah sebagai Editor Berita Senior. Ringkas artikel berita yang bertele-tele berikut menjadi tulisan yang padat, lugas, ringkas, dan to the point tanpa menghilangkan substansi atau fakta utama. Buang kalimat-kalimat pengulangan atau basa-basi yang tidak perlu. ATURAN WAJIB:\n1. TULISKAN HASILNYA DALAM FORMAT HTML DENGAN MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF.\n2. Pastikan selalu ada spasi setelah tanda baca titik (.) atau koma (,).\n3. Jangan sertakan catatan, komentar pendahuluan, atau penjelasan apapun di dalam respons. Hanya kembalikan artikel hasil ringkasan dalam tag <p>:\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Editor Berita Senior. Ringkas artikel berita yang bertele-tele berikut menjadi tulisan yang padat, lugas, ringkas, dan to the point tanpa menghilangkan substansi atau fakta utama (5W+1H).
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA.
+2. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF.
+3. Pastikan selalu ada spasi setelah tanda baca titik (.) atau koma (,). Jangan sertakan teks pengantar AI:
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'antiplagiat':
-        prompt = `Bertindaklah sebagai Editor Senior Jurnalistik Bedain News. Tulis ulang (parafrase) seluruh teks berita berikut secara menyeluruh agar 100% UNIK, BEBAS PLAGIASI, dan lolos uji orisinalitas di mesin pencari (SEO-friendly). Gunakan gaya bahasa jurnalistik modern yang khas Bedain News. ATURAN WAJIB:\n1. PERTAHANKAN SELURUH FAKTA DAN DATA (JANGAN MENGUBAH MAKNA ATAU MERINGKAS TERLALU PENDEK).\n2. ROMBAK TOTAL STRUKTUR KALIMAT DAN PEMILIHAN KATA.\n3. KEMBALIKAN DALAM FORMAT JSON VALID DENGAN STRUKTUR TEPAT SEPERTI INI: {"judul": "Judul Baru yang Menggugah (Maks 70 karakter)", "ringkasan": "Ringkasan padat dan jelas (Maksimal 2 kalimat)", "isi": "<p>paragraf pertama berita hasil parafrase...</p><p>paragraf kedua...</p>"}.\n4. Jangan sertakan markdown \`\`\`json, berikan teks JSON murni saja agar bisa langsung diproses sistem:\n\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Editor Senior Jurnalistik Bedain News. Tulis ulang (parafrase total) seluruh teks berita berikut secara menyeluruh agar 100% UNIK, BEBAS PLAGIASI, dan lolos uji orisinalitas di mesin pencari Google.
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA BAKU, JURNALISTIK, DAN LUGAS SESUAI PUEBI/KBBI. DILARANG KERAS MENGGUNAKAN BAHASA INGGRIS.
+2. JANGAN PERNAH membuat poin-poin outline atau daftar ringkasan seperti "*Event:*", "*Key Person:*", "*Details:*", dll. TULISKAN ARTIKEL BERITA NARATIF UTUH DENGAN STRUKTUR PIRAMIDA TERBALIK YANG MENGALIR.
+3. PERTAHANKAN SELURUH FAKTA, ANGKA, NAMA TOKOH, DAN LOKASI. Rombak total susunan kalimat dan kosakata agar unik.
+4. KEMBALIKAN DALAM FORMAT JSON VALID DENGAN STRUKTUR PERSIS:
+{
+  "judul": "Judul Baru yang Menggugah dan Akurat (Maks 70 karakter)",
+  "ringkasan": "Ringkasan lead berita baru 2 kalimat (Maks 150 karakter)",
+  "isi": "<p>paragraf pertama berita...</p><p>paragraf kedua...</p><p>paragraf ketiga...</p>"
+}
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       case 'custom':
-        prompt = `Bertindaklah sebagai Asisten AI Redaksi Berita Bedain News. Instruksi khusus dari Editor: "${effectiveCustomText}". ATURAN WAJIB:\n1. JANGAN MEMANGKAS ATAU MERINGKAS ARTIKEL KECUALI DIMINTA DALAM INSTRUKSI. PERTAHANKAN SELURUH ISI BERITA.\n2. TULISKAN HASILNYA DALAM FORMAT HTML DENGAN MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF.\n3. Jangan sertakan catatan AI di dalam respons, berikan langsung teks hasilnya dalam tag <p>:\n\nBahan berita saat ini:\n${articleInfo}`;
+        prompt = `Bertindaklah sebagai Asisten AI Redaksi Berita Bedain News. Instruksi khusus dari Editor: "${effectiveCustomText}".
+ATURAN MUTLAK & WAJIB:
+1. WAJIB 100% BAHASA INDONESIA BAKU & JURNALISTIK SESUAI PUEBI/KBBI. DILARANG KERAS MENGGUNAKAN BAHASA INGGRIS ATAU BAHASA LAIN.
+2. Hasilkan tulisan dalam bentuk ARTIKEL BERITA UTUH NARATIF yang rapi, padat, dan mengalir (BUKAN outline atau poin-poin mentah seperti "*Event:*", "*Key Person:*").
+3. JANGAN MEMANGKAS ATAU MERINGKAS ARTIKEL KECUALI DIMINTA DALAM INSTRUKSI. PERTAHANKAN SELURUH ISI DAN NAMA TOKOH/LOKASI.
+4. TULISKAN DALAM FORMAT HTML MENGGUNAKAN TAG <p> dan </p> UNTUK SETIAP PARAGRAF. Jangan sertakan catatan atau pengantar AI:
+
+Bahan Berita Saat Ini:
+${articleInfo}`;
         break;
       default:
         return;
@@ -846,34 +964,113 @@ const AIAssistantModal = ({
                 </div>
               ) : activeTab === 'antiplagiat' && parsedAntiplagiat ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Judul Baru */}
                   <div style={{ padding: '16px', background: 'var(--color-bg-primary)', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Judul Baru (Bebas Plagiasi)
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                        Judul Baru (Bebas Plagiasi)
+                      </span>
+                      {onApplyTitle && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onApplyTitle(parsedAntiplagiat.title);
+                            setApplied('Judul Baru');
+                          }}
+                          style={{
+                            background: 'rgba(230, 57, 70, 0.12)',
+                            color: 'var(--color-accent)',
+                            border: 'none',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Terapkan Judul Saja
+                        </button>
+                      )}
                     </div>
                     <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                       {parsedAntiplagiat.title}
                     </div>
                   </div>
+
+                  {/* Ringkasan Baru */}
                   <div style={{ padding: '16px', background: 'var(--color-bg-primary)', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Ringkasan Baru
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                        Ringkasan Baru (Lead)
+                      </span>
+                      {onApplyExcerpt && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onApplyExcerpt(parsedAntiplagiat.excerpt);
+                            setApplied('Ringkasan Baru');
+                          }}
+                          style={{
+                            background: 'rgba(230, 57, 70, 0.12)',
+                            color: 'var(--color-accent)',
+                            border: 'none',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Terapkan Ringkasan Saja
+                        </button>
+                      )}
                     </div>
                     <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
                       {parsedAntiplagiat.excerpt}
                     </div>
                   </div>
+
+                  {/* Isi Berita Baru */}
                   <div style={{ padding: '16px', background: 'var(--color-bg-primary)', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Isi Berita Baru
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                        Isi Berita Baru (Format Narasi Rapi)
+                      </span>
+                      {onApplyContent && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onApplyContent(parsedAntiplagiat.content);
+                            setApplied('Isi Berita Baru');
+                          }}
+                          style={{
+                            background: 'rgba(230, 57, 70, 0.12)',
+                            color: 'var(--color-accent)',
+                            border: 'none',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Terapkan Isi Berita Saja
+                        </button>
+                      )}
                     </div>
-                    <div className="ai-result-content ql-editor" dangerouslySetInnerHTML={{ __html: parsedAntiplagiat.content }} style={{ padding: 0, fontSize: '14.5px', color: 'var(--color-text-primary)', lineHeight: 1.8 }} />
+                    <div 
+                      className="ai-result-content ql-editor" 
+                      dangerouslySetInnerHTML={{ __html: parsedAntiplagiat.content }} 
+                      style={{ padding: 0, fontSize: '14.5px', color: 'var(--color-text-primary)', lineHeight: 1.8 }} 
+                    />
                   </div>
 
+                  {/* Tombol Utama Terapkan Semuanya */}
                   <button
                     onClick={() => {
-                      if (onApplyTitle) onApplyTitle(parsedAntiplagiat.title);
-                      if (onApplyExcerpt) onApplyExcerpt(parsedAntiplagiat.excerpt);
-                      if (onApplyContent) onApplyContent(parsedAntiplagiat.content);
+                      if (onApplyTitle && parsedAntiplagiat.title) onApplyTitle(parsedAntiplagiat.title);
+                      if (onApplyExcerpt && parsedAntiplagiat.excerpt) onApplyExcerpt(parsedAntiplagiat.excerpt);
+                      if (onApplyContent && parsedAntiplagiat.content) onApplyContent(parsedAntiplagiat.content);
                       setApplied('Judul, Ringkasan & Isi Artikel otomatis diperbarui!');
                       setTimeout(() => {
                         if (onClose) onClose();
@@ -895,7 +1092,7 @@ const AIAssistantModal = ({
                       boxShadow: '0 4px 14px rgba(230, 57, 70, 0.4)'
                     }}
                   >
-                    <Check size={18} /> Terapkan Semuanya Sekaligus
+                    <Check size={18} /> Terapkan Semuanya Sekaligus (Judul, Ringkasan & Isi)
                   </button>
                 </div>
               ) : (
@@ -921,12 +1118,13 @@ const AIAssistantModal = ({
                       .ai-result-content p:last-child {
                         margin-bottom: 0 !important;
                       }
+                      .ai-result-content strong {
+                        color: var(--color-text-primary);
+                      }
                     `}
                   </style>
                   <div dangerouslySetInnerHTML={{ 
-                    __html: (activeTab === 'grammar' || activeTab === 'expand' || activeTab === 'custom' || activeTab === 'rewrite' || activeTab === 'summarize')
-                      ? cleanArticleContent(result)
-                      : result.replace(/\n/g, '<br/>')
+                    __html: cleanArticleContent(result)
                   }} />
                 </div>
               )}
@@ -986,10 +1184,11 @@ const AIAssistantModal = ({
               </button>
             )}
 
-            {result && (activeTab === 'grammar' || activeTab === 'expand' || activeTab === 'custom' || activeTab === 'rewrite' || activeTab === 'summarize') && (
+            {result && activeTab !== 'headlines' && activeTab !== 'seo' && activeTab !== 'excerpt' && (
               <button
                 onClick={() => {
-                  if (onApplyContent) onApplyContent(cleanArticleContent(result));
+                  const contentToApply = parsedAntiplagiat?.content || cleanArticleContent(result);
+                  if (onApplyContent) onApplyContent(contentToApply);
                   setApplied('Konten Artikel (Bersih tanpa catatan AI)');
                   setTimeout(() => { if (onClose) onClose(); }, 800);
                 }}

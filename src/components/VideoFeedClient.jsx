@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, where, orderBy, getDocs, limit, updateDoc, doc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getArticleVideoData, getArticleCardImage } from '../lib/videoHelpers';
-import { X, Heart, MessageCircle, Share2, Bookmark, ArrowLeft } from 'lucide-react';
+import { X, Heart, MessageCircle, Share2, Bookmark, ArrowLeft, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import BottomNav from './BottomNav';
@@ -19,22 +19,54 @@ export default function VideoFeedClient() {
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        const q = query(
+        const now = new Date();
+
+        // 1. Ambil artikel dari kategori Video yang berstatus published (didukung index Firestore)
+        const qVideoCat = query(
+          collection(db, 'articles'),
+          where('category', '==', 'Video'),
+          where('status', '==', 'published'),
+          orderBy('publishedAt', 'desc'),
+          limit(50)
+        );
+
+        // 2. Ambil artikel terbaru umum jika ada artikel kategori lain yang menyematkan video
+        const qRecent = query(
           collection(db, 'articles'),
           orderBy('publishedAt', 'desc'),
-          limit(150) 
+          limit(50)
         );
-        const snap = await getDocs(q);
-        const now = new Date();
-        const articles = snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(a => {
-            const pDate = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt || Date.now());
-            return pDate <= now;
-          });
 
-        const videosOnly = articles.filter(a => a.status === 'published' && getArticleVideoData(a));
+        const [snapVideo, snapRecent] = await Promise.all([
+          getDocs(qVideoCat),
+          getDocs(qRecent)
+        ]);
+
+        const mergedMap = new Map();
+        snapVideo.docs.forEach(docSnap => {
+          mergedMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+        });
+        snapRecent.docs.forEach(docSnap => {
+          if (!mergedMap.has(docSnap.id)) {
+            mergedMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+          }
+        });
+
+        const articles = Array.from(mergedMap.values()).filter(a => {
+          if (a.status !== 'published') return false;
+          const pDate = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt || Date.now());
+          return pDate <= now;
+        });
+
+        const videosOnly = articles.filter(a => getArticleVideoData(a));
         
+        // Urutkan berdasarkan tanggal publikasi terbaru
+        videosOnly.sort((a, b) => {
+          const dateA = a.publishedAt?.toDate ? a.publishedAt.toDate().getTime() : new Date(a.publishedAt || a.createdAt || 0).getTime();
+          const dateB = b.publishedAt?.toDate ? b.publishedAt.toDate().getTime() : new Date(b.publishedAt || b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+
         // Load initial local reactions
         const initialReactions = {};
         videosOnly.forEach(a => {
@@ -128,9 +160,17 @@ export default function VideoFeedClient() {
 
   if (videos.length === 0) {
     return (
-      <div style={{ height: '100dvh', width: '100vw', background: '#000', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <h2 style={{ marginBottom: '20px' }}>Belum ada video saat ini.</h2>
-        <button onClick={() => router.push('/')} style={{ padding: '10px 20px', borderRadius: '20px', background: 'var(--color-accent)', color: '#fff', border: 'none', fontWeight: 600 }}>Kembali ke Beranda</button>
+      <div style={{ height: '100dvh', width: '100vw', background: '#0a0a0c', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(230, 32, 32, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+          <Play size={28} style={{ color: 'var(--color-accent)', marginLeft: '4px' }} />
+        </div>
+        <h2 style={{ marginBottom: '10px', fontSize: '1.25rem', fontWeight: 700 }}>Konten Video Sedang Disiapkan</h2>
+        <p style={{ color: 'rgba(255,255,255,0.6)', maxWidth: '380px', marginBottom: '24px', fontSize: '14px', lineHeight: 1.6 }}>
+          Redaksi Bedain News sedang memproduksi liputan video terkini. Silakan jelajahi berita terbaru di portal utama.
+        </p>
+        <button onClick={() => router.push('/')} style={{ padding: '12px 28px', borderRadius: '24px', background: 'var(--color-accent)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '14px', cursor: 'pointer', transition: 'transform 0.2s' }}>
+          Jelajahi Berita Utama
+        </button>
       </div>
     );
   }

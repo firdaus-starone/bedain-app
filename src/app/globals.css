@@ -4188,15 +4188,24 @@ body {
 }
 .modern-article-layout .ql-editor p {
   color: var(--color-text-primary) !important;
-  font-size: 0.95rem !important;
+  font-size: var(--article-font-size, 1.05rem) !important;
   margin-bottom: 1.6rem !important;
   line-height: 1.85 !important;
+  transition: font-size 0.25s ease !important;
+}
+.modern-article-layout .article-block p,
+.modern-article-layout .article-block span,
+.modern-article-layout .article-block li,
+.modern-article-layout .article-block div {
+  font-size: var(--article-font-size, 1.05rem) !important;
+  transition: font-size 0.25s ease !important;
 }
 .modern-article-layout .ql-editor > p:first-of-type,
 .modern-article-layout .article-block:first-of-type > p:first-of-type {
   color: var(--color-text-primary) !important;
-  font-size: 1.05rem !important;
+  font-size: calc(var(--article-font-size, 1.05rem) * 1.08) !important;
   line-height: 1.9 !important;
+  transition: font-size 0.25s ease !important;
 }
 .modern-article-layout .ql-editor > p:first-of-type:first-letter,
 .modern-article-layout

@@ -219,11 +219,15 @@ const AdminDashboard = () => {
       const data = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
       
       const getSortTimestamp = (item) => {
-        const ts = item.createdAt || item.updatedAt || item.publishedAt;
+        const ts = item.publishedAt || item.createdAt || item.date || item.updatedAt;
         if (ts && typeof ts.toMillis === 'function') return ts.toMillis();
         if (ts && ts.seconds) return ts.seconds * 1000;
-        if (item.publishedAt && typeof item.publishedAt.toMillis === 'function') return item.publishedAt.toMillis();
-        if (item.publishedAt && item.publishedAt.seconds) return item.publishedAt.seconds * 1000;
+        if (item.createdAt && typeof item.createdAt.toMillis === 'function') return item.createdAt.toMillis();
+        if (item.createdAt && item.createdAt.seconds) return item.createdAt.seconds * 1000;
+        if (item.scheduledAt) {
+          const parsed = Date.parse(item.scheduledAt);
+          if (!isNaN(parsed)) return parsed;
+        }
         if (item.date) {
           const parsed = Date.parse(item.date);
           if (!isNaN(parsed)) return parsed;

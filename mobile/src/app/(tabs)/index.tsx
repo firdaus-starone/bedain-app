@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ImageBackground, StatusBar, Platform, FlatList, Dimensions, RefreshControl, Linking, Animated, ToastAndroid, Easing, useWindowDimensions } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -182,6 +183,7 @@ export default function Home() {
     logoUrl: '',
   });
   const [rawArticles, setRawArticles] = useState<any[]>([]);
+  const [extraVisibleCount, setExtraVisibleCount] = useState(15);
   const [hotTopics, setHotTopics] = useState<string[]>(HOT_TOPICS);
   const [refreshing, setRefreshing] = useState(false);
   const [banners, setBanners] = useState<any[]>([]);
@@ -262,6 +264,7 @@ export default function Home() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setExtraVisibleCount(15);
     try {
       const docRef = doc(db, 'settings', 'site');
       const snap = await getDoc(docRef);
@@ -319,7 +322,7 @@ export default function Home() {
         const q = query(
           collection(db, 'articles'), 
           orderBy('publishedAt', 'desc'), 
-          limit(60)
+          limit(100)
         );
         unsubscribeArticles = onSnapshot(q, (snapshot) => {
           const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -441,7 +444,7 @@ export default function Home() {
     const related = mainFeed.slice(6, 8);
     const list = mainFeed.slice(8, 13);
     const latest = mainFeed.slice(13, 28);
-    const extra = mainFeed.slice(28, 38);
+    const extra = mainFeed.slice(28);
     
     // Video Articles: Diambil dari artikel yang memiliki video
     const filteredVideos = allMapped.filter(a => a.videoUrl);
@@ -1065,15 +1068,20 @@ export default function Home() {
           </View>
         )}
 
-        {/* SECTION BERITA LAINNYA (10 ARTIKEL TAMBAHAN) */}
+        {/* SECTION BERITA LAINNYA (PROGRESSIVE LOAD DENGAN EXPO-IMAGE AGAR TETAP RINGAN) */}
         {EXTRA_ARTICLES && EXTRA_ARTICLES.length > 0 && (
           <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
             <View style={[styles.bottomSectionHeader, { paddingHorizontal: 0, marginTop: 0, marginBottom: 14 }]}>
-              <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Lainnya</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Lainnya</Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                  {Math.min(extraVisibleCount, EXTRA_ARTICLES.length)} dari {EXTRA_ARTICLES.length} berita
+                </Text>
+              </View>
             </View>
             <View>
-              {EXTRA_ARTICLES.map((item: any, idx: number) => {
-                const isLast = idx === EXTRA_ARTICLES.length - 1;
+              {EXTRA_ARTICLES.slice(0, extraVisibleCount).map((item: any, idx: number) => {
+                const isLast = idx === Math.min(extraVisibleCount, EXTRA_ARTICLES.length) - 1;
                 return (
                   <TouchableOpacity
                     key={`extra-news-${item.id || idx}`}
@@ -1081,7 +1089,13 @@ export default function Home() {
                     activeOpacity={0.7}
                     onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
                   >
-                    <Image source={{ uri: item.image }} style={styles.mixedListImage} />
+                    <ExpoImage 
+                      source={{ uri: item.image }} 
+                      style={styles.mixedListImage} 
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                    />
                     <View style={styles.mixedListText}>
                       <Text style={[styles.mixedListTitle, dyn.textMain]} numberOfLines={2}>
                         {item.title}
@@ -1098,6 +1112,39 @@ export default function Home() {
                 );
               })}
             </View>
+
+            {/* Tombol Muat Lebih Banyak Berita */}
+            {extraVisibleCount < EXTRA_ARTICLES.length ? (
+              <TouchableOpacity
+                style={{
+                  marginTop: 14,
+                  marginBottom: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9',
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+                activeOpacity={0.75}
+                onPress={() => setExtraVisibleCount(prev => prev + 15)}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: isDarkMode ? '#60a5fa' : '#1b61d1' }}>
+                  Muat Lebih Banyak Berita (+15)
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={isDarkMode ? '#60a5fa' : '#1b61d1'} />
+              </TouchableOpacity>
+            ) : (
+              <View style={{ marginTop: 16, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 12, color: isDarkMode ? '#64748b' : '#94a3b8' }}>
+                  Semua berita terbaru sudah ditampilkan
+                </Text>
+              </View>
+            )}
           </View>
         )}
 

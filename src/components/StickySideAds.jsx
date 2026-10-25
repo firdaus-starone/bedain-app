@@ -126,7 +126,7 @@ const StickySideAds = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
 
-  if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/video') || pathname.startsWith('/watch')) return null;
   if (loading) return null;
 
   const showLeft = settings?.stickyAdLeftStatus === 'aktif' && !closedLeft;

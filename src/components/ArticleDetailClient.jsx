@@ -93,6 +93,12 @@ const ArticleDetail = ({ initialArticle = null }) => {
   useEffect(() => {
     setIsClient(true);
     window.scrollTo(0, 0);
+    try {
+      const saved = localStorage.getItem('bedain_font_size');
+      if (saved && ['normal', 'large', 'xlarge'].includes(saved)) {
+        setFontSize(saved);
+      }
+    } catch (e) {}
 
     const now = new Date();
     const isSched = initialArticle?.status === 'scheduled';
@@ -585,9 +591,13 @@ const ArticleDetail = ({ initialArticle = null }) => {
   };
 
   const toggleFontSize = () => {
-    if (fontSize === 'normal') setFontSize('large');
-    else if (fontSize === 'large') setFontSize('xlarge');
-    else setFontSize('normal');
+    setFontSize(prev => {
+      const next = prev === 'normal' ? 'large' : prev === 'large' ? 'xlarge' : 'normal';
+      try {
+        localStorage.setItem('bedain_font_size', next);
+      } catch (e) {}
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -860,9 +870,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
   };
 
   const getFontSizeValue = () => {
-    if (fontSize === 'large') return '1.2rem';
-    if (fontSize === 'xlarge') return '1.35rem';
-    return '1.08rem';
+    if (fontSize === 'large') return '1.22rem';
+    if (fontSize === 'xlarge') return '1.38rem';
+    return '1.05rem';
   };
 
   const formatDate = (val) => {
@@ -1292,8 +1302,29 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     {copied ? <Check size={18} /> : <Link2 size={18} />}
                   </button>
-                  <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
+                  <button 
+                    className="share-icon-btn font-size-toggle-btn" 
+                    onClick={toggleFontSize} 
+                    title={`Ukuran Font: ${fontSize === 'normal' ? 'Normal (Klik untuk Memperbesar)' : fontSize === 'large' ? 'Besar (+)' : 'Sangat Besar (++)'}`} 
+                    style={{ 
+                      background: fontSize !== 'normal' ? 'rgba(230, 32, 32, 0.12)' : 'transparent', 
+                      border: fontSize !== 'normal' ? '1px solid var(--color-accent)' : 'none', 
+                      color: fontSize !== 'normal' ? 'var(--color-accent)' : 'var(--color-text-primary)', 
+                      cursor: 'pointer', 
+                      padding: '8px 12px', 
+                      borderRadius: '8px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '5px',
+                      justifyContent: 'center', 
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
+                      marginLeft: 'auto' 
+                    }}
+                  >
                     <Type size={18} />
+                    <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px' }}>
+                      {fontSize === 'normal' ? 'A' : fontSize === 'large' ? 'A+' : 'A++'}
+                    </span>
                   </button>
                 </div>
 
@@ -1387,8 +1418,29 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     {copied ? <Check size={18} /> : <Link2 size={18} />}
                   </button>
-                  <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
+                  <button 
+                    className="share-icon-btn font-size-toggle-btn" 
+                    onClick={toggleFontSize} 
+                    title={`Ukuran Font: ${fontSize === 'normal' ? 'Normal (Klik untuk Memperbesar)' : fontSize === 'large' ? 'Besar (+)' : 'Sangat Besar (++)'}`} 
+                    style={{ 
+                      background: fontSize !== 'normal' ? 'rgba(230, 32, 32, 0.12)' : 'transparent', 
+                      border: fontSize !== 'normal' ? '1px solid var(--color-accent)' : 'none', 
+                      color: fontSize !== 'normal' ? 'var(--color-accent)' : 'var(--color-text-primary)', 
+                      cursor: 'pointer', 
+                      padding: '8px 12px', 
+                      borderRadius: '8px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '5px',
+                      justifyContent: 'center', 
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
+                      marginLeft: 'auto' 
+                    }}
+                  >
                     <Type size={18} />
+                    <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px' }}>
+                      {fontSize === 'normal' ? 'A' : fontSize === 'large' ? 'A+' : 'A++'}
+                    </span>
                   </button>
                 </div>
 
@@ -1448,9 +1500,30 @@ const ArticleDetail = ({ initialArticle = null }) => {
                    <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                      {copied ? <Check size={18} /> : <Link2 size={18} />}
                    </button>
-                   <button className="share-icon-btn" onClick={toggleFontSize} title="Ukuran Font" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginLeft: 'auto' }}>
-                     <Type size={18} />
-                   </button>
+                    <button 
+                      className="share-icon-btn font-size-toggle-btn" 
+                      onClick={toggleFontSize} 
+                      title={`Ukuran Font: ${fontSize === 'normal' ? 'Normal (Klik untuk Memperbesar)' : fontSize === 'large' ? 'Besar (+)' : 'Sangat Besar (++)'}`} 
+                      style={{ 
+                        background: fontSize !== 'normal' ? 'rgba(230, 32, 32, 0.12)' : 'transparent', 
+                        border: fontSize !== 'normal' ? '1px solid var(--color-accent)' : 'none', 
+                        color: fontSize !== 'normal' ? 'var(--color-accent)' : 'var(--color-text-primary)', 
+                        cursor: 'pointer', 
+                        padding: '8px 12px', 
+                        borderRadius: '8px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '5px',
+                        justifyContent: 'center', 
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
+                        marginLeft: 'auto' 
+                      }}
+                    >
+                      <Type size={18} />
+                      <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px' }}>
+                        {fontSize === 'normal' ? 'A' : fontSize === 'large' ? 'A+' : 'A++'}
+                      </span>
+                    </button>
                  </div>
               </>
             )}
@@ -1704,11 +1777,12 @@ const ArticleDetail = ({ initialArticle = null }) => {
             <div
               className="article-content modern-content ql-editor"
               style={{
+                '--article-font-size': getFontSizeValue(),
                 fontSize: getFontSizeValue(),
                 lineHeight: 1.85,
                 color: 'var(--color-text-primary)',
                 padding: 0,
-                transition: 'font-size 0.3s ease',
+                transition: 'font-size 0.25s ease',
                 fontFamily: 'Inter, system-ui, sans-serif',
                 wordBreak: 'normal',
                 overflowWrap: 'break-word',
@@ -1736,7 +1810,15 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 
                 return (
                   <React.Fragment key={index}>
-                    <div className="article-block" dangerouslySetInnerHTML={{ __html: replaceBWithLogo(block) }} />
+                    <div 
+                      className="article-block" 
+                      style={{
+                        '--article-font-size': getFontSizeValue(),
+                        fontSize: getFontSizeValue(),
+                        transition: 'font-size 0.25s ease'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: replaceBWithLogo(block) }} 
+                    />
                     
                     {/* Inject Baca Juga (Interactive Card) */}
                     {isRelatedInsertPos && relatedArticles.length > 0 && (

@@ -315,11 +315,16 @@ export default function ArticleDetail() {
         <View style={{ paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 120 : 130, paddingBottom: 16 }}>
           <Text style={[styles.title, dyn.textMain]}>{article.title}</Text>
           <View style={[styles.metaRow, { marginBottom: 0 }]}>
-            <View style={styles.authorContainer}>
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[styles.authorName, dyn.textMain]}>{article.contributorName || article.author?.name || 'Redaksi'}</Text>
-                  <View style={styles.categoryBadge}>
+            <View style={[styles.authorContainer, { flex: 1 }]}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                  <Text 
+                    style={[styles.authorName, dyn.textMain, { flexShrink: 1 }]}
+                    numberOfLines={2}
+                  >
+                    {article.contributorName || article.author?.name || 'Redaksi'}
+                  </Text>
+                  <View style={[styles.categoryBadge, { flexShrink: 0, marginTop: 1 }]}>
                     <Text style={styles.categoryText}>{article.category?.toUpperCase() || 'BERITA'}</Text>
                   </View>
                 </View>
@@ -532,7 +537,7 @@ export default function ArticleDetail() {
             {/* Nama Kontributor / Penulis di Akhir Artikel */}
             <View style={{ marginTop: 24, paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="pencil" size={16} color={isDarkMode ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+              <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#475569', flex: 1, lineHeight: 18 }}>
                 <Text style={{ fontWeight: '700', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Kontributor: </Text>
                 {article.contributorName || article.author?.name || 'Redaksi'}
               </Text>
@@ -950,6 +955,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#334155',
+    lineHeight: 21,
   },
   date: {
     fontSize: 13,

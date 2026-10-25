@@ -67,18 +67,19 @@ const VideoSection = () => {
 
     const promise = (async () => {
       try {
-        // Mode hemat kuota: Pangkas dari limit 50 menjadi limit 15
         const q = query(
           collection(db, 'articles'),
+          where('category', '==', 'Video'),
+          where('status', '==', 'published'),
           orderBy('publishedAt', 'desc'),
-          limit(15)
+          limit(8)
         );
         const snap = await getDocs(q);
         const now = new Date();
         const articles = snap.docs.map(d => ({ id: d.id, ...d.data() }))
           .filter(a => { const p = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(a.publishedAt||Date.now()); return p <= now; });
         const videos = articles
-          .filter(a => a.status === 'published' && getArticleVideoData(a))
+          .filter(a => getArticleVideoData(a))
           .slice(0, 4);
         
         cachedVideosMemory = videos;

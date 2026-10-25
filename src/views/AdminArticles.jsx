@@ -52,11 +52,15 @@ const AdminArticles = () => {
       const data = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 
       const getSortTimestamp = (item) => {
-        const ts = item.createdAt || item.updatedAt || item.publishedAt;
+        const ts = item.publishedAt || item.createdAt || item.date || item.updatedAt;
         if (ts && typeof ts.toMillis === 'function') return ts.toMillis();
         if (ts && ts.seconds) return ts.seconds * 1000;
-        if (item.publishedAt && typeof item.publishedAt.toMillis === 'function') return item.publishedAt.toMillis();
-        if (item.publishedAt && item.publishedAt.seconds) return item.publishedAt.seconds * 1000;
+        if (item.createdAt && typeof item.createdAt.toMillis === 'function') return item.createdAt.toMillis();
+        if (item.createdAt && item.createdAt.seconds) return item.createdAt.seconds * 1000;
+        if (item.scheduledAt) {
+          const parsed = Date.parse(item.scheduledAt);
+          if (!isNaN(parsed)) return parsed;
+        }
         if (item.date) {
           const parsed = Date.parse(item.date);
           if (!isNaN(parsed)) return parsed;
@@ -103,11 +107,15 @@ const AdminArticles = () => {
     }
 
     const getSortTimestamp = (item) => {
-      const ts = item.createdAt || item.updatedAt || item.publishedAt;
+      const ts = item.publishedAt || item.createdAt || item.date || item.updatedAt;
       if (ts && typeof ts.toMillis === 'function') return ts.toMillis();
       if (ts && ts.seconds) return ts.seconds * 1000;
-      if (item.publishedAt && typeof item.publishedAt.toMillis === 'function') return item.publishedAt.toMillis();
-      if (item.publishedAt && item.publishedAt.seconds) return item.publishedAt.seconds * 1000;
+      if (item.createdAt && typeof item.createdAt.toMillis === 'function') return item.createdAt.toMillis();
+      if (item.createdAt && item.createdAt.seconds) return item.createdAt.seconds * 1000;
+      if (item.scheduledAt) {
+        const parsed = Date.parse(item.scheduledAt);
+        if (!isNaN(parsed)) return parsed;
+      }
       if (item.date) {
         const parsed = Date.parse(item.date);
         if (!isNaN(parsed)) return parsed;
@@ -182,10 +190,79 @@ const AdminArticles = () => {
     if (window.confirm(`Langsung tayangkan berita "${article.title}" ke publik sekarang?`)) {
       try {
         const articleRef = doc(db, 'articles', article.id);
-        await updateDoc(articleRef, {
+        const now = new Date();
+
+        const parseToDate = (val) => {
+          if (!val) return null;
+          if (typeof val.toDate === 'function') return val.toDate();
+          if (val.seconds) return new Date(val.seconds * 1000);
+          if (typeof val === 'number') return new Date(val);
+          if (typeof val === 'string') {
+            let s = val.trim();
+            if (!s) return null;
+            if (s.includes('T') && !s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) {
+              s += '+07:00';
+            }
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) return d;
+          }
+          return null;
+        };
+
+        let finalPublishedAt = null;
+
+        // Jika statusnya terjadwal:
+        if (article.status === 'scheduled') {
+          const schedDate = parseToDate(article.publishedAt) || parseToDate(article.scheduledAt);
+          if (schedDate && schedDate.getTime() <= now.getTime()) {
+            // Jadwal masa lalu: pertahankan waktu jadwal aslinya
+            finalPublishedAt = article.publishedAt && typeof article.publishedAt.toDate === 'function'
+              ? article.publishedAt
+              : Timestamp.fromDate(schedDate);
+          } else {
+            // Jadwal masa depan: karena admin memilih tayangkan sekarang, buat tayang detik ini
+            finalPublishedAt = Timestamp.now();
+          }
+        } else {
+          // Status draf atau status lainnya:
+          // Cari tanggal asli saat artikel dibuat atau disimpan di masa lalu
+          const candidates = [
+            article.publishedAt,
+            article.createdAt,
+            article.scheduledAt,
+            article.date
+          ];
+
+          for (const candidate of candidates) {
+            const d = parseToDate(candidate);
+            if (d && !isNaN(d.getTime()) && d.getTime() <= now.getTime()) {
+              if (candidate && typeof candidate.toDate === 'function') {
+                finalPublishedAt = candidate;
+              } else {
+                finalPublishedAt = Timestamp.fromDate(d);
+              }
+              break;
+            }
+          }
+
+          // Fallback jika sama sekali tidak ada tanggal di masa lalu
+          if (!finalPublishedAt) {
+            finalPublishedAt = Timestamp.now();
+          }
+        }
+
+        const updatePayload = {
           status: 'published',
-          publishedAt: Timestamp.now()
-        });
+          publishedAt: finalPublishedAt,
+          scheduledAt: null
+        };
+
+        // Kunci juga createdAt ke tanggal asli jika belum ada
+        if (!article.createdAt) {
+          updatePayload.createdAt = finalPublishedAt;
+        }
+
+        await updateDoc(articleRef, updatePayload);
         
         // Auto-post to Facebook HANYA jika belum pernah dibagikan/dijadwalkan sebelumnya
         if (!article.facebookPostId && article.autoShareFacebook !== false) {
@@ -495,10 +572,15 @@ const AdminArticles = () => {
                         <td style={{ padding: '16px 20px', color: 'var(--admin-text-secondary)', fontSize: '13px' }}>
                           {(() => {
                             let dateObj = null;
-                            const ts = article.createdAt || article.publishedAt || article.updatedAt;
+                            const ts = article.publishedAt || article.createdAt || article.updatedAt;
                             if (ts && typeof ts.toDate === 'function') dateObj = ts.toDate();
                             else if (ts && typeof ts === 'number') dateObj = new Date(ts);
                             else if (ts && ts.seconds) dateObj = new Date(ts.seconds * 1000);
+                            else if (article.scheduledAt) {
+                              let s = String(article.scheduledAt).trim();
+                              if (!s.includes('Z') && !s.includes('+') && !s.includes('-', 10)) s += '+07:00';
+                              dateObj = new Date(s);
+                            }
                             else if (article.date) dateObj = new Date(article.date);
                             
                             if (!dateObj || isNaN(dateObj.getTime())) return 'Hari ini';
