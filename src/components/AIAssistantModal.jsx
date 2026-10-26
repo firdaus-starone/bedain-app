@@ -24,7 +24,7 @@ const AIAssistantModal = ({
   const [apiKey, setApiKey] = useState('');
   const [savingKey, setSavingKey] = useState(false);
   const [showKeyInput, setShowKeyInput] = useState(false);
-  const [activeTab, setActiveTab] = useState('grammar'); // grammar, headlines, excerpt, seo, expand, custom
+  const [activeTab, setActiveTab] = useState(null); // antiplagiat, grammar, rewrite, headlines, excerpt, seo, expand, summarize, custom
   const [customPrompt, setCustomPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
@@ -109,13 +109,10 @@ const AIAssistantModal = ({
     }
 
     try {
+      // Prioritaskan gemini-1.5-flash sebagai model resmi super cepat & stabil
       const modelsToTry = [
-        'gemini-flash-latest',
-        'gemini-3.8-flash',
-        'gemini-3.5-flash',
-        'gemini-pro-latest',
-        'gemini-2.0-flash',
         'gemini-1.5-flash',
+        'gemini-2.0-flash',
         'gemini-1.5-pro',
         'gemini-pro'
       ];
@@ -153,30 +150,39 @@ ATURAN MUTLAK & TIDAK DAPAT DITAWAR:
       let data;
       let success = false;
 
-      // 1. Coba daftar model standar terlebih dahulu
+      // 1. Coba daftar model standar terlebih dahulu dengan timeout 20 detik & fast-fail
       for (const modelName of modelsToTry) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
         try {
           response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveKey}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: requestBody
+              body: requestBody,
+              signal: controller.signal
             }
           );
+          clearTimeout(timeoutId);
           data = await response.json();
           if (response.ok && !data.error && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
             success = true;
             break;
+          } else if (response.status === 400 || response.status === 401 || response.status === 403) {
+            // Langsung hentikan loop jika API Key salah atau dilarang (hindari buang waktu retry berkali-kali)
+            console.warn(`AIAssistantModal: Fatal error ${response.status} dari model ${modelName}:`, data.error);
+            break;
           }
         } catch (e) {
+          clearTimeout(timeoutId);
           console.warn(`AIAssistantModal model ${modelName} gagal dipanggil:`, e);
         }
       }
 
-      // 2. Jika semua model standar gagal, lakukan auto-discovery model loop
-      if (!success) {
-        console.log('Model standar gagal/tidak tersedia di AIAssistantModal, mencoba auto-discovery model...');
+      // 2. Jika semua model standar gagal (misal karena list model khusus) dan terjadi 404, lakukan auto-discovery model loop
+      if (!success && response && response.status === 404) {
+        console.log('Model standar tidak ditemukan (404) di AIAssistantModal, mencoba auto-discovery model...');
         try {
           const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${effectiveKey}`);
           const listData = await listResponse.json();
@@ -186,11 +192,10 @@ ATURAN MUTLAK & TIDAK DAPAT DITAWAR:
               .filter(m => !m.name.includes('vision') && !m.name.includes('embedding') && !m.name.includes('aqa'))
               .sort((a, b) => {
                 const score = (name) => {
-                  if (name.includes('1.5-pro')) return 10;
-                  if (name.includes('1.5-flash')) return 9;
-                  if (name.includes('2.0-flash')) return 8;
+                  if (name.includes('1.5-flash')) return 10;
+                  if (name.includes('2.0-flash')) return 9;
+                  if (name.includes('1.5-pro')) return 8;
                   if (name.includes('gemini-pro')) return 7;
-                  if (name.includes('2.5')) return 1;
                   return 5;
                 };
                 return score(b.name) - score(a.name);
