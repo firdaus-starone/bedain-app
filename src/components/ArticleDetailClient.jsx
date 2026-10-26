@@ -13,6 +13,8 @@ import VideoBadge from './VideoBadge';
 import AdUnit from './AdUnit';
 import AdBanner from './AdBanner';
 import DonationBox from './DonationBox';
+import ArticleKeyPoints from './ArticleKeyPoints';
+import ArticlePoll from './ArticlePoll';
 
 import Navbar from './Navbar';
 import BreakingNews from './BreakingNews';
@@ -1774,6 +1776,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
               </div>
             )}
 
+            {/* Poin Penting / TL;DR (3 Detik Paham) */}
+            <ArticleKeyPoints article={article} />
+
             {/* Rich Content Text */}
             <div
               className="article-content modern-content ql-editor"
@@ -1894,6 +1899,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 ))}
               </div>
             )}
+
+            {/* Polling Cepat Isu Hangat Komunitas */}
+            <ArticlePoll article={article} />
 
             {/* Kotak Donasi / Traktir Kopi Redaksi (Saweria & Trakteer) */}
             <DonationBox />
