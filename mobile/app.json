@@ -40,7 +40,19 @@
         }
       ],
       "expo-web-browser",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraGradleProperties": {
+              "org.gradle.jvmargs": "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+              "android.lint.checkReleaseBuilds": "false",
+              "android.lint.abortOnError": "false"
+            }
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
