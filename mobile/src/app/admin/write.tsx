@@ -27,8 +27,8 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, auth, storage } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
+import { uploadArticleCover } from '../../lib/uploadImage';
 import { useTheme } from '../../context/ThemeContext';
 import { useRouter } from 'expo-router';
 
@@ -276,20 +276,15 @@ export default function AdminWriteArticle() {
         user?.email?.split('@')[0] ||
         'Tim Redaksi';
 
-      // 1. Upload Cover Image if selected
+      // 1. Upload Cover Image with Automatic Watermark
       let uploadedImageUrl = '';
       if (imageUri) {
-        setSavingStage('Mengunggah foto sampul ke server...');
+        setSavingStage('Memproses kompresi & watermark foto...');
         try {
-          const response = await fetch(imageUri);
-          const blob = await response.blob();
-          const filename = `articles/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-          const imageRef = ref(storage, filename);
-          await uploadBytes(imageRef, blob);
-          uploadedImageUrl = await getDownloadURL(imageRef);
+          uploadedImageUrl = await uploadArticleCover(imageUri);
         } catch (uploadError) {
           console.error('Gagal upload gambar:', uploadError);
-          Alert.alert('Peringatan Foto', 'Gagal mengunggah foto sampul. Berita akan tetap disimpan tanpa foto atau Anda bisa mencoba lagi.');
+          Alert.alert('Peringatan Foto', 'Gagal memproses foto sampul. Berita akan tetap disimpan tanpa foto atau Anda bisa mencoba lagi.');
         }
       }
 

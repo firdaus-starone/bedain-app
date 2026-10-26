@@ -9,7 +9,7 @@ import { getGeminiApiKey, saveGeminiApiKey } from '../lib/geminiSecrets';
 import {
   LayoutDashboard, PenTool, Globe, LogOut, Users, Image as ImageIcon,
   Settings, Save, RefreshCw, UploadCloud, Check, AlertCircle, FileText,
-  Sparkles, Key, Eye, EyeOff, ExternalLink
+  Sparkles, Key, Eye, EyeOff, ExternalLink, Coffee, Heart
 } from 'lucide-react';
 
 
@@ -381,7 +381,7 @@ const AdminSettings = () => {
           </Section>
 
           {/* Monetisasi & AdSense */}
-          <Section title="💰 Monetisasi & Google AdSense" icon={null}>
+          <Section title="💰 Monetisasi, Iklan & Donasi Pembaca" icon={<Coffee size={18} style={{ color: '#f59e0b' }} />}>
             <Field label="Google AdSense Publisher ID" hint="Format: ca-pub-XXXX... Masukkan ID AdSense akun Anda untuk menampilkan iklan otomatis dari Google.">
               <input 
                 style={inputStyle} 
@@ -390,6 +390,115 @@ const AdminSettings = () => {
                 placeholder="ca-pub-6752045445074470" 
               />
             </Field>
+
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--admin-card-border)' }}>
+              <h3 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f59e0b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Coffee size={16} /> Kotak Donasi / Traktir Kopi (Saweria & Trakteer)
+              </h3>
+
+              {/* Switch Aktif / Nonaktif Kotak Donasi */}
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                background: form.donationEnabled !== false ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                border: form.donationEnabled !== false ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--admin-text-primary)' }}>
+                    Status Kotak Donasi / Traktir Kopi
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--admin-text-secondary)', marginTop: '2px' }}>
+                    {form.donationEnabled !== false 
+                      ? '✅ SEDANG AKTIF: Tampil di bagian bawah semua artikel berita.'
+                      : '❌ SEDANG NONAKTIF: Disembunyikan dari semua artikel berita.'}
+                  </div>
+                </div>
+
+                <div 
+                  onClick={() => handleChange('donationEnabled', form.donationEnabled === false ? true : false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                >
+                  <div style={{
+                    width: '52px',
+                    height: '28px',
+                    borderRadius: '14px',
+                    position: 'relative',
+                    backgroundColor: form.donationEnabled !== false ? '#10b981' : 'var(--admin-border)',
+                    transition: 'background-color 0.2s',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '3px',
+                      left: form.donationEnabled !== false ? '26px' : '3px',
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      transition: 'left 0.2s',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    }} />
+                  </div>
+                  <span style={{
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    color: form.donationEnabled !== false ? '#10b981' : 'var(--admin-text-secondary)'
+                  }}>
+                    {form.donationEnabled !== false ? 'AKTIF' : 'NONAKTIF'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <Field label="Link Saweria" hint="Contoh: https://saweria.co/bedainnews">
+                  <input
+                    style={inputStyle}
+                    value={form.saweriaUrl || ''}
+                    onChange={e => handleChange('saweriaUrl', e.target.value)}
+                    placeholder="https://saweria.co/bedainnews"
+                  />
+                </Field>
+
+                <Field label="Link Trakteer" hint="Contoh: https://trakteer.id/bedainnews">
+                  <input
+                    style={inputStyle}
+                    value={form.trakteerUrl || ''}
+                    onChange={e => handleChange('trakteerUrl', e.target.value)}
+                    placeholder="https://trakteer.id/bedainnews"
+                  />
+                </Field>
+              </div>
+
+              <Field label="Judul Kotak Dukungan" hint="Judul ajakan yang tampil di bawah artikel">
+                <input
+                  style={inputStyle}
+                  value={form.donationTitle || ''}
+                  onChange={e => handleChange('donationTitle', e.target.value)}
+                  placeholder="Dukung Jurnalisme Independen Bedain News"
+                />
+              </Field>
+
+              <Field label="Keterangan Ajakan Dukungan" hint="Teks deskripsi singkat ajakan berdonasi">
+                <textarea
+                  style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
+                  value={form.donationDesc || ''}
+                  onChange={e => handleChange('donationDesc', e.target.value)}
+                  placeholder="Bantu tim redaksi kami tetap menyajikan berita berimbang, tajam, dan bebas pengaruh dengan mentraktir secangkir kopi."
+                />
+              </Field>
+            </div>
           </Section>
 
           {/* Integrasi Google Gemini AI */}

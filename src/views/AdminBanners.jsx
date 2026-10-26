@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Plus, Trash2, Eye, EyeOff, DollarSign, Sparkles, ExternalLink, Image as ImageIcon, Pencil, Save, UploadCloud } from 'lucide-react';
+import { Plus, Trash2, Eye, EyeOff, DollarSign, Sparkles, ExternalLink, Image as ImageIcon, Pencil, Save, UploadCloud, Coffee, Power } from 'lucide-react';
 import { useSiteSettings, saveSiteSettings } from '../hooks/useSiteSettings';
+import Link from 'next/link';
 import { uploadAndCompressImage } from '../lib/uploadImage';
 
 
@@ -32,6 +33,7 @@ const AdminBanners = () => {
   const { settings: savedSettings, loading: settingsLoading } = useSiteSettings();
   const [stickyForm, setStickyForm] = useState(null);
   const [savingSticky, setSavingSticky] = useState(false);
+  const [togglingDonation, setTogglingDonation] = useState(false);
   const [uploadingLeftAd, setUploadingLeftAd] = useState(false);
   const [uploadingRightAd, setUploadingRightAd] = useState(false);
   const leftAdInputRef = React.useRef(null);
@@ -57,6 +59,19 @@ const AdminBanners = () => {
       alert('Gagal menyimpan pengaturan');
     } finally {
       setSavingSticky(false);
+    }
+  };
+
+  const handleToggleDonation = async () => {
+    setTogglingDonation(true);
+    try {
+      const nextStatus = savedSettings?.donationEnabled === false ? true : false;
+      await saveSiteSettings({ donationEnabled: nextStatus });
+    } catch (err) {
+      console.error('Error toggling donation:', err);
+      alert('Gagal mengubah status kotak donasi');
+    } finally {
+      setTogglingDonation(false);
     }
   };
 
@@ -252,6 +267,128 @@ const AdminBanners = () => {
           <Plus size={18} /> Tambah Banner Sponsor
         </button>
       </div>
+
+      {/* Quick Card: Kotak Donasi / Traktir Kopi (Trakteer) Toggle */}
+      {(() => {
+        const isDonationActive = savedSettings?.donationEnabled !== false;
+        return (
+          <div style={{
+            marginBottom: '28px',
+            padding: '20px 24px',
+            borderRadius: '16px',
+            background: isDonationActive 
+              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(16, 185, 129, 0.08) 100%)'
+              : 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%)',
+            border: isDonationActive ? '1.5px solid rgba(245, 158, 11, 0.35)' : '1.5px solid rgba(239, 68, 68, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.15)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '260px', flex: 1 }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: isDonationActive ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#334155',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: isDonationActive ? '0 4px 16px rgba(245, 158, 11, 0.4)' : 'none'
+              }}>
+                <Coffee size={24} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: isDonationActive ? '#f59e0b' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                    Fitur Apresiasi Pembaca
+                  </span>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    background: isDonationActive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                    color: isDonationActive ? '#10b981' : '#f87171',
+                    border: isDonationActive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)'
+                  }}>
+                    {isDonationActive ? '● SEDANG AKTIF (TAYANG)' : '○ SEDANG NONAKTIF (SEMBUNYI)'}
+                  </span>
+                </div>
+                <h3 style={{ margin: '4px 0 2px', fontSize: '1.05rem', fontWeight: 800, color: 'var(--admin-text-primary)' }}>
+                  Kotak Traktir Kopi / Donasi Trakteer
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--admin-text-secondary)' }}>
+                  {isDonationActive 
+                    ? 'Kotak apresiasi tampil di setiap bawah artikel dengan link: trakteer.id/bedainnews'
+                    : 'Fitur sedang dinonaktifkan sementara dari seluruh artikel berita.'}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <a
+                href={savedSettings?.trakteerUrl || 'https://trakteer.id/bedainnews'}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  color: 'var(--admin-text-secondary)',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)'
+                }}
+              >
+                <span>Lihat Trakteer</span>
+                <ExternalLink size={12} />
+              </a>
+
+              <button
+                type="button"
+                onClick={handleToggleDonation}
+                disabled={togglingDonation}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: togglingDonation ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: isDonationActive 
+                    ? 'rgba(239, 68, 68, 0.15)' 
+                    : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: isDonationActive ? '#f87171' : '#ffffff',
+                  border: isDonationActive ? '1px solid rgba(239, 68, 68, 0.35)' : 'none',
+                  boxShadow: isDonationActive ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.35)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Power size={14} />
+                <span>
+                  {togglingDonation 
+                    ? 'Menyimpan...' 
+                    : isDonationActive 
+                      ? 'Nonaktifkan Fitur' 
+                      : 'Aktifkan Fitur Sekarang'}
+                </span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#aaa' }}>Memuat daftar sponsor...</div>

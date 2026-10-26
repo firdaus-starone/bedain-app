@@ -12,6 +12,7 @@ import Script from 'next/script';
 import VideoBadge from './VideoBadge';
 import AdUnit from './AdUnit';
 import AdBanner from './AdBanner';
+import DonationBox from './DonationBox';
 
 import Navbar from './Navbar';
 import BreakingNews from './BreakingNews';
@@ -1893,6 +1894,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 ))}
               </div>
             )}
+
+            {/* Kotak Donasi / Traktir Kopi Redaksi (Saweria & Trakteer) */}
+            <DonationBox />
 
             {/* Google News & WhatsApp Channel CTA Box */}
             <div className="google-news-cta-container" style={{

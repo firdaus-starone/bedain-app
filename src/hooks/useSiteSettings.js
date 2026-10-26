@@ -49,6 +49,13 @@ export const DEFAULT_SETTINGS = {
   stickyAdRightCtaText: 'Pasang Sekarang',
   stickyAdRightUrl: '',
   stickyAdRightImage: '',
+  
+  // Dukungan Pembaca / Tip Jar (Saweria & Trakteer)
+  donationEnabled: true,
+  donationTitle: 'Dukung Jurnalisme Independen Bedain News',
+  donationDesc: 'Bantu tim redaksi kami tetap menyajikan berita berimbang, tajam, dan bebas pengaruh dengan mentraktir secangkir kopi.',
+  saweriaUrl: '',
+  trakteerUrl: 'https://trakteer.id/bedainnews',
 };
 
 const SETTINGS_DOC = 'settings/site';
