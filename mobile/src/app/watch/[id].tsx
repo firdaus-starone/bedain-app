@@ -10,6 +10,7 @@ import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
+import { DonationBox } from '../../components/DonationBox';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
@@ -26,7 +27,7 @@ const getArticleVideoId = (article: any) => {
 };
 
 export default function VideoDetail() {
-  const { id } = useLocalSearchParams();
+  const { id, title: paramTitle, videoUrl: paramVideoUrl, author: paramAuthor, coverImage: paramCoverImage } = useLocalSearchParams();
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
   const { user } = useAuth();
@@ -128,6 +129,23 @@ export default function VideoDetail() {
             articleData = { id: slugSnap.docs[0].id, ...slugSnap.docs[0].data() };
             actualId = slugSnap.docs[0].id;
           }
+        }
+
+        // Fallback jika video ditarik langsung dari channel YouTube dan belum tersimpan di Firestore
+        if (!articleData && actualId && (actualId.startsWith('yt_') || actualId.length === 11)) {
+          const rawYtId = actualId.startsWith('yt_') ? actualId.replace('yt_', '') : actualId;
+          articleData = {
+            id: actualId,
+            title: (typeof paramTitle === 'string' && paramTitle) ? paramTitle : 'Video Bedain News',
+            videoUrl: (typeof paramVideoUrl === 'string' && paramVideoUrl) ? paramVideoUrl : `https://www.youtube.com/watch?v=${rawYtId}`,
+            youtubeUrl: (typeof paramVideoUrl === 'string' && paramVideoUrl) ? paramVideoUrl : `https://www.youtube.com/watch?v=${rawYtId}`,
+            content: 'Tayangan video resmi dari channel YouTube Bedain News.',
+            coverImage: (typeof paramCoverImage === 'string' && paramCoverImage) ? paramCoverImage : `https://img.youtube.com/vi/${rawYtId}/hqdefault.jpg`,
+            category: 'Video',
+            author: (typeof paramAuthor === 'string' && paramAuthor) ? paramAuthor : 'Bedain News',
+            publishedAt: new Date(),
+            status: 'published'
+          };
         }
 
         if (articleData) {
@@ -465,17 +483,6 @@ export default function VideoDetail() {
             <Text style={[styles.imageCaptionTextOutside, dyn.textMuted]}>{article.imageCaption}</Text>
           ) : null}
 
-          <View style={[styles.excerptContainer, dyn.excerpt]}>
-            {(article.excerpt || article.summary || article.seoDescription || article.description) ? (
-              <Text style={[styles.excerpt, dyn.excerpt]}>{article.excerpt || article.summary || article.seoDescription || article.description}</Text>
-            ) : (
-              <Text style={[styles.excerpt, dyn.textMuted]}>
-                [Kolom excerpt/ringkasan akan muncul di sini. Silakan isi kolom ringkasan saat membuat berita untuk menghilangkan teks ini.]
-              </Text>
-            )}
-          </View>
-
-          <View style={[styles.divider, dyn.borderB]} />
 
           {/* Isi Artikel */}
           <View style={styles.articleBody}>
@@ -720,6 +727,9 @@ export default function VideoDetail() {
                 ))}
               </ScrollView>
             </View>
+
+            {/* KOTAK DUKUNGAN PEMBACA / TRAKTIR KOPI */}
+            <DonationBox settings={siteSettings} />
 
             {/* Kolom Komentar */}
             <View style={[styles.commentSection, dyn.borderB]}>

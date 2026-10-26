@@ -1745,8 +1745,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
               </div>
             </div>
 
-            {/* Excerpt Lead */}
-            {(article.seoDescription || article.excerpt || cleanText.length > 50) && (
+            {/* Excerpt Lead (Hanya untuk artikel biasa, bukan artikel video) */}
+            {(!videoId && !videoData?.embedUrl && (article.seoDescription || article.excerpt || cleanText.length > 50)) && (
               <div style={{
                 fontSize: '1.05rem',
                 fontWeight: 500,

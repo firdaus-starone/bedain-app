@@ -9,6 +9,7 @@ import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
+import { DonationBox } from '../../components/DonationBox';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
@@ -369,17 +370,22 @@ export default function ArticleDetail() {
             <Text style={[styles.imageCaptionTextOutside, dyn.textMuted]}>{article.imageCaption}</Text>
           ) : null}
 
-          <View style={[styles.excerptContainer, dyn.excerpt]}>
-            {(article.excerpt || article.summary || article.seoDescription || article.description) ? (
-              <Text style={[styles.excerpt, dyn.excerpt]}>{article.excerpt || article.summary || article.seoDescription || article.description}</Text>
-            ) : (
-              <Text style={[styles.excerpt, dyn.textMuted]}>
-                [Kolom excerpt/ringkasan akan muncul di sini. Silakan isi kolom ringkasan saat membuat berita untuk menghilangkan teks ini.]
-              </Text>
-            )}
-          </View>
+          {/* Kolom Excerpt: Hanya tampil untuk artikel biasa (non-video) */}
+          {(!article.videoUrl && !article.youtubeUrl && !article.video) && (
+            <>
+              <View style={[styles.excerptContainer, dyn.excerpt]}>
+                {(article.excerpt || article.summary || article.seoDescription || article.description) ? (
+                  <Text style={[styles.excerpt, dyn.excerpt]}>{article.excerpt || article.summary || article.seoDescription || article.description}</Text>
+                ) : (
+                  <Text style={[styles.excerpt, dyn.textMuted]}>
+                    [Kolom excerpt/ringkasan akan muncul di sini. Silakan isi kolom ringkasan saat membuat berita untuk menghilangkan teks ini.]
+                  </Text>
+                )}
+              </View>
 
-          <View style={[styles.divider, dyn.borderB]} />
+              <View style={[styles.divider, dyn.borderB]} />
+            </>
+          )}
 
           {/* Isi Artikel */}
           <View style={styles.articleBody}>
@@ -624,6 +630,9 @@ export default function ArticleDetail() {
                 ))}
               </ScrollView>
             </View>
+
+            {/* KOTAK DUKUNGAN PEMBACA / TRAKTIR KOPI */}
+            <DonationBox settings={siteSettings} />
 
             {/* Kolom Komentar */}
             <View style={[styles.commentSection, dyn.borderB]}>

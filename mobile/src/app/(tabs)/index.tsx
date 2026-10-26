@@ -1192,25 +1192,29 @@ export default function Home() {
                 </TouchableOpacity>
               )}
 
-              {/* List Rekomendasi Lainnya */}
+              {/* List Rekomendasi Lainnya (Tanpa Pembungkus Kartu) */}
               <View style={styles.recomListContainer}>
-                {REKOMENDASI_ARTICLES.slice(1).map((item) => (
-                  <TouchableOpacity
-                    key={`recom-${item.id}`}
-                    style={[styles.recomListItem, dyn.card]}
-                    activeOpacity={0.8}
-                    onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
-                  >
-                    <Image source={{ uri: item.image }} style={styles.recomListImage} />
-                    <View style={styles.recomListBody}>
-                      <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
-                      <Text style={[styles.recomListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 }}>
-                        <Ionicons name="time-outline" size={12} color={dyn.textMuted.color} />
-                        <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                {REKOMENDASI_ARTICLES.slice(1).map((item, index) => (
+                  <Fragment key={`recom-${item.id || index}`}>
+                    <TouchableOpacity
+                      style={styles.recomListItem}
+                      activeOpacity={0.75}
+                      onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                    >
+                      <Image source={{ uri: item.image }} style={styles.recomListImage} />
+                      <View style={styles.recomListBody}>
+                        <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                        <Text style={[styles.recomListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 }}>
+                          <Ionicons name="time-outline" size={12} color={dyn.textMuted.color} />
+                          <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                    {index !== REKOMENDASI_ARTICLES.slice(1).length - 1 && (
+                      <View style={[styles.divider, dyn.divider]} />
+                    )}
+                  </Fragment>
                 ))}
               </View>
             </View>
@@ -1265,34 +1269,38 @@ export default function Home() {
                 </TouchableOpacity>
               )}
 
-              {/* Peringkat #2 sampai seterusnya */}
+              {/* Peringkat #2 sampai seterusnya (Tanpa Pembungkus Kartu) */}
               <View style={styles.popularRankList}>
                 {POPULER_ARTICLES.slice(1).map((item, idx) => {
                   const rank = idx + 2;
                   return (
-                    <TouchableOpacity
-                      key={`pop-${item.id}`}
-                      style={[styles.popularRankItem, dyn.card]}
-                      activeOpacity={0.8}
-                      onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
-                    >
-                      <View style={[styles.rankNumberBox, rank <= 3 ? styles.rankNumberTop : {}]}>
-                        <Text style={[styles.rankNumberText, rank <= 3 ? { color: '#f97316' } : dyn.textMuted]}>
-                          {rank < 10 ? `0${rank}` : rank}
-                        </Text>
-                      </View>
-                      <View style={styles.popularRankContent}>
-                        <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
-                        <Text style={[styles.popularRankTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                          <Ionicons name="eye-outline" size={12} color={dyn.textMuted.color} />
-                          <Text style={[styles.recomListDate, dyn.textMuted]}>{item.views || 0} views</Text>
-                          <Text style={dyn.textMuted}>•</Text>
-                          <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                    <Fragment key={`pop-${item.id || idx}`}>
+                      <TouchableOpacity
+                        style={styles.popularRankItem}
+                        activeOpacity={0.75}
+                        onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
+                      >
+                        <View style={[styles.rankNumberBox, rank <= 3 ? styles.rankNumberTop : {}]}>
+                          <Text style={[styles.rankNumberText, rank <= 3 ? { color: '#f97316' } : dyn.textMuted]}>
+                            {rank < 10 ? `0${rank}` : rank}
+                          </Text>
                         </View>
-                      </View>
-                      <Image source={{ uri: item.image }} style={styles.popularRankThumb} />
-                    </TouchableOpacity>
+                        <View style={styles.popularRankContent}>
+                          <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                          <Text style={[styles.popularRankTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                            <Ionicons name="eye-outline" size={12} color={dyn.textMuted.color} />
+                            <Text style={[styles.recomListDate, dyn.textMuted]}>{item.views || 0} views</Text>
+                            <Text style={dyn.textMuted}>•</Text>
+                            <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
+                          </View>
+                        </View>
+                        <Image source={{ uri: item.image }} style={styles.popularRankThumb} />
+                      </TouchableOpacity>
+                      {idx !== POPULER_ARTICLES.slice(1).length - 1 && (
+                        <View style={[styles.divider, dyn.divider]} />
+                      )}
+                    </Fragment>
                   );
                 })}
               </View>
@@ -2061,13 +2069,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   recomListContainer: {
-    gap: 12,
+    marginTop: 4,
   },
   recomListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 0,
     gap: 12,
   },
   recomListImage: {
@@ -2099,6 +2107,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 16,
     position: 'relative',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
   },
   popularTopImage: {
     width: '100%',
@@ -2129,13 +2142,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   popularRankList: {
-    gap: 12,
+    marginTop: 4,
   },
   popularRankItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 0,
     gap: 12,
   },
   rankNumberBox: {

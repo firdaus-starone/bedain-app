@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bedain News",
     "slug": "mobile",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -11,13 +11,14 @@
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png",
+      "supportsTablet": true
     },
     "android": {
-      "versionCode": 20,
+      "versionCode": 21,
       "package": "com.bedain.newsapp",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FBFBF9",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"

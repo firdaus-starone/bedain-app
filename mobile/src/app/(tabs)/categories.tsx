@@ -79,6 +79,7 @@ export default function CategoriesModal() {
   const { isDarkMode, colors } = useTheme();
   const [categories, setCategories] = useState<{ id: string, name: string, slug: string, color: string, icon: string }[]>([]);
   const [regions, setRegions] = useState<{ id: string, name: string, color: string, icon: string }[]>([]);
+  const [popularTags, setPopularTags] = useState<{ name: string, count: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -101,6 +102,8 @@ export default function CategoriesModal() {
         const qArt = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(200));
         const snapArt = await getDocs(qArt);
         const uniqueLocations = new Map<string, string>(); // Menyimpan <lowercaseName, DisplayName>
+        const tagCounts: Record<string, number> = {};
+        const tagDisplays: Record<string, string> = {};
         
         const toTitleCase = (str: string) => {
           return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -117,7 +120,32 @@ export default function CategoriesModal() {
               uniqueLocations.set(lowerLoc, toTitleCase(cleanLoc));
             }
           }
+
+          // Ekstrak tag artikel
+          const rawTags = artData.tags || [];
+          const tagsList = typeof rawTags === 'string' ? rawTags.split(',') : (Array.isArray(rawTags) ? rawTags : []);
+          tagsList.forEach((tag: any) => {
+            if (typeof tag !== 'string') return;
+            const cleanTag = tag.trim().replace(/^#/, '');
+            if (cleanTag && cleanTag.length >= 3) {
+              const key = cleanTag.toLowerCase();
+              tagCounts[key] = (tagCounts[key] || 0) + 1;
+              if (!tagDisplays[key] || cleanTag === cleanTag.toUpperCase()) {
+                tagDisplays[key] = cleanTag;
+              }
+            }
+          });
         });
+
+        // Urutkan tag paling populer
+        const sortedTags = Object.entries(tagCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 16)
+          .map(([key, count]) => ({
+            name: tagDisplays[key] || key,
+            count
+          }));
+        setPopularTags(sortedTags);
 
         const regData = Array.from(uniqueLocations.values()).map((displayLoc, i) => ({
           id: `reg-${i}`,
@@ -139,6 +167,14 @@ export default function CategoriesModal() {
   const handleSelectCategory = (categorySlug: string) => {
     // Navigasi ke halaman kategori khusus
     router.push(`/category/${categorySlug || 'semua'}`);
+  };
+
+  const handleSelectTag = (tagName: string) => {
+    // Navigasi langsung ke pencarian artikel dengan kata kunci tag tersebut
+    router.push({
+      pathname: '/search',
+      params: { q: tagName }
+    } as any);
   };
 
   const dyn = {
@@ -163,6 +199,47 @@ export default function CategoriesModal() {
           <ActivityIndicator size="large" color="#1b61d1" style={{ marginTop: 40 }} />
         ) : (
           <View>
+            {/* Section: Topik / Tag Populer (di atas Topik Utama) */}
+            {popularTags.length > 0 && (
+              <View style={styles.popularTagsSection}>
+                <View style={styles.sectionHeaderRow}>
+                  <View style={styles.sectionHeaderTitleWrap}>
+                    <Ionicons name="flame" size={18} color="#ef4444" style={{ marginRight: 6 }} />
+                    <Text style={[styles.sectionHeading, { color: colors.text }]}>Topik / Tag Populer</Text>
+                  </View>
+                  <Text style={styles.tagCountHint}>{popularTags.length} Topik Hangat</Text>
+                </View>
+
+                <View style={styles.tagsContainer}>
+                  {popularTags.map((tag, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[
+                        styles.tagChip,
+                        {
+                          backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.12)' : '#fff1f2',
+                          borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fecdd3',
+                        }
+                      ]}
+                      onPress={() => handleSelectTag(tag.name)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.tagHash, { color: '#ef4444' }]}>#</Text>
+                      <Text style={[styles.tagText, { color: isDarkMode ? '#f8fafc' : '#1e293b' }]}>
+                        {tag.name}
+                      </Text>
+                      {tag.count > 1 && (
+                        <View style={[styles.tagCountBadge, { backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#ffe4e6' }]}>
+                          <Text style={styles.tagCountBadgeText}>{tag.count}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Section: Topik Utama */}
             <View style={styles.sectionHeaderWrap}>
               <Text style={[styles.sectionHeading, { color: colors.text }]}>Topik Utama</Text>
             </View>
@@ -286,5 +363,57 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1e293b',
     textAlign: 'center',
+  },
+  popularTagsSection: {
+    marginBottom: 20,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  sectionHeaderTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagCountHint: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '500',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  tagHash: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginRight: 4,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tagCountBadge: {
+    marginLeft: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 10,
+  },
+  tagCountBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ef4444',
   }
 });

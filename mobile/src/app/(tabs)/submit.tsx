@@ -1,13 +1,19 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Alert, Image, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function SubmitScreen() {
+  const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const { user } = useAuth();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [title, setTitle] = useState('');
@@ -16,10 +22,40 @@ export default function SubmitScreen() {
   const [content, setContent] = useState('');
   const [isAgreed, setIsAgreed] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+
+  // Otomatis isi Nama & Email jika pengguna sudah login
+  useEffect(() => {
+    const autoFillFromUser = async () => {
+      if (!user) return;
+
+      let resolvedName = user.displayName || '';
+      let resolvedEmail = user.email || '';
+
+      // Jika displayName kosong di auth, cek dokumen profil pengguna di Firestore
+      if (!resolvedName) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const snap = await getDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            resolvedName = data.displayName || data.name || data.fullName || '';
+          }
+        } catch (e) {
+          console.log('Error fetching user profile doc:', e);
+        }
+      }
+
+      if (resolvedName) setName(resolvedName);
+      if (resolvedEmail) setEmail(resolvedEmail);
+    };
+
+    autoFillFromUser();
+  }, [user]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -54,6 +90,102 @@ export default function SubmitScreen() {
 
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const insertFormatting = (prefix: string, suffix: string = '') => {
+    setContent(prev => (prev ? prev + `\n\n${prefix}teks di sini${suffix}` : `${prefix}teks di sini${suffix}`));
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !email.trim() || !title.trim() || !content.trim()) {
+      Alert.alert('Perhatian', 'Harap lengkapi Nama, Email, Judul, dan Isi Tulisan.');
+      return;
+    }
+
+    if (!isAgreed) {
+      Alert.alert('Perhatian', 'Anda wajib mencentang persetujuan keaslian karya sebelum mengirim.');
+      return;
+    }
+
+    if (content.trim().length < 50) {
+      Alert.alert('Perhatian', 'Isi tulisan minimal 50 karakter agar layak dibaca.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let uploadedImageUrl = '';
+      if (imageUri) {
+        try {
+          const blob = await new Promise<Blob>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+              resolve(xhr.response);
+            };
+            xhr.onerror = function(e) {
+              console.error(e);
+              reject(new TypeError("Network request failed"));
+            };
+            xhr.responseType = "blob";
+            xhr.open("GET", imageUri, true);
+            xhr.send(null);
+          });
+          
+          const fileExtension = imageUri.split('.').pop() || 'jpg';
+          const fileName = `submissions/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
+          const storageRef = ref(storage, fileName);
+          await uploadBytes(storageRef, blob);
+          uploadedImageUrl = await getDownloadURL(storageRef);
+        } catch (imgErr) {
+          console.warn('Gagal upload gambar, melanjutkan tanpa cover custom:', imgErr);
+        }
+      }
+
+      const submissionData = {
+        authorName: name.trim(),
+        authorEmail: email.trim(),
+        authorBio: 'Kontributor Bedain News',
+        authorAvatar: user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name.trim())}&background=E62020&color=fff&size=128`,
+        title: title.trim(),
+        category: category || 'Opini',
+        excerpt: excerpt.trim() || content.trim().substring(0, 160) + '...',
+        content: content.trim(),
+        imageUrl: uploadedImageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80',
+        status: 'pending',
+        userId: user?.uid || null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        source: 'mobile_app'
+      };
+
+      await addDoc(collection(db, 'user_submissions'), submissionData);
+
+      Alert.alert(
+        'Terima Kasih! 🎉',
+        'Tulisan Anda berhasil dikirim ke tim redaksi Bedain News dan akan segera direviu sebelum ditayangkan.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setTitle('');
+              setExcerpt('');
+              setContent('');
+              setImageUri(null);
+              setIsAgreed(false);
+              if (!user) {
+                setName('');
+                setEmail('');
+              }
+            }
+          }
+        ]
+      );
+    } catch (err: any) {
+      console.error('Gagal mengirim tulisan:', err);
+      Alert.alert('Gagal Mengirim', 'Terjadi kendala saat mengirim tulisan. Silakan periksa koneksi internet Anda dan coba lagi.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -98,6 +230,26 @@ export default function SubmitScreen() {
             <Ionicons name="person-outline" size={20} color="#ef4444" />
             <Text style={[styles.sectionTitle, dyn.textMain]}>1. Identitas Penulis / Kontributor</Text>
           </View>
+
+          {user ? (
+            <View style={[styles.autoFillBadge, { backgroundColor: isDarkMode ? 'rgba(34,197,94,0.15)' : '#f0fdf4', borderColor: isDarkMode ? 'rgba(34,197,94,0.3)' : '#bbf7d0' }]}>
+              <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+              <Text style={[styles.autoFillText, { color: isDarkMode ? '#86efac' : '#15803d' }]}>
+                Data otomatis terisi dari akun Anda ({user.email})
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity 
+              style={[styles.loginPromptBadge, { backgroundColor: isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2', borderColor: isDarkMode ? 'rgba(239,68,68,0.25)' : '#fecaca' }]}
+              onPress={() => router.push('/login')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-in-outline" size={16} color="#ef4444" />
+              <Text style={[styles.loginPromptText, { color: isDarkMode ? '#fca5a5' : '#b91c1c' }]}>
+                Punya akun? <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}>Masuk di sini</Text> agar nama & email terisi otomatis
+              </Text>
+            </TouchableOpacity>
+          )}
           
           <Text style={[styles.label, { color: isDarkMode ? '#cbd5e1' : '#334155' }]}>Nama Lengkap / Nama Pena <Text style={styles.required}>*</Text></Text>
           <View style={[styles.inputContainer, dyn.inputContainer]}>
@@ -172,18 +324,25 @@ export default function SubmitScreen() {
                   <Ionicons name="pencil" size={14} color="#ffffff" style={{ marginRight: 6 }} />
                   <Text style={styles.editorTabTextActive}>Tulis</Text>
                 </View>
-                <View style={styles.editorTab}>
-                  <Ionicons name="eye-outline" size={14} color="#94a3b8" style={{ marginRight: 6 }} />
-                  <Text style={styles.editorTabText}>Pratinjau (Preview)</Text>
-                </View>
               </View>
             </View>
             
             <View style={[styles.editorTools, dyn.borderB]}>
-              {['Tebal', 'Miring', 'Subjudul (H2)', 'Kutipan', 'Daftar Poin'].map((tool, idx) => (
-                <View key={idx} style={[styles.toolBtn, dyn.toolBtn]}>
-                  <Text style={[styles.toolBtnText, { color: isDarkMode ? '#cbd5e1' : '#475569' }]}>{tool}</Text>
-                </View>
+              {[
+                { label: 'Tebal', prefix: '**', suffix: '**' },
+                { label: 'Miring', prefix: '*', suffix: '*' },
+                { label: 'Subjudul', prefix: '## ' },
+                { label: 'Kutipan', prefix: '> ' },
+                { label: 'Daftar Poin', prefix: '- ' }
+              ].map((tool, idx) => (
+                <TouchableOpacity 
+                  key={idx} 
+                  style={[styles.toolBtn, dyn.toolBtn]}
+                  onPress={() => insertFormatting(tool.prefix, tool.suffix)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.toolBtnText, { color: isDarkMode ? '#cbd5e1' : '#475569' }]}>{tool.label}</Text>
+                </TouchableOpacity>
               ))}
             </View>
 
@@ -217,9 +376,23 @@ export default function SubmitScreen() {
         </View>
 
         {/* Submit Button */}
-        <TouchableOpacity style={[styles.submitMainBtn, !isAgreed && styles.submitMainBtnDisabled]} disabled={!isAgreed} onPress={() => Alert.alert('Terima Kasih!', 'Tulisan Anda berhasil dikirim dan akan segera direviu oleh tim redaksi kami.')}>
-          <Ionicons name="paper-plane" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-          <Text style={styles.submitMainBtnText}>Kirim Tulisan Sekarang</Text>
+        <TouchableOpacity 
+          style={[styles.submitMainBtn, (!isAgreed || isSubmitting) && styles.submitMainBtnDisabled]} 
+          disabled={!isAgreed || isSubmitting} 
+          onPress={handleSubmit}
+          activeOpacity={0.8}
+        >
+          {isSubmitting ? (
+            <>
+              <ActivityIndicator size="small" color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.submitMainBtnText}>Mengirim Tulisan...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="paper-plane" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.submitMainBtnText}>Kirim Tulisan Sekarang</Text>
+            </>
+          )}
         </TouchableOpacity>
 
       </ScrollView>
@@ -301,6 +474,12 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginLeft: 10 },
   
+  // Auth badges
+  autoFillBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1, marginBottom: 14 },
+  autoFillText: { fontSize: 12, fontWeight: '600', flex: 1, marginLeft: 8 },
+  loginPromptBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1, marginBottom: 14 },
+  loginPromptText: { fontSize: 12, flex: 1, marginLeft: 8 },
+
   // Inputs
   label: { fontSize: 12, fontWeight: '700', color: '#334155', marginBottom: 6 },
   required: { color: '#ef4444' },
