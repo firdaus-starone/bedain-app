@@ -1808,15 +1808,19 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 const replaceBWithLogo = (htmlStr) => {
                   if (!htmlStr) return htmlStr;
                   const logoUrl = settings?.faviconUrl || settings?.logoUrl || '';
-                  const fallbackBadge = `<span class="inline-b-badge" title="Bedain News" style="display:inline-flex;align-items:center;justify-content:center;width:1.25em;height:1.25em;border-radius:50%;background:linear-gradient(135deg,#ef4444,#f59e0b);color:#ffffff;font-size:0.75em;font-weight:900;line-height:1;margin:0 4px;vertical-align:-0.15em;box-shadow:0 2px 6px rgba(239,68,68,0.35);user-select:none;">B</span>`;
-                  
+                  if (logoUrl) {
+                    return htmlStr.replace(/(<[^>]+>)|(\[B\])/g, (match, tag, letterB) => {
+                      if (tag) return tag;
+                      if (letterB) {
+                        return `<img src="${logoUrl}" alt="Bedain News" class="inline-b-logo" onerror="this.style.display='none'" />`;
+                      }
+                      return match;
+                    });
+                  }
                   return htmlStr.replace(/(<[^>]+>)|(\[B\])/g, (match, tag, letterB) => {
                     if (tag) return tag;
                     if (letterB) {
-                      if (logoUrl) {
-                        return `<img src="${logoUrl}" alt="Bedain News" class="inline-b-logo" onerror="this.outerHTML='${fallbackBadge}'" />`;
-                      }
-                      return fallbackBadge;
+                      return `<span class="inline-b-badge" title="Bedain News">B</span>`;
                     }
                     return match;
                   });
