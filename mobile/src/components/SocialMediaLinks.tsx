@@ -59,11 +59,11 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
     },
     {
       id: 'whatsapp',
-      name: 'WhatsApp',
+      name: 'Saluran WhatsApp',
       icon: 'logo-whatsapp' as const,
       color: '#25D366',
       bgColor: isDarkMode ? 'rgba(37, 211, 102, 0.15)' : '#f0fdf4',
-      url: settings?.whatsappChannelUrl?.trim() || (settings?.contactWhatsapp ? `https://wa.me/${settings.contactWhatsapp.replace(/\D/g, '')}` : 'https://whatsapp.com/channel/0029VaBedainNews'),
+      url: settings?.waChannelUrl?.trim() || settings?.whatsappChannelUrl?.trim() || 'https://whatsapp.com/channel/0029Vb9Ap15K0IBe1NVOCX0T',
     },
   ];
 
