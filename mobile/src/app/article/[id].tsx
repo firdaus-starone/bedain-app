@@ -12,6 +12,7 @@ import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 import { DonationBox } from '../../components/DonationBox';
 import { ArticleKeyPoints } from '../../components/ArticleKeyPoints';
 import { ArticlePoll } from '../../components/ArticlePoll';
+import { ArticleAudioPlayer } from '../../components/ArticleAudioPlayer';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
@@ -388,6 +389,9 @@ export default function ArticleDetail() {
               <View style={[styles.divider, dyn.borderB]} />
             </>
           )}
+
+          {/* 🎧 Dengarkan Berita AI (Podcast Narator) */}
+          <ArticleAudioPlayer article={article} />
 
           {/* ⚡ 3 Detik Paham (Poin Utama / TL;DR) */}
           <ArticleKeyPoints article={article} />
