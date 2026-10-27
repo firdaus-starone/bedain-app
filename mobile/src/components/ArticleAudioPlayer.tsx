@@ -57,7 +57,7 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
 
   const [status, setStatus] = useState<'idle' | 'playing' | 'paused'>('idle');
   const [rate, setRate] = useState<number>(1.0);
-  const [isReady, setIsReady] = useState(false);
+  const [currentProgress, setCurrentProgress] = useState<string>('');
 
   // Animasi Soundwave 4 Bar Equalizer
   const bar1 = useRef(new Animated.Value(0.4)).current;
@@ -147,6 +147,7 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
       true;
     `);
     setStatus('idle');
+    setCurrentProgress('');
   };
 
   const handleChangeRate = (newRate: number) => {
@@ -162,23 +163,25 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
   const handleWebViewMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'ready') {
-        setIsReady(true);
-      } else if (data.type === 'start') {
+      if (data.type === 'start') {
         setStatus('playing');
+        if (data.index !== undefined && data.total) {
+          setCurrentProgress(`(${data.index + 1}/${data.total})`);
+        }
       } else if (data.type === 'pause') {
         setStatus('paused');
       } else if (data.type === 'resume') {
         setStatus('playing');
       } else if (data.type === 'end' || data.type === 'error') {
         setStatus('idle');
+        setCurrentProgress('');
       }
     } catch (e) {
       // ignore
     }
   };
 
-  // HTML Headless untuk engine TTS
+  // HTML Headless Engine dengan Google TTS MP3 Audio Streamer
   const webViewSource = {
     html: `
       <!DOCTYPE html>
@@ -187,9 +190,10 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>
-      <body>
+      <body style="background:transparent; margin:0; padding:0;">
+        <audio id="audioPlayer" playsinline preload="auto"></audio>
         <script>
-          const synth = window.speechSynthesis;
+          const player = document.getElementById('audioPlayer');
           let chunks = [];
           let currentChunkIndex = 0;
           let currentRate = 1.0;
@@ -202,28 +206,38 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
             }
           }
 
-          function getBestIndonesianVoice() {
-            if (!synth) return null;
-            const voices = synth.getVoices() || [];
-            return voices.find(v => v.lang && (v.lang.startsWith('id') || v.lang.startsWith('in'))) || null;
-          }
-
           function splitTextIntoSentences(text) {
             if (!text) return [];
-            // Pecah berdasarkan tanda baca kalimat agar narasi mengalir alami
-            const parts = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
-            const cleanParts = [];
-            for (let i = 0; i < parts.length; i++) {
-              const part = parts[i].trim();
-              if (part.length > 0) {
-                cleanParts.push(part);
+            // Pecah kalimat rapi maks 140 karakter per penggalan agar audio lancar
+            const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+            const result = [];
+            
+            for (let i = 0; i < sentences.length; i++) {
+              let s = sentences[i].trim();
+              if (!s) continue;
+              if (s.length <= 150) {
+                result.push(s);
+              } else {
+                const words = s.split(' ');
+                let temp = '';
+                for (let j = 0; j < words.length; j++) {
+                  const w = words[j];
+                  if ((temp + ' ' + w).length > 140) {
+                    if (temp.trim()) result.push(temp.trim());
+                    temp = w;
+                  } else {
+                    temp += (temp ? ' ' : '') + w;
+                  }
+                }
+                if (temp.trim()) result.push(temp.trim());
               }
             }
-            return cleanParts;
+            return result;
           }
 
           function playNextChunk() {
-            if (!isSpeaking) return;
+            if (!isSpeaking || isPaused) return;
+
             if (currentChunkIndex >= chunks.length) {
               isSpeaking = false;
               sendStatus('end');
@@ -231,41 +245,57 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
             }
 
             const sentence = chunks[currentChunkIndex];
-            const utterance = new SpeechSynthesisUtterance(sentence);
-            utterance.lang = 'id-ID';
-            utterance.rate = currentRate;
+            const ttsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=' + encodeURIComponent(sentence);
 
-            const idVoice = getBestIndonesianVoice();
-            if (idVoice) {
-              utterance.voice = idVoice;
-            }
+            player.src = ttsUrl;
+            player.playbackRate = currentRate;
 
-            utterance.onend = function() {
+            player.onplay = function() {
+              sendStatus('start', { index: currentChunkIndex, total: chunks.length });
+            };
+
+            player.onended = function() {
               if (isSpeaking && !isPaused) {
                 currentChunkIndex++;
                 playNextChunk();
               }
             };
 
-            utterance.onerror = function(e) {
-              if (e.error !== 'interrupted' && e.error !== 'canceled') {
-                currentChunkIndex++;
-                playNextChunk();
+            player.onerror = function() {
+              // Fallback jika Google TTS gagal, coba Web Speech API bawaan
+              if (window.speechSynthesis) {
+                try {
+                  const utter = new SpeechSynthesisUtterance(sentence);
+                  utter.lang = 'id-ID';
+                  utter.rate = currentRate;
+                  utter.onend = function() {
+                    if (isSpeaking && !isPaused) {
+                      currentChunkIndex++;
+                      playNextChunk();
+                    }
+                  };
+                  window.speechSynthesis.speak(utter);
+                  return;
+                } catch(err) {}
               }
+              // Lewati ke kalimat berikutnya jika error
+              currentChunkIndex++;
+              playNextChunk();
             };
 
-            synth.speak(utterance);
+            const playPromise = player.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(function(err) {
+                console.log('Play error:', err);
+              });
+            }
           }
 
-          window.speakArticle = function(text, rate = 1.0) {
-            if (!synth) {
-              sendStatus('error', { message: 'TTS tidak didukung' });
-              return;
-            }
-            synth.cancel();
+          window.speakArticle = function(text, rate) {
+            if (!text) return;
             isPaused = false;
             isSpeaking = true;
-            currentRate = rate;
+            currentRate = rate || 1.0;
             currentChunkIndex = 0;
             chunks = splitTextIntoSentences(text);
 
@@ -274,39 +304,55 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
               return;
             }
 
-            sendStatus('start');
+            sendStatus('start', { index: 0, total: chunks.length });
             playNextChunk();
           };
 
           window.pauseArticle = function() {
-            if (synth && isSpeaking && !isPaused) {
-              synth.pause();
-              isPaused = true;
-              sendStatus('pause');
+            isPaused = true;
+            if (player) {
+              player.pause();
             }
+            if (window.speechSynthesis) {
+              window.speechSynthesis.pause();
+            }
+            sendStatus('pause');
           };
 
           window.resumeArticle = function() {
-            if (synth && isPaused) {
-              synth.resume();
+            if (isPaused) {
               isPaused = false;
+              if (player && player.src) {
+                player.playbackRate = currentRate;
+                player.play();
+              } else {
+                playNextChunk();
+              }
               sendStatus('resume');
             }
           };
 
           window.stopArticle = function() {
-            if (synth) {
-              synth.cancel();
-              isSpeaking = false;
-              isPaused = false;
-              currentChunkIndex = 0;
-              chunks = [];
-              sendStatus('end');
+            isSpeaking = false;
+            isPaused = false;
+            currentChunkIndex = 0;
+            chunks = [];
+            if (player) {
+              player.pause();
+              player.removeAttribute('src');
+              player.load();
             }
+            if (window.speechSynthesis) {
+              window.speechSynthesis.cancel();
+            }
+            sendStatus('end');
           };
 
           window.setRate = function(rate) {
             currentRate = rate;
+            if (player) {
+              player.playbackRate = rate;
+            }
           };
 
           document.addEventListener('DOMContentLoaded', function() {
@@ -334,8 +380,8 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
         containerStyle,
       ]}
     >
-      {/* Headless WebView untuk speech synthesis engine */}
-      <View style={{ width: 0, height: 0, overflow: 'hidden', position: 'absolute' }}>
+      {/* Headless WebView untuk speech engine (posisi offscreen aktif) */}
+      <View style={styles.hiddenWebViewWrapper}>
         <WebView
           ref={webViewRef}
           originWhitelist={['*']}
@@ -345,6 +391,8 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
           domStorageEnabled={true}
           mediaPlaybackRequiresUserAction={false}
           allowsInlineMediaPlayback={true}
+          mixedContentMode="always"
+          style={styles.hiddenWebView}
         />
       </View>
 
@@ -366,7 +414,7 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
               {status === 'playing' && (
                 <View style={styles.liveBadge}>
                   <View style={styles.liveDot} />
-                  <Text style={styles.liveBadgeText}>LIVE AUDIO</Text>
+                  <Text style={styles.liveBadgeText}>LIVE {currentProgress}</Text>
                 </View>
               )}
               {status === 'paused' && (
@@ -492,6 +540,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 4,
+  },
+  hiddenWebViewWrapper: {
+    position: 'absolute',
+    top: -500,
+    left: -500,
+    width: 20,
+    height: 20,
+    opacity: 0.01,
+    overflow: 'hidden',
+  },
+  hiddenWebView: {
+    width: 20,
+    height: 20,
   },
   topRow: {
     flexDirection: 'row',
