@@ -413,7 +413,7 @@ export default function ArticleDetail() {
                     .replace(/&nbsp;/g, ' ')
                     .replace(/\u00A0/g, ' ')
                     .replace(/color\s*:\s*[^;"']+;?/gi, '') // Hapus inline color bawaan editor (agar bisa beradaptasi ke dark mode)
-                    .replace(/\[B\]/g, `<span class="bedain-signature-badge">B</span> <strong style="color: #ef4444;">BEDAIN NEWS</strong> — `);
+                    .replace(/\s*\[B\]/g, ''); // Hapus tanda [B] dari badan teks (sudah diwakili badge resmi di baris Kontributor)
                     
                   // Jika tidak ada related articles, kita langsung bungkus saja
                   if (relatedArticles.length === 0) {
@@ -504,15 +504,6 @@ export default function ArticleDetail() {
                   li: { fontSize: 15, lineHeight: 24, color: colors.text, marginBottom: 6, textAlign: 'left' },
                 }}
                 classesStyles={{
-                  'bedain-signature-badge': { 
-                    color: '#ffffff', 
-                    backgroundColor: '#ef4444', 
-                    fontWeight: '900', 
-                    fontSize: 10, 
-                    paddingHorizontal: 4, 
-                    paddingVertical: 1, 
-                    borderRadius: 4 
-                  },
                   'baca-juga-label': { 
                     color: '#3b82f6', 
                     fontSize: 12, 
