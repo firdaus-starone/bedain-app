@@ -8,11 +8,13 @@ import { signOut } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { SocialMediaLinks } from '../components/SocialMediaLinks';
 
 export default function ProfileModal() {
   const router = useRouter();
   const { isDarkMode, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const [siteSettings, setSiteSettings] = useState<any>(null);
   const [currentUserData, setCurrentUserData] = useState({
     displayName: user?.displayName || 'Pengguna',
     email: user?.email || 'Belum login',
@@ -83,7 +85,19 @@ export default function ProfileModal() {
       }
     };
 
+    const fetchSiteSettings = async () => {
+      try {
+        const sSnap = await getDoc(doc(db, 'settings', 'site'));
+        if (sSnap.exists()) {
+          setSiteSettings(sSnap.data());
+        }
+      } catch (err) {
+        console.error("Error fetching site settings:", err);
+      }
+    };
+
     fetchPages();
+    fetchSiteSettings();
   }, []);
 
   const handleFeatureNotReady = (featureName: string) => {
@@ -263,6 +277,9 @@ export default function ProfileModal() {
             )
           )}
         </View>
+
+        {/* Media Sosial Resmi & Komunitas Bedain News */}
+        <SocialMediaLinks settings={siteSettings} variant="full" />
 
         <View style={{ height: 40 }} />
       </ScrollView>

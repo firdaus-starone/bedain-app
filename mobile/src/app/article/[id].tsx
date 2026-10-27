@@ -13,6 +13,7 @@ import { DonationBox } from '../../components/DonationBox';
 import { ArticleKeyPoints } from '../../components/ArticleKeyPoints';
 import { ArticlePoll } from '../../components/ArticlePoll';
 import { ArticleAudioPlayer } from '../../components/ArticleAudioPlayer';
+import { SocialMediaLinks } from '../../components/SocialMediaLinks';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
@@ -647,6 +648,9 @@ export default function ArticleDetail() {
                 ))}
               </ScrollView>
             </View>
+
+            {/* IKUTI MEDIA SOSIAL RESMI BEDAINS */}
+            <SocialMediaLinks settings={siteSettings} variant="article" />
 
             {/* POLLING OPINI PEMBACA BEDAINS */}
             <ArticlePoll article={article} />
