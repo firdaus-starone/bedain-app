@@ -10,6 +10,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 import { DonationBox } from '../../components/DonationBox';
+import { ArticleKeyPoints } from '../../components/ArticleKeyPoints';
+import { ArticlePoll } from '../../components/ArticlePoll';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
 
 const { width } = Dimensions.get('window');
@@ -387,6 +389,9 @@ export default function ArticleDetail() {
             </>
           )}
 
+          {/* ⚡ 3 Detik Paham (Poin Utama / TL;DR) */}
+          <ArticleKeyPoints article={article} />
+
           {/* Isi Artikel */}
           <View style={styles.articleBody}>
             {article.content ? (
@@ -408,7 +413,7 @@ export default function ArticleDetail() {
                     .replace(/&nbsp;/g, ' ')
                     .replace(/\u00A0/g, ' ')
                     .replace(/color\s*:\s*[^;"']+;?/gi, '') // Hapus inline color bawaan editor (agar bisa beradaptasi ke dark mode)
-                    .replace(/\[B\]/g, `<strong style="color: #3b82f6;">BEDAIN NEWS</strong> — `);
+                    .replace(/\[B\]/g, `<span class="bedain-signature-badge">B</span> <strong style="color: #ef4444;">BEDAIN NEWS</strong> — `);
                     
                   // Jika tidak ada related articles, kita langsung bungkus saja
                   if (relatedArticles.length === 0) {
@@ -499,6 +504,15 @@ export default function ArticleDetail() {
                   li: { fontSize: 15, lineHeight: 24, color: colors.text, marginBottom: 6, textAlign: 'left' },
                 }}
                 classesStyles={{
+                  'bedain-signature-badge': { 
+                    color: '#ffffff', 
+                    backgroundColor: '#ef4444', 
+                    fontWeight: '900', 
+                    fontSize: 10, 
+                    paddingHorizontal: 4, 
+                    paddingVertical: 1, 
+                    borderRadius: 4 
+                  },
                   'baca-juga-label': { 
                     color: '#3b82f6', 
                     fontSize: 12, 
@@ -540,13 +554,21 @@ export default function ArticleDetail() {
               <Text style={styles.fallbackText}>Konten berita tidak tersedia.</Text>
             )}
 
-            {/* Nama Kontributor / Penulis di Akhir Artikel */}
-            <View style={{ marginTop: 24, paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="pencil" size={16} color={isDarkMode ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
-              <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#475569', flex: 1, lineHeight: 18 }}>
-                <Text style={{ fontWeight: '700', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Kontributor: </Text>
-                {article.contributorName || article.author?.name || 'Redaksi'}
-              </Text>
+            {/* Nama Kontributor / Penulis di Akhir Artikel & Signature Cap Bedain */}
+            <View style={{ marginTop: 24, paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Ionicons name="pencil" size={16} color={isDarkMode ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#475569', flex: 1, lineHeight: 18 }}>
+                  <Text style={{ fontWeight: '700', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Kontributor: </Text>
+                  {article.contributorName || article.author?.name || 'Redaksi'}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 5 }}>
+                <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#ffffff', fontSize: 8.5, fontWeight: '900' }}>B</Text>
+                </View>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#ef4444', letterSpacing: 0.5 }}>BEDAIN REDAKSI</Text>
+              </View>
             </View>
 
             {/* REAKSI PEMBACA */}
@@ -630,6 +652,9 @@ export default function ArticleDetail() {
                 ))}
               </ScrollView>
             </View>
+
+            {/* POLLING OPINI PEMBACA BEDAINS */}
+            <ArticlePoll article={article} />
 
             {/* KOTAK DUKUNGAN PEMBACA / TRAKTIR KOPI */}
             <DonationBox settings={siteSettings} />
