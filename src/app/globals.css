@@ -4148,6 +4148,19 @@ body {
   max-width: 100% !important;
   height: auto !important;
 }
+.article-block em,
+.article-content em,
+.article-block i,
+.article-content i,
+.in-article-image-caption,
+.article-block figcaption,
+.article-content figcaption {
+  font-style: italic !important;
+  font-weight: 400 !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 0.9em !important;
+  line-height: 1.5 !important;
+}
 .article-block img.inline-b-logo {
   min-height: 0 !important;
   margin: 0 4px !important;

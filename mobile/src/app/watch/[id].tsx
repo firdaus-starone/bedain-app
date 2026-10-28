@@ -317,6 +317,7 @@ export default function VideoDetail() {
     bg: { backgroundColor: colors.background },
     textMain: { color: colors.text },
     textMuted: { color: isDarkMode ? '#cbd5e1' : '#64748b' },
+    imageCaptionOutside: { color: isDarkMode ? '#94a3b8' : '#64748b' },
     borderB: { borderBottomColor: colors.border },
     excerpt: { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', color: isDarkMode ? '#cbd5e1' : '#334155' },
     tagBadge: { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: colors.border },
@@ -480,7 +481,7 @@ export default function VideoDetail() {
 
         <View style={[styles.contentContainer, dyn.bg]}>
           {article.imageCaption ? (
-            <Text style={[styles.imageCaptionTextOutside, dyn.textMuted]}>{article.imageCaption}</Text>
+            <Text style={[styles.imageCaptionTextOutside, dyn.imageCaptionOutside]}>{article.imageCaption}</Text>
           ) : null}
 
 
@@ -507,13 +508,24 @@ export default function VideoDetail() {
                     .replace(/color\s*:\s*[^;"']+;?/gi, '') // Hapus inline color bawaan editor (agar bisa beradaptasi ke dark mode)
                     .replace(/\[B\]/g, `<strong style="color: #3b82f6;">BEDAIN NEWS</strong> — `);
                     
+                  // Format deskripsi gambar in-article agar otomatis miring, berukuran pas, dan berwarna muted
+                  const processedHtml = cleanHtml.replace(
+                    /(<img[^>]*>[\s\S]*?<\/p>(?:\s*<p><\/p>)*\s*<p)(>[\s\S]*?<\/p>)/gi,
+                    (full: string, pStart: string, pRest: string) => {
+                      if (/<em>|<i>|dok[:\.]|foto[:\.]|sumber[:\.]|kredit[:\.]/i.test(pRest)) {
+                        return `${pStart} class="in-article-image-caption"${pRest}`;
+                      }
+                      return full;
+                    }
+                  );
+
                   // Jika tidak ada related articles, kita langsung bungkus saja
                   if (relatedArticles.length === 0) {
-                    return `<div style="text-align: left;">${cleanHtml}</div>`;
+                    return `<div style="text-align: left;">${processedHtml}</div>`;
                   }
                   
                   let pCount = 0;
-                  const newHtml = cleanHtml.replace(/<\/p>/g, (match: string) => {
+                  const newHtml = processedHtml.replace(/<\/p>/g, (match: string) => {
                     pCount++;
                     let injected = match;
                     
@@ -588,6 +600,37 @@ export default function VideoDetail() {
                   div: { textAlign: 'left' },
                   span: { textAlign: 'left' },
                   p: { fontSize: 15, lineHeight: 24, color: colors.text, marginBottom: 8, textAlign: 'left', fontWeight: '500' },
+                  em: { 
+                    fontStyle: 'italic', 
+                    fontWeight: 'normal', 
+                    fontSize: 13, 
+                    lineHeight: 20, 
+                    color: isDarkMode ? '#94a3b8' : '#64748b' 
+                  },
+                  i: { 
+                    fontStyle: 'italic', 
+                    fontWeight: 'normal', 
+                    fontSize: 13, 
+                    lineHeight: 20, 
+                    color: isDarkMode ? '#94a3b8' : '#64748b' 
+                  },
+                  cite: { 
+                    fontStyle: 'italic', 
+                    fontWeight: 'normal', 
+                    fontSize: 13, 
+                    lineHeight: 20, 
+                    color: isDarkMode ? '#94a3b8' : '#64748b' 
+                  },
+                  figcaption: { 
+                    fontStyle: 'italic', 
+                    fontWeight: 'normal', 
+                    fontSize: 13, 
+                    lineHeight: 20, 
+                    color: isDarkMode ? '#94a3b8' : '#64748b',
+                    textAlign: 'left',
+                    marginTop: 4,
+                    marginBottom: 12
+                  },
                   strong: { fontWeight: '800', color: colors.text },
                   h2: { fontSize: 19, fontWeight: '800', marginTop: 14, marginBottom: 6, color: colors.text, textAlign: 'left' },
                   h3: { fontSize: 17, fontWeight: '700', marginTop: 14, marginBottom: 6, color: colors.text, textAlign: 'left' },
@@ -596,6 +639,16 @@ export default function VideoDetail() {
                   li: { fontSize: 15, lineHeight: 24, color: colors.text, marginBottom: 6, textAlign: 'left' },
                 }}
                 classesStyles={{
+                  'in-article-image-caption': { 
+                    fontStyle: 'italic', 
+                    fontWeight: 'normal', 
+                    fontSize: 13, 
+                    lineHeight: 20, 
+                    color: isDarkMode ? '#94a3b8' : '#64748b',
+                    marginTop: -2,
+                    marginBottom: 14,
+                    textAlign: 'left'
+                  },
                   'baca-juga-label': { 
                     color: '#3b82f6', 
                     fontSize: 12, 
@@ -985,8 +1038,11 @@ const styles = StyleSheet.create({
   },
   imageCaptionTextOutside: {
     color: '#64748b',
-    fontSize: 12,
+    fontSize: 12.5,
     fontStyle: 'italic',
+    fontWeight: '400',
+    lineHeight: 18,
+    marginTop: -4,
     marginBottom: 16,
   },
   contentContainer: {
