@@ -8,7 +8,7 @@ import VideoBadge from '../components/VideoBadge';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import { useAutoTranslate } from '../hooks/useAutoTranslate';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 
 // Mode hemat kuota: cache hasil di sessionStorage selama 10 menit
 const SEARCH_CACHE_TTL = 10 * 60 * 1000;
@@ -54,7 +54,13 @@ const SearchPage = () => {
 
   useEffect(() => {
     setSearchInput(queryParam);
-  }, [queryParam]);
+    if (queryParam && dbCategories.length > 0) {
+      const matched = dbCategories.find(c => c.toLowerCase() === queryParam.trim().toLowerCase());
+      if (matched) {
+        setActiveCategoryFilter(matched);
+      }
+    }
+  }, [queryParam, dbCategories]);
 
   useEffect(() => {
     const fetchAllArticles = async () => {
@@ -129,12 +135,63 @@ const SearchPage = () => {
     }
   }, [articles]);
 
+  const fetchedCategoriesRef = React.useRef(new Set());
+
+  // Smart Category Fetcher: ensures all articles in the target category are loaded directly from Firestore
+  useEffect(() => {
+    let targetCat = null;
+    if (activeCategoryFilter !== 'Semua') {
+      targetCat = activeCategoryFilter;
+    } else if (queryParam && dbCategories.length > 0) {
+      targetCat = dbCategories.find(c => c.toLowerCase() === queryParam.trim().toLowerCase()) || null;
+    }
+
+    if (!targetCat || targetCat === 'Semua') return;
+
+    const lowerTarget = targetCat.toLowerCase();
+    if (fetchedCategoriesRef.current.has(lowerTarget)) return;
+    fetchedCategoriesRef.current.add(lowerTarget);
+
+    const fetchCategoryArticles = async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'articles'), where('category', '==', targetCat)));
+        const now = new Date();
+        const catArticles = snap.docs.map(doc => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            ...d,
+            publishedAt: d.publishedAt?.toDate ? d.publishedAt.toDate().toISOString() : d.publishedAt,
+            createdAt: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : d.createdAt,
+            updatedAt: d.updatedAt?.toDate ? d.updatedAt.toDate().toISOString() : d.updatedAt,
+          };
+        }).filter(a => new Date(a.publishedAt || now) <= now);
+
+        if (catArticles.length > 0) {
+          setArticles(prev => {
+            const map = new Map(prev.map(item => [item.id, item]));
+            catArticles.forEach(item => map.set(item.id, item));
+            const merged = Array.from(map.values());
+            writeSessionCache('bedain_search_articles', merged);
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error(`Error fetching category articles for ${targetCat}:`, err);
+      }
+    };
+
+    fetchCategoryArticles();
+  }, [activeCategoryFilter, queryParam, dbCategories]);
+
   const searchResults = useMemo(() => {
     const q = queryParam.trim().toLowerCase();
     
     // Base filter by query string
     let filtered = articles;
-    if (q && q !== 'semua' && q !== 'all') {
+    const isExactCategoryQuery = activeCategoryFilter !== 'Semua' && q === activeCategoryFilter.toLowerCase();
+
+    if (q && q !== 'semua' && q !== 'all' && !isExactCategoryQuery) {
       filtered = articles.filter(article => {
         const titleMatch = (article.title || '').toLowerCase().includes(q);
         const excerptMatch = (article.seoDescription || article.excerpt || '').toLowerCase().includes(q);
@@ -175,7 +232,7 @@ const SearchPage = () => {
         if (activeCategoryFilter === 'Teknologi & AI') return cat.includes('teknologi') || cat.includes('ai') || cat.includes('gadget') || cat.includes('tekno');
         if (activeCategoryFilter === 'Hiburan & Pop') return cat.includes('hiburan') || cat.includes('pop') || cat.includes('viral') || cat.includes('seleb');
         if (activeCategoryFilter === 'Gaya Hidup') return cat.includes('gaya') || cat.includes('health') || cat.includes('wellness');
-        return cat.includes(activeCategoryFilter.toLowerCase());
+        return cat === activeCategoryFilter.toLowerCase() || cat.includes(activeCategoryFilter.toLowerCase());
       });
     }
 
@@ -359,7 +416,14 @@ const SearchPage = () => {
             {categoryTabs.map(cat => (
               <button
                 key={cat}
-                onClick={() => setActiveCategoryFilter(cat)}
+                onClick={() => {
+                  setActiveCategoryFilter(cat);
+                  if (cat === 'Semua') {
+                    if (queryParam) router.push('/cari');
+                  } else {
+                    router.push(`/cari?q=${encodeURIComponent(cat)}`);
+                  }
+                }}
                 style={{
                   background: activeCategoryFilter === cat ? 'var(--color-text-primary)' : 'var(--color-bg-secondary)',
                   color: activeCategoryFilter === cat ? 'var(--color-bg-primary)' : 'var(--color-text-secondary)',
@@ -414,7 +478,7 @@ const SearchPage = () => {
             <div style={{ marginBottom: '16px', fontSize: '13.5px', color: 'var(--color-text-secondary)' }}>
               Menampilkan <strong>{searchResults.length}</strong> berita
               {activeCategoryFilter !== 'Semua' && ` di kategori ${activeCategoryFilter}`}
-              {queryParam && ` untuk "${queryParam}"`}
+              {queryParam && queryParam.toLowerCase() !== activeCategoryFilter.toLowerCase() && ` untuk "${queryParam}"`}
             </div>
 
             <div style={{
