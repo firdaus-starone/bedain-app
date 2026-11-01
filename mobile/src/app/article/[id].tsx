@@ -189,24 +189,47 @@ export default function ArticleDetail() {
     }
   }, [id]);
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Memuat berita...</Text>
-      </View>
-    );
-  }
+  // Auto-translate full article effect - ALWAYS declared before early returns
+  useEffect(() => {
+    if (!article || !article.id) return;
+    if (lang === 'id' || showOriginal) {
+      setTranslatedArticle(null);
+      setIsTranslatingArticle(false);
+      return;
+    }
 
-  if (!article) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Berita tidak ditemukan.</Text>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-          <Text style={{ color: '#3b82f6', fontWeight: 'bold' }}>Kembali ke Beranda</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+    const hasStatic = lang === 'en'
+      ? (article.title_en && article.content_en)
+      : (article.title_zh && article.content_zh);
+
+    if (hasStatic) {
+      setTranslatedArticle(null);
+      setIsTranslatingArticle(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const runTranslation = async () => {
+      setIsTranslatingArticle(true);
+      try {
+        const result = await loadFullArticleTranslation(article);
+        if (!isCancelled && result) {
+          setTranslatedArticle(result);
+        }
+      } catch (e) {
+        console.warn('Failed to load full article translation:', e);
+      } finally {
+        if (!isCancelled) {
+          setIsTranslatingArticle(false);
+        }
+      }
+    };
+
+    runTranslation();
+    return () => {
+      isCancelled = true;
+    };
+  }, [article?.id, lang, showOriginal]);
 
   const handleShare = async () => {
     try {
@@ -256,7 +279,7 @@ export default function ArticleDetail() {
     }
   };
 
-  const thumb = article.coverImage || article.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80';
+  const thumb = article?.coverImage || article?.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80';
 
   const toggleBookmark = async () => {
     try {
@@ -287,48 +310,6 @@ export default function ArticleDetail() {
     }
   };
 
-  // Auto-translate full article effect
-  useEffect(() => {
-    if (!article || !article.id) return;
-    if (lang === 'id' || showOriginal) {
-      setTranslatedArticle(null);
-      setIsTranslatingArticle(false);
-      return;
-    }
-
-    const hasStatic = lang === 'en'
-      ? (article.title_en && article.content_en)
-      : (article.title_zh && article.content_zh);
-
-    if (hasStatic) {
-      setTranslatedArticle(null);
-      setIsTranslatingArticle(false);
-      return;
-    }
-
-    let isCancelled = false;
-    const runTranslation = async () => {
-      setIsTranslatingArticle(true);
-      try {
-        const result = await loadFullArticleTranslation(article);
-        if (!isCancelled && result) {
-          setTranslatedArticle(result);
-        }
-      } catch (e) {
-        console.warn('Failed to load full article translation:', e);
-      } finally {
-        if (!isCancelled) {
-          setIsTranslatingArticle(false);
-        }
-      }
-    };
-
-    runTranslation();
-    return () => {
-      isCancelled = true;
-    };
-  }, [article?.id, lang, showOriginal]);
-
   const displayTitle = (translatedArticle && !showOriginal)
     ? translatedArticle.title
     : getArticleTitle(article);
@@ -346,7 +327,7 @@ export default function ArticleDetail() {
     : (article?.keyPoints || []);
 
   let dateStr = 'Baru saja';
-  if (article.publishedAt) {
+  if (article?.publishedAt) {
     const dateObj = typeof article.publishedAt.toDate === 'function' ? article.publishedAt.toDate() : new Date(article.publishedAt);
     dateStr = dateObj.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   }
@@ -366,6 +347,25 @@ export default function ArticleDetail() {
     card: { backgroundColor: colors.card, borderColor: colors.border },
     headerBtn: { backgroundColor: isDarkMode ? '#1e293b' : '#ffffff' },
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Memuat berita...</Text>
+      </View>
+    );
+  }
+
+  if (!article) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Berita tidak ditemukan.</Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+          <Text style={{ color: '#3b82f6', fontWeight: 'bold' }}>Kembali ke Beranda</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, dyn.bg]}>
