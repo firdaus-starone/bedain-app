@@ -8,6 +8,8 @@ import { db } from '../../lib/firebase';
 import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from '../../components/LanguageSelector';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 import { DonationBox } from '../../components/DonationBox';
 import { ArticleKeyPoints } from '../../components/ArticleKeyPoints';
@@ -23,6 +25,7 @@ export default function ArticleDetail() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
   const { user } = useAuth();
+  const { lang, getArticleTitle, getArticleContent, getArticleExcerpt, t } = useLanguage();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { width: contentWidth } = useWindowDimensions();
@@ -282,10 +285,14 @@ export default function ArticleDetail() {
     }
   };
 
+  const displayTitle = getArticleTitle(article);
+  const displayContent = getArticleContent(article);
+  const displayExcerpt = getArticleExcerpt(article);
+
   let dateStr = 'Baru saja';
   if (article.publishedAt) {
     const dateObj = typeof article.publishedAt.toDate === 'function' ? article.publishedAt.toDate() : new Date(article.publishedAt);
-    dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    dateStr = dateObj.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   const dyn = {
@@ -319,7 +326,7 @@ export default function ArticleDetail() {
       >
         {/* Judul dan Meta di atas Gambar */}
         <View style={{ paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 120 : 130, paddingBottom: 16 }}>
-          <Text style={[styles.title, dyn.textMain]}>{article.title}</Text>
+          <Text style={[styles.title, dyn.textMain]}>{displayTitle}</Text>
           <View style={[styles.metaRow, { marginBottom: 0 }]}>
             <View style={[styles.authorContainer, { flex: 1 }]}>
               <View style={{ flex: 1 }}>
@@ -379,8 +386,8 @@ export default function ArticleDetail() {
           {(!article.videoUrl && !article.youtubeUrl && !article.video) && (
             <>
               <View style={[styles.excerptContainer, dyn.excerpt]}>
-                {(article.excerpt || article.summary || article.seoDescription || article.description) ? (
-                  <Text style={[styles.excerpt, dyn.excerpt]}>{article.excerpt || article.summary || article.seoDescription || article.description}</Text>
+                {displayExcerpt ? (
+                  <Text style={[styles.excerpt, dyn.excerpt]}>{displayExcerpt}</Text>
                 ) : (
                   <Text style={[styles.excerpt, dyn.textMuted]}>
                     [Kolom excerpt/ringkasan akan muncul di sini. Silakan isi kolom ringkasan saat membuat berita untuk menghilangkan teks ini.]
@@ -400,7 +407,7 @@ export default function ArticleDetail() {
 
           {/* Isi Artikel */}
           <View style={styles.articleBody}>
-            {article.content ? (
+            {displayContent ? (
               <RenderHtml
                 contentWidth={contentWidth - 40}
                 systemFonts={systemFonts}
@@ -410,7 +417,7 @@ export default function ArticleDetail() {
                   fontWeight: '500'
                 }}
                 source={{ html: (() => {
-                  const html = article.content;
+                  const html = displayContent;
                   if (!html) return html;
                   
                   // Bersihkan HTML sesuai dengan panduan Ultimate Fix
@@ -895,7 +902,8 @@ export default function ArticleDetail() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 4 }}>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          <LanguageSelector variant="button" />
           <TouchableOpacity style={styles.bookmarkButton} onPress={handleShare}>
             <Ionicons name="share-social-outline" size={24} color={dyn.textMain.color} />
           </TouchableOpacity>

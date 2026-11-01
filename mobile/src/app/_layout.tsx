@@ -4,6 +4,7 @@ import { StatusBar, useColorScheme, Alert, Modal, View, Text, TouchableOpacity, 
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { AuthProvider } from '../context/AuthContext';
+import { LanguageProvider } from '../context/LanguageContext';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { doc, getDoc } from 'firebase/firestore';
@@ -244,7 +245,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <RootLayoutContent />
+        <LanguageProvider>
+          <RootLayoutContent />
+        </LanguageProvider>
       </AuthProvider>
     </ThemeProvider>
   );

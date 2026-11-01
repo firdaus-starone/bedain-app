@@ -8,6 +8,8 @@ import { signOut } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageSelector } from '../components/LanguageSelector';
 import { SocialMediaLinks } from '../components/SocialMediaLinks';
 
 export default function ProfileModal() {
@@ -238,6 +240,9 @@ export default function ProfileModal() {
               thumbColor={isDarkMode ? '#3b82f6' : '#ffffff'}
             />
           </View>
+
+          {/* Pilihan Bahasa / Language */}
+          <LanguageSelector variant="menu-item" />
           
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/notifications' as any)}>
             <View style={[styles.menuIconBox, dyn.menuIconBoxGray]}>

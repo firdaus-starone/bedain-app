@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { doc, getDoc, collection, query, orderBy, limit, getDocs, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from '../../components/LanguageSelector';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 
 const HOT_TOPICS = [
@@ -37,11 +39,12 @@ const getYouTubeId = (input: string) => {
   return match ? match[1] : null;
 };
 
-const mapArticle = (a: any) => {
+const mapArticle = (a: any, lang: string | number = 'id') => {
+  const activeLang = typeof lang === 'string' ? lang : 'id';
   let dateStr = 'Baru saja';
   if (a.publishedAt) {
     const dateObj = typeof a.publishedAt.toDate === 'function' ? a.publishedAt.toDate() : new Date(a.publishedAt);
-    dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    dateStr = dateObj.toLocaleDateString(activeLang === 'en' ? 'en-US' : activeLang === 'zh' ? 'zh-CN' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   }
   const hasVideo = !!(
     a.videoUrl || 
@@ -64,9 +67,22 @@ const mapArticle = (a: any) => {
     }
   }
 
+  let finalTitle = a.title || 'Tanpa Judul';
+  if (activeLang === 'en' && a.title_en) finalTitle = a.title_en;
+  else if (activeLang === 'zh' && a.title_zh) finalTitle = a.title_zh;
+
+  let finalExcerpt = a.excerpt || a.seoDescription || '';
+  if (activeLang === 'en' && (a.excerpt_en || a.seoDescription_en)) {
+    finalExcerpt = a.excerpt_en || a.seoDescription_en;
+  } else if (activeLang === 'zh' && (a.excerpt_zh || a.seoDescription_zh)) {
+    finalExcerpt = a.excerpt_zh || a.seoDescription_zh;
+  }
+
   return {
     id: a.id,
-    title: a.title || 'Tanpa Judul',
+    title: finalTitle,
+    rawTitle: a.title,
+    excerpt: finalExcerpt,
     date: dateStr,
     image: cover || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80',
     category: a.category || 'Berita',
@@ -127,6 +143,7 @@ const PulsingDot = () => {
 export default function Home() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const { lang, t, getCategoryName } = useLanguage();
   const { width: screenWidth } = useWindowDimensions();
   const [categories, setCategories] = useState<{ name: string, slug: string }[]>([]);
   const [activeTab, setActiveTab] = useState<'terkini' | 'rekomendasi' | 'populer' | 'redaksi' | 'komentar'>('terkini');
@@ -238,7 +255,7 @@ export default function Home() {
         }
       }
 
-      const validDocs = docs.filter(filterPublished).map(mapArticle);
+      const validDocs = docs.filter(filterPublished).map(d => mapArticle(d, lang));
       setDbRedaksiArticles(validDocs);
     } catch (err) {
       console.error('Error fetching redaksi articles:', err);
@@ -255,7 +272,7 @@ export default function Home() {
       );
       const snapC = await getDocs(qC);
       const docs = snapC.docs.map(d => ({ id: d.id, ...d.data() }));
-      const valid = docs.filter(filterPublished).map(mapArticle);
+      const valid = docs.filter(filterPublished).map(d => mapArticle(d, lang));
       setDbCommentedArticles(valid);
     } catch (err) {
       console.error('Error fetching commented articles:', err);
@@ -433,8 +450,8 @@ export default function Home() {
     MOST_COMMENTED_ARTICLES,
     EXTRA_ARTICLES
   } = useMemo(() => {
-    const allMapped = rawArticles.map(mapArticle);
-    const breaking = rawArticles.filter(a => a.isBreakingNews).map(mapArticle);
+    const allMapped = rawArticles.map(a => mapArticle(a, lang));
+    const breaking = rawArticles.filter(a => a.isBreakingNews).map(a => mapArticle(a, lang));
     
     // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish)
     const mainFeed = allMapped;
@@ -522,7 +539,7 @@ export default function Home() {
       MOST_COMMENTED_ARTICLES: mostCommentedArticles || [],
       EXTRA_ARTICLES: extra || []
     };
-  }, [rawArticles, dbRedaksiArticles, dbCommentedArticles, allApprovedComments]);
+  }, [rawArticles, dbRedaksiArticles, dbCommentedArticles, allApprovedComments, lang]);
 
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -680,6 +697,7 @@ export default function Home() {
           </Text>
         </View>
         <View style={styles.headerIcons}>
+          <LanguageSelector variant="button" />
           <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/search')}>
             <Ionicons name="search-outline" size={22} color={dyn.iconColor} />
           </TouchableOpacity>
@@ -1517,7 +1535,8 @@ const styles = StyleSheet.create({
   },
   headerIcons: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    gap: 8,
   },
   iconButton: {
     width: 40,
