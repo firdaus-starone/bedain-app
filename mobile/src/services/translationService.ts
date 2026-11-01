@@ -16,6 +16,15 @@ const textMemoryCache: Record<string, Record<string, string>> = {
   zh: {},
 };
 
+export interface TranslatedArticlePayload {
+  title: string;
+  excerpt: string;
+  content: string;
+  keyPoints?: string[];
+  imageCaption?: string;
+  targetLang: string;
+}
+
 const articleMemoryCache = new Map<string, TranslatedArticlePayload>();
 
 // Debounced batch translation queue
@@ -31,7 +40,7 @@ export const subscribeToTranslations = (listener: () => void) => {
 };
 
 const notifyBatchListeners = () => {
-  batchListeners.forEach(listener => {
+  batchListeners.forEach((listener) => {
     try {
       listener();
     } catch (e) {
@@ -97,28 +106,57 @@ const persistTextCache = async (targetLang: SupportedLanguage) => {
   }
 };
 
-// Fallback for single text translation (MyMemory / Bedain Web API)
-const translateSingleFallback = async (text: string, targetLang: SupportedLanguage): Promise<string | null> => {
-  const clean = text.trim();
-  if (!clean || targetLang === 'id') return clean;
+/**
+ * Robust online translation for a single text or HTML block
+ * 1. Google Translate official Android API (GET with client=at)
+ * 2. MyMemory Translated API with valid email (no daily limit warning)
+ * 3. Bedain Web Next.js API
+ */
+export const translateSingleOnline = async (text: string, targetLang: SupportedLanguage): Promise<string> => {
+  const clean = (text || '').trim();
+  if (!clean || targetLang === 'id') return text;
+
   const tl = TARGET_LANG_MAP[targetLang] || targetLang;
 
-  // 1. MyMemory API
+  // 1. Google Translate Android API (highly reliable, no 429 captcha)
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=id|${tl}`;
+    const url = `https://translate.google.com/translate_a/single?client=at&dt=t&dj=1&sl=auto&tl=${tl}&q=${encodeURIComponent(clean)}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'GoogleTranslate/6.28.0.05.357165030 (Linux; U; Android 12; Pixel 6)',
+      },
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && Array.isArray(json.sentences)) {
+        const trans = json.sentences.map((s: any) => s.trans || '').join('');
+        if (trans && isValidTranslation(clean, trans, targetLang)) {
+          return trans;
+        }
+      }
+    }
+  } catch (e) {
+    // try fallback
+  }
+
+  // 2. MyMemory API with verified contact parameter
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=id|${tl}&de=redaksi@bedainnews.com`;
     const res = await fetch(url, {
       headers: { 'User-Agent': 'BedainNewsMobile/1.0' },
     });
     if (res.ok) {
       const data = await res.json();
       const trans = data.responseData?.translatedText?.trim();
-      if (trans && isValidTranslation(clean, trans, targetLang)) {
+      if (trans && !trans.includes('MYMEMORY WARNING') && isValidTranslation(clean, trans, targetLang)) {
         return trans;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    // try next fallback
+  }
 
-  // 2. Bedain Web API
+  // 3. Bedain Web API
   try {
     const res = await fetch('https://bedainnews.com/api/translate-text', {
       method: 'POST',
@@ -134,87 +172,35 @@ const translateSingleFallback = async (text: string, targetLang: SupportedLangua
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    // fail silently and return original
+  }
 
-  return null;
+  return text;
 };
 
-// Process batch text translation
+// Process batch text translation for UI labels
 const processBatchQueue = async (targetLang: SupportedLanguage) => {
   if (pendingBatch.size === 0 || targetLang === 'id') return;
 
   const textsToTranslate = Array.from(pendingBatch);
   pendingBatch.clear();
 
-  const tl = TARGET_LANG_MAP[targetLang] || targetLang;
-  const DELIM = '<hr id="b-delim" />';
-  const chunkSize = 15;
-
+  const chunkSize = 6;
   for (let i = 0; i < textsToTranslate.length; i += chunkSize) {
     const chunk = textsToTranslate.slice(i, i + chunkSize);
-    const payload = chunk.map(t => (t ? t.trim() : '<!--empty-->')).join(DELIM);
-    let chunkSucceeded = false;
-
-    try {
-      const body = new URLSearchParams({
-        client: 'gtx',
-        sl: 'auto',
-        tl: tl,
-        dt: 't',
-        q: payload,
-      });
-
-      const res = await fetch('https://translate.googleapis.com/translate_a/single', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-        body: body.toString(),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json && Array.isArray(json[0])) {
-          const raw = json[0].map((p: any) => p[0] || '').join('');
-          const parts = raw.split(/<hr[^>]*id=["']?b-delim["']?[^>]*\/?>/i);
-
-          if (parts.length === chunk.length) {
-            if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
-
-            parts.forEach((part: string, idx: number) => {
-              const orig = chunk[idx];
-              const trans = part.replace(/<!--\s*empty\s*-->/gi, '').trim();
-
-              if (isValidTranslation(orig, trans, targetLang)) {
-                textMemoryCache[targetLang][orig] = trans;
-                textMemoryCache[targetLang][orig.trim()] = trans;
-              }
-            });
-            chunkSucceeded = true;
-          }
+    await Promise.all(
+      chunk.map(async (item) => {
+        const trans = await translateSingleOnline(item, targetLang);
+        if (trans && isValidTranslation(item, trans, targetLang)) {
+          if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
+          textMemoryCache[targetLang][item] = trans;
+          textMemoryCache[targetLang][item.trim()] = trans;
         }
-      }
-    } catch (e) {
-      console.warn('Batch translation request error:', e);
-    }
-
-    // Fallback for failed items in chunk
-    if (!chunkSucceeded) {
-      await Promise.all(
-        chunk.map(async item => {
-          const trans = await translateSingleFallback(item, targetLang);
-          if (trans && isValidTranslation(item, trans, targetLang)) {
-            if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
-            textMemoryCache[targetLang][item] = trans;
-            textMemoryCache[targetLang][item.trim()] = trans;
-          }
-        })
-      );
-    }
+      })
+    );
   }
 
-  // Persist updated translations and notify subscribers
   await persistTextCache(targetLang);
   notifyBatchListeners();
 };
@@ -247,16 +233,69 @@ export const getCachedTranslation = (text: string, targetLang: SupportedLanguage
   return null;
 };
 
-export interface TranslatedArticlePayload {
-  title: string;
-  excerpt: string;
-  content: string;
-  keyPoints?: string[];
-  imageCaption?: string;
-  targetLang: string;
-}
+export const getCachedArticleTranslation = (
+  articleId: string,
+  targetLang: SupportedLanguage
+): TranslatedArticlePayload | null => {
+  if (!articleId || targetLang === 'id') return null;
+  const cacheKey = `${articleId}_${targetLang}`;
+  return articleMemoryCache.get(cacheKey) || null;
+};
 
-// Full Article Translation
+/**
+ * Intelligent HTML body translation that splits into block chunks,
+ * translates them concurrently while preserving tags, images, and formatting.
+ */
+export const translateHtmlContent = async (html: string, targetLang: SupportedLanguage): Promise<string> => {
+  if (!html || !html.trim() || targetLang === 'id') return html;
+
+  // Split at closing block tags
+  const parts = html.split(/(<\/(?:p|h[1-6]|blockquote|li|div)>)/i);
+
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (let i = 0; i < parts.length; i += 2) {
+    const content = parts[i] || '';
+    const closingTag = parts[i + 1] || '';
+    const block = content + closingTag;
+
+    // Keep standalone image tags intact
+    if (/^<p[^>]*>\s*<img[^>]*\/?>\s*<\/p>$/i.test(block.trim())) {
+      if (currentChunk) {
+        chunks.push(currentChunk);
+        currentChunk = '';
+      }
+      chunks.push(block);
+      continue;
+    }
+
+    if (currentChunk.length + block.length > 1200 && currentChunk.length > 0) {
+      chunks.push(currentChunk);
+      currentChunk = block;
+    } else {
+      currentChunk += block;
+    }
+  }
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  // Translate all chunks concurrently
+  const translatedChunks = await Promise.all(
+    chunks.map(async (chunk) => {
+      // If purely an img tag, don't send to translation
+      if (/^<p[^>]*>\s*<img[^>]*\/?>\s*<\/p>$/i.test(chunk.trim())) {
+        return chunk;
+      }
+      return translateSingleOnline(chunk, targetLang);
+    })
+  );
+
+  return translatedChunks.join('');
+};
+
+// Full Article Translation (Title, Excerpt, Content HTML, Key Points, Image Caption)
 export const translateFullArticle = async (
   article: {
     id: string;
@@ -282,7 +321,7 @@ export const translateFullArticle = async (
 
   const cacheKey = `${article.id}_${targetLang}`;
 
-  // 1. Check memory cache
+  // 1. Check in-memory cache
   if (articleMemoryCache.has(cacheKey)) {
     return articleMemoryCache.get(cacheKey)!;
   }
@@ -323,101 +362,85 @@ export const translateFullArticle = async (
     console.warn('Firestore translation check notice:', e);
   }
 
-  // 4. Translate via Google Translate endpoint
-  const tl = TARGET_LANG_MAP[targetLang] || targetLang;
-  const DELIM = '<hr id="b-delim" />';
-  const title = (targetLang === 'en' && article.title_en) ? article.title_en : ((targetLang === 'zh' && article.title_zh) ? article.title_zh : (article.title || ''));
-  const excerpt = (targetLang === 'en' && article.excerpt_en) ? article.excerpt_en : ((targetLang === 'zh' && article.excerpt_zh) ? article.excerpt_zh : (article.excerpt || article.summary || article.seoDescription || article.description || ''));
-  const content = (targetLang === 'en' && article.content_en) ? article.content_en : ((targetLang === 'zh' && article.content_zh) ? article.content_zh : (article.content || ''));
+  // 4. Perform dynamic translation of all parts in parallel
+  const title =
+    targetLang === 'en' && article.title_en
+      ? article.title_en
+      : targetLang === 'zh' && article.title_zh
+      ? article.title_zh
+      : article.title || '';
+
+  const excerpt =
+    targetLang === 'en' && article.excerpt_en
+      ? article.excerpt_en
+      : targetLang === 'zh' && article.excerpt_zh
+      ? article.excerpt_zh
+      : article.excerpt || article.summary || article.seoDescription || article.description || '';
+
+  const content =
+    targetLang === 'en' && article.content_en
+      ? article.content_en
+      : targetLang === 'zh' && article.content_zh
+      ? article.content_zh
+      : article.content || '';
+
   const imageCaption = article.imageCaption || article.caption || '';
   const keyPoints = article.keyPoints || [];
 
-  const kpBlock = Array.isArray(keyPoints) && keyPoints.length > 0
-    ? '<ul>' + keyPoints.map(k => '<li>' + k + '</li>').join('') + '</ul>'
-    : '<!--no-kp-->';
-
-  const combined = (title || '') + DELIM + (excerpt || '') + DELIM + kpBlock + DELIM + (imageCaption || '') + DELIM + (content || '');
-
   try {
-    const body = new URLSearchParams({
-      client: 'gtx',
-      sl: 'auto',
-      tl: tl,
-      dt: 't',
-      q: combined,
-    });
+    const [transTitle, transExcerpt, transImageCaption, transKeyPoints, transContent] = await Promise.all([
+      translateSingleOnline(title, targetLang),
+      translateSingleOnline(excerpt, targetLang),
+      imageCaption ? translateSingleOnline(imageCaption, targetLang) : Promise.resolve(''),
+      Array.isArray(keyPoints) && keyPoints.length > 0
+        ? Promise.all(keyPoints.map((kp) => translateSingleOnline(kp, targetLang)))
+        : Promise.resolve([]),
+      translateHtmlContent(content, targetLang),
+    ]);
 
-    const res = await fetch('https://translate.googleapis.com/translate_a/single', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-      body: body.toString(),
-    });
+    const result: TranslatedArticlePayload = {
+      title: transTitle || title,
+      excerpt: transExcerpt || excerpt,
+      content: transContent || content,
+      keyPoints: transKeyPoints.length > 0 ? transKeyPoints : keyPoints,
+      imageCaption: transImageCaption || imageCaption,
+      targetLang,
+    };
 
-    if (res.ok) {
-      const json = await res.json();
-      if (json && Array.isArray(json[0])) {
-        const raw = json[0].map((p: any) => p[0] || '').join('');
-        const parts = raw.split(/<hr[^>]*id=["']?b-delim["']?[^>]*\/?>/i);
+    // Cache locally in memory & AsyncStorage
+    articleMemoryCache.set(cacheKey, result);
+    AsyncStorage.setItem(`bedain_art_full_${cacheKey}`, JSON.stringify(result)).catch(() => {});
 
-        const transTitle = parts[0]?.trim() || title;
-        const transExcerpt = parts[1]?.trim() || excerpt;
-
-        let transKeyPoints: string[] = [];
-        const rawKp = parts[2]?.trim();
-        if (rawKp && rawKp.includes('<li>')) {
-          const matched = rawKp.match(/<li>(.*?)<\/li>/gis);
-          if (matched) {
-            transKeyPoints = matched.map((s: string) => s.replace(/<\/?li>/gi, '').trim());
-          }
-        }
-
-        const transImageCaption = parts[3]?.trim() || imageCaption;
-        const transContent = parts.slice(4).join(DELIM)?.trim() || content;
-
-        const result: TranslatedArticlePayload = {
-          title: transTitle,
-          excerpt: transExcerpt,
-          content: transContent,
-          keyPoints: transKeyPoints.length > 0 ? transKeyPoints : (article.keyPoints || []),
-          imageCaption: transImageCaption,
-          targetLang,
-        };
-
-        // Cache locally
-        articleMemoryCache.set(cacheKey, result);
-        AsyncStorage.setItem(`bedain_art_full_${cacheKey}`, JSON.stringify(result)).catch(() => {});
-
-        // Cache title & imageCaption in text cache
-        if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
-        if (article.title) {
-          textMemoryCache[targetLang][article.title] = transTitle;
-          textMemoryCache[targetLang][article.title.trim()] = transTitle;
-        }
-        if (imageCaption) {
-          textMemoryCache[targetLang][imageCaption] = transImageCaption;
-          textMemoryCache[targetLang][imageCaption.trim()] = transImageCaption;
-        }
-
-        // Cache to Firestore for future readers
-        try {
-          const transDocRef = doc(db, 'articles', article.id, 'translations', targetLang);
-          setDoc(transDocRef, {
-            ...result,
-            translatedAt: new Date().toISOString(),
-          }, { merge: true }).catch(() => {});
-        } catch (e) {}
-
-        return result;
-      }
+    // Cache title & imageCaption in text cache
+    if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
+    if (article.title && transTitle) {
+      textMemoryCache[targetLang][article.title] = transTitle;
+      textMemoryCache[targetLang][article.title.trim()] = transTitle;
     }
+    if (imageCaption && transImageCaption) {
+      textMemoryCache[targetLang][imageCaption] = transImageCaption;
+      textMemoryCache[targetLang][imageCaption.trim()] = transImageCaption;
+    }
+
+    // Cache to Firestore for future readers
+    try {
+      const transDocRef = doc(db, 'articles', article.id, 'translations', targetLang);
+      setDoc(
+        transDocRef,
+        {
+          ...result,
+          translatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      ).catch(() => {});
+    } catch (e) {}
+
+    return result;
   } catch (e) {
-    console.warn('Failed to translate full article via Google, trying Bedain web endpoint:', e);
+    console.warn('Failed to translate full article:', e);
   }
 
-  // 5. Fallback via Bedain Web API
+  // 5. Fallback via Bedain Web API if any
   try {
     const res = await fetch('https://bedainnews.com/api/translate-article', {
       method: 'POST',
@@ -441,6 +464,7 @@ export const translateFullArticle = async (
           excerpt: transData.excerpt || transData.seoDescription || excerpt,
           content: transData.content || content,
           keyPoints: transData.keyPoints || keyPoints,
+          imageCaption: transData.imageCaption || imageCaption,
           targetLang,
         };
 

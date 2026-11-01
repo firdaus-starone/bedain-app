@@ -88,7 +88,18 @@
     "cancel": "Cancel",
     "login": "Login",
     "related_news": "RELATED NEWS",
-    "recommendations": "RECOMMENDED"
+    "recommendations": "RECOMMENDED",
+    "sponsor_ad": "SPONSORED AD",
+    "read_also": "READ ALSO",
+    "editorial_badge": "BEDAIN EDITORIAL",
+    "content_unavailable": "Article content is not available.",
+    "original_language": "Original Language (ID)",
+    "loading": "Loading article...",
+    "not_found": "Article not found.",
+    "back_to_home": "Back to Home",
+    "bookmark_removed": "Article removed from bookmarks.",
+    "bookmark_saved": "Article saved for later reading.",
+    "read_more_at": "Read more at:"
   },
   "donation": {
     "badge": "READER SUPPORT",

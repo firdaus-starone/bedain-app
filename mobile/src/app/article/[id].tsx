@@ -9,6 +9,8 @@ import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from '../../components/LanguageSelector';
+import { getCachedArticleTranslation } from '../../services/translationService';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 import { DonationBox } from '../../components/DonationBox';
 import { ArticleKeyPoints } from '../../components/ArticleKeyPoints';
@@ -208,6 +210,13 @@ export default function ArticleDetail() {
       return;
     }
 
+    const cached = getCachedArticleTranslation(article.id, lang);
+    if (cached) {
+      setTranslatedArticle(cached);
+      setIsTranslatingArticle(false);
+      return;
+    }
+
     let isCancelled = false;
     const runTranslation = async () => {
       setIsTranslatingArticle(true);
@@ -234,11 +243,11 @@ export default function ArticleDetail() {
   const handleShare = async () => {
     try {
       if (!article) return;
-      const shareUrl = `https://bedainapp--bedain-eb6a6.us-central1.hosted.app/article/${article.slug || article.id}`;
+      const shareUrl = `https://bedainnews.com/article/${article.slug || article.id}`;
       await Share.share({
-        message: `${article.title}\n\nBaca selengkapnya di: ${shareUrl}`,
+        message: `${displayTitle}\n\n${t('article.read_more_at', 'Baca selengkapnya di:')} ${shareUrl}`,
         url: shareUrl,
-        title: article.title
+        title: displayTitle
       });
     } catch (error: any) {
       console.error('Error sharing:', error.message);
@@ -297,7 +306,7 @@ export default function ArticleDetail() {
       if (isBookmarked) {
         list = list.filter((b: any) => b.id !== article.id);
         setIsBookmarked(false);
-        Alert.alert('Batal Disimpan', 'Berita dihapus dari daftar simpanan.');
+        Alert.alert(t('article.saved', 'Batal Disimpan'), t('article.bookmark_removed', 'Berita dihapus dari daftar simpanan.'));
       } else {
         list.push({
           id: article.id,
@@ -308,7 +317,7 @@ export default function ArticleDetail() {
           savedAt: Date.now()
         });
         setIsBookmarked(true);
-        Alert.alert('Tersimpan', 'Berita berhasil disimpan untuk dibaca nanti.');
+        Alert.alert(t('article.saved', 'Tersimpan'), t('article.bookmark_saved', 'Berita berhasil disimpan untuk dibaca nanti.'));
       }
       await AsyncStorage.setItem('bookmarks', JSON.stringify(list));
     } catch (e) {
@@ -362,7 +371,7 @@ export default function ArticleDetail() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Memuat berita...</Text>
+        <Text style={styles.loadingText}>{t('article.loading', 'Memuat berita...')}</Text>
       </View>
     );
   }
@@ -370,9 +379,9 @@ export default function ArticleDetail() {
   if (!article) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Berita tidak ditemukan.</Text>
+        <Text style={styles.loadingText}>{t('article.not_found', 'Berita tidak ditemukan.')}</Text>
         <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
-          <Text style={{ color: '#3b82f6', fontWeight: 'bold' }}>Kembali ke Beranda</Text>
+          <Text style={{ color: '#3b82f6', fontWeight: 'bold' }}>{t('article.back_to_home', 'Kembali ke Beranda')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -426,7 +435,7 @@ export default function ArticleDetail() {
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 6 }}>
                 <Ionicons name="information-circle" size={16} color="#ca8a04" />
                 <Text style={{ fontSize: 12, color: isDarkMode ? '#fde047' : '#854d0e', fontWeight: '600', flexShrink: 1 }}>
-                  Bahasa Asli (ID)
+                  {t('article.original_language', 'Bahasa Asli (ID)')}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowOriginal(false)} style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
@@ -565,7 +574,7 @@ export default function ArticleDetail() {
                         <div style="margin: 24px -20px; text-align: left;">
                           <a href="${banner.targetUrl || '#'}" style="text-decoration: none; display: block;">
                             <img src="${banner.imageUrl}" style="width: 100%; background-color: #e2e8f0;" />
-                            <div style="font-size: 10px; color: #94a3b8; text-align: left; margin-top: 4px; padding-left: 20px;">IKLAN SPONSOR</div>
+                            <div style="font-size: 10px; color: #94a3b8; text-align: left; margin-top: 4px; padding-left: 20px;">${t('article.sponsor_ad', 'IKLAN SPONSOR')}</div>
                           </a>
                         </div>
                       `;
@@ -583,17 +592,17 @@ export default function ArticleDetail() {
                         const bacaJugaHtml = `
                           <div style="margin: 24px -20px; background-color: ${isDarkMode ? '#1e293b' : '#f8fafc'}; padding: 16px 20px; border-left: 4px solid #3b82f6;">
                             <div style="display: flex; flex-direction: row; align-items: center; margin-bottom: 12px;">
-                              <span class="baca-juga-label">BACA JUGA</span>
+                              <span class="baca-juga-label">${t('article.read_also', 'BACA JUGA')}</span>
                             </div>
                             ${articlesToShow.map((item, index, arr) => `
                               <div style="margin-bottom: ${index === arr.length - 1 ? '0' : '12px'}; border-bottom: ${index === arr.length - 1 ? 'none' : `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`}; padding-bottom: ${index === arr.length - 1 ? '0' : '12px'};">
                                 <div style="display: flex; flex-direction: row; align-items: center;">
                                   <div style="flex: 1; padding-right: 12px;">
                                     <span class="baca-juga-cat">
-                                      ${item.category || 'BERITA'}
+                                      ${getCategoryName(item.category).toUpperCase() || 'BERITA'}
                                     </span>
                                     <a href="/article/${item.id}" class="baca-juga-title">
-                                      ${item.title}
+                                      ${getArticleTitle(item)}
                                     </a>
                                   </div>
                                   <a href="/article/${item.id}" class="baca-juga-arrow" style="background-color: ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};">
@@ -716,7 +725,7 @@ export default function ArticleDetail() {
                 }}
               />
             ) : (
-              <Text style={styles.fallbackText}>Konten berita tidak tersedia.</Text>
+              <Text style={styles.fallbackText}>{t('article.content_unavailable', 'Konten berita tidak tersedia.')}</Text>
             )}
 
             {/* Nama Kontributor / Penulis di Akhir Artikel & Signature Cap Bedain */}
@@ -724,7 +733,7 @@ export default function ArticleDetail() {
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Ionicons name="pencil" size={16} color={isDarkMode ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
                 <Text style={{ fontSize: 13, color: isDarkMode ? '#cbd5e1' : '#475569', flex: 1, lineHeight: 18 }}>
-                  <Text style={{ fontWeight: '700', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Kontributor: </Text>
+                  <Text style={{ fontWeight: '700', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{t('article.contributor', 'Kontributor')}: </Text>
                   {article.contributorName || article.author?.name || 'Redaksi'}
                 </Text>
               </View>
@@ -732,7 +741,7 @@ export default function ArticleDetail() {
                 <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: '#ffffff', fontSize: 8.5, fontWeight: '900' }}>B</Text>
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#ef4444', letterSpacing: 0.5 }}>BEDAIN REDAKSI</Text>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#ef4444', letterSpacing: 0.5 }}>{t('article.editorial_badge', 'BEDAIN REDAKSI')}</Text>
               </View>
             </View>
 
@@ -1011,7 +1020,8 @@ export default function ArticleDetail() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <LanguageSelector variant="button" />
           <TouchableOpacity style={styles.bookmarkButton} onPress={handleShare}>
             <Ionicons name="share-social-outline" size={24} color={dyn.textMain.color} />
           </TouchableOpacity>

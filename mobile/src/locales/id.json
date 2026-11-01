@@ -88,7 +88,18 @@
     "cancel": "Batal",
     "login": "Login",
     "related_news": "BERITA TERKAIT",
-    "recommendations": "REKOMENDASI"
+    "recommendations": "REKOMENDASI",
+    "sponsor_ad": "IKLAN SPONSOR",
+    "read_also": "BACA JUGA",
+    "editorial_badge": "BEDAIN REDAKSI",
+    "content_unavailable": "Konten berita tidak tersedia.",
+    "original_language": "Bahasa Asli (ID)",
+    "loading": "Memuat berita...",
+    "not_found": "Berita tidak ditemukan.",
+    "back_to_home": "Kembali ke Beranda",
+    "bookmark_removed": "Berita dihapus dari daftar simpanan.",
+    "bookmark_saved": "Berita berhasil disimpan untuk dibaca nanti.",
+    "read_more_at": "Baca selengkapnya di:"
   },
   "donation": {
     "badge": "DUKUNGAN PEMBACA",

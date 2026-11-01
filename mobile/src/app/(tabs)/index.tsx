@@ -8,6 +8,7 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs, onSnapshot, wh
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from '../../components/LanguageSelector';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 
 const HOT_TOPICS = [
@@ -716,6 +717,7 @@ export default function Home() {
           </Text>
         </View>
         <View style={styles.headerIcons}>
+          <LanguageSelector variant="button" />
           <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/search')}>
             <Ionicons name="search-outline" size={22} color={dyn.iconColor} />
           </TouchableOpacity>

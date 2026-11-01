@@ -19,77 +19,102 @@ const LANG_CODE_MAP = {
   vi: 'vi',
 };
 
-async function translateArticlePayload({ title, seoDescription, keyPoints, content, targetLang }) {
+async function translateChunk(text, targetLang) {
+  if (!text || !text.trim()) return text;
   const tl = LANG_CODE_MAP[targetLang] || targetLang;
 
-  // Format key points as HTML list if present
-  let kpBlock = '';
-  if (Array.isArray(keyPoints) && keyPoints.length > 0) {
-    kpBlock = '<ul>' + keyPoints.map((k) => '<li>' + k + '</li>').join('') + '</ul>';
+  // 1. Google Translate Android API (highly reliable, no 429 block)
+  try {
+    const url = `https://translate.google.com/translate_a/single?client=at&dt=t&dj=1&sl=auto&tl=${tl}&q=${encodeURIComponent(text.trim())}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'GoogleTranslate/6.28.0.05.357165030 (Linux; U; Android 12; Pixel 6)',
+      },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const trans = data.sentences?.map((s) => s.trans || '').join('');
+      if (trans && trans.trim()) return trans;
+    }
+  } catch (e) {
+    console.warn('Google client=at error in translate-article:', e.message);
   }
 
-  // Combine into single payload using delimiter to translate the entire article in 1 single HTTP POST
-  const DELIM = '<hr id="b-delim" />';
-  const combined =
-    (title || '') +
-    DELIM +
-    (seoDescription || '') +
-    DELIM +
-    kpBlock +
-    DELIM +
-    (content || '');
-
-  const body = new URLSearchParams({
-    client: 'gtx',
-    sl: 'auto',
-    tl: tl,
-    dt: 't',
-    q: combined,
-  });
-
-  const res = await fetch('https://translate.googleapis.com/translate_a/single', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-    body: body.toString(),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Google Translate error ${res.status}`);
+  // 2. MyMemory with authorized contact
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.trim())}&langpair=id|${tl}&de=redaksi@bedainnews.com`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const trans = data.responseData?.translatedText;
+      if (trans && !trans.includes('MYMEMORY WARNING')) return trans;
+    }
+  } catch (e) {
+    console.warn('MyMemory error in translate-article:', e.message);
   }
 
-  const json = await res.json();
-  if (!json || !Array.isArray(json[0])) {
-    throw new Error('Invalid translation JSON format');
-  }
+  return text;
+}
 
-  const rawTranslated = json[0].map((p) => p[0] || '').join('');
-  const parts = rawTranslated.split(/<hr\s+id=["']b-delim["']\s*\/?>/i);
+async function translateHtml(html, targetLang) {
+  if (!html || !html.trim()) return html;
+  const parts = html.split(/(<\/(?:p|h[1-6]|blockquote|li|div)>)/i);
+  const chunks = [];
+  let currentChunk = '';
 
-  const transTitle = parts[0]?.trim() || title;
-  const transDesc = parts[1]?.trim() || seoDescription;
+  for (let i = 0; i < parts.length; i += 2) {
+    const content = parts[i] || '';
+    const closingTag = parts[i + 1] || '';
+    const block = content + closingTag;
 
-  let transKeyPoints = keyPoints;
-  const rawKp = parts[2]?.trim();
-  if (rawKp && rawKp.includes('<li>')) {
-    const matched = rawKp.match(/<li>(.*?)<\/li>/gis);
-    if (matched) {
-      transKeyPoints = matched.map((s) => s.replace(/<\/?li>/gi, '').trim());
+    if (/^<p[^>]*>\s*<img[^>]*\/?>\s*<\/p>$/i.test(block.trim())) {
+      if (currentChunk) {
+        chunks.push(currentChunk);
+        currentChunk = '';
+      }
+      chunks.push(block);
+      continue;
+    }
+
+    if (currentChunk.length + block.length > 1200 && currentChunk.length > 0) {
+      chunks.push(currentChunk);
+      currentChunk = block;
+    } else {
+      currentChunk += block;
     }
   }
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
 
-  // The rest is content (in case content had inner hr or remaining parts)
-  const transContent = parts.slice(3).join(DELIM)?.trim() || content;
+  const translatedChunks = await Promise.all(
+    chunks.map(async (chunk) => {
+      if (/^<p[^>]*>\s*<img[^>]*\/?>\s*<\/p>$/i.test(chunk.trim())) {
+        return chunk;
+      }
+      return translateChunk(chunk, targetLang);
+    })
+  );
+
+  return translatedChunks.join('');
+}
+
+async function translateArticlePayload({ title, seoDescription, keyPoints, content, targetLang }) {
+  const [transTitle, transDesc, transKeyPoints, transContent] = await Promise.all([
+    translateChunk(title, targetLang),
+    translateChunk(seoDescription, targetLang),
+    Array.isArray(keyPoints) && keyPoints.length > 0
+      ? Promise.all(keyPoints.map((kp) => translateChunk(kp, targetLang)))
+      : Promise.resolve([]),
+    translateHtml(content, targetLang),
+  ]);
 
   return {
-    title: transTitle,
-    seoDescription: transDesc,
-    excerpt: transDesc,
-    keyPoints: transKeyPoints,
-    content: transContent,
+    title: transTitle || title,
+    seoDescription: transDesc || seoDescription,
+    excerpt: transDesc || seoDescription,
+    keyPoints: transKeyPoints.length > 0 ? transKeyPoints : keyPoints,
+    content: transContent || content,
     targetLang,
   };
 }

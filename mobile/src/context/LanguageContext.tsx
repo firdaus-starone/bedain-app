@@ -9,6 +9,7 @@ import {
   subscribeToTranslations,
   queueTextTranslation,
   getCachedTranslation,
+  getCachedArticleTranslation,
   translateFullArticle,
   TranslatedArticlePayload,
 } from '../services/translationService';
@@ -135,11 +136,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (lang === 'en' && article.title_en) return article.title_en;
     if (lang === 'zh' && article.title_zh) return article.title_zh;
 
-    // 2. Local cache lookup
+    // 2. Full article cache lookup
+    if (article.id) {
+      const fullCached = getCachedArticleTranslation(article.id, lang);
+      if (fullCached?.title) return fullCached.title;
+    }
+
+    // 3. Local text cache lookup
     const cached = getCachedTranslation(originalTitle, lang);
     if (cached) return cached;
 
-    // 3. Queue in background & return original text while translating
+    // 4. Queue in background & return original text while translating
     queueTextTranslation(originalTitle, lang);
     return originalTitle;
   };
@@ -158,11 +165,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return article.excerpt_zh || article.seoDescription_zh;
     }
 
-    // 2. Local cache lookup
+    // 2. Full article cache lookup
+    if (article.id) {
+      const fullCached = getCachedArticleTranslation(article.id, lang);
+      if (fullCached?.excerpt) return fullCached.excerpt;
+    }
+
+    // 3. Local text cache lookup
     const cached = getCachedTranslation(originalExcerpt, lang);
     if (cached) return cached;
 
-    // 3. Queue in background
+    // 4. Queue in background
     queueTextTranslation(originalExcerpt, lang);
     return originalExcerpt;
   };
@@ -172,9 +185,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!article) return '';
     if (lang === 'id') return article.content || '';
 
-    // Static override in Firestore
+    // 1. Static override in Firestore
     if (lang === 'en' && article.content_en) return article.content_en;
     if (lang === 'zh' && article.content_zh) return article.content_zh;
+
+    // 2. Full article cache lookup
+    if (article.id) {
+      const fullCached = getCachedArticleTranslation(article.id, lang);
+      if (fullCached?.content) return fullCached.content;
+    }
 
     return article.content || '';
   };

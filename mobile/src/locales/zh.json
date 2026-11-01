@@ -88,7 +88,18 @@
     "cancel": "取消",
     "login": "登录",
     "related_news": "相关新闻",
-    "recommendations": "为您推荐"
+    "recommendations": "为您推荐",
+    "sponsor_ad": "赞助广告",
+    "read_also": "延伸阅读",
+    "editorial_badge": "BEDAIN 编辑部",
+    "content_unavailable": "新闻内容暂不可用。",
+    "original_language": "原文语言 (ID)",
+    "loading": "正在加载新闻...",
+    "not_found": "未找到该新闻。",
+    "back_to_home": "返回首页",
+    "bookmark_removed": "已从书签中移除。",
+    "bookmark_saved": "已保存至书签，供稍后阅读。",
+    "read_more_at": "阅读全文："
   },
   "donation": {
     "badge": "读者支持",

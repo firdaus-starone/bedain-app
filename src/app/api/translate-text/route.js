@@ -24,7 +24,7 @@ async function translateWithMyMemory(text, targetLang) {
     const clean = (text || '').trim();
     if (!clean) return '';
     const tl = targetLang === 'zh' || targetLang === 'zh-CN' ? 'zh-CN' : targetLang;
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=id|${tl}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=id|${tl}&de=redaksi@bedainnews.com`;
     const res = await fetch(url, { 
       headers: { 'User-Agent': 'BedainNews/1.0 (https://bedainnews.com)' },
       cache: 'no-store'
