@@ -24,7 +24,7 @@ export default function ArticleDetail() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
   const { user } = useAuth();
-  const { lang, getArticleTitle, getArticleContent, getArticleExcerpt, loadFullArticleTranslation, t } = useLanguage();
+  const { lang, getArticleTitle, getArticleContent, getArticleExcerpt, getCategoryName, translateText, loadFullArticleTranslation, t } = useLanguage();
   const [article, setArticle] = useState<any>(null);
   const [translatedArticle, setTranslatedArticle] = useState<any>(null);
   const [isTranslatingArticle, setIsTranslatingArticle] = useState(false);
@@ -247,10 +247,14 @@ export default function ArticleDetail() {
 
   const submitComment = async () => {
     if (!user) {
-      Alert.alert('Belum Login', 'Silakan login terlebih dahulu untuk memberikan komentar.', [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Login', onPress: () => router.push('/login') }
-      ]);
+      Alert.alert(
+        t('article.login_required_title', 'Belum Login'),
+        t('article.login_required_desc', 'Silakan login terlebih dahulu untuk memberikan komentar.'),
+        [
+          { text: t('article.cancel', 'Batal'), style: 'cancel' },
+          { text: t('article.login', 'Login'), onPress: () => router.push('/login') }
+        ]
+      );
       return;
     }
     if (!commentText.trim() || submittingComment || !article) return;
@@ -270,7 +274,10 @@ export default function ArticleDetail() {
       setCommentText('');
       const wasReplying = replyingTo;
       setReplyingTo(null);
-      Alert.alert(wasReplying ? 'Balasan Terkirim' : 'Komentar Terkirim', wasReplying ? 'Balasan Anda berhasil dikirim dan menunggu moderasi.' : 'Komentar Anda berhasil dikirim dan menunggu moderasi oleh tim redaksi.');
+      Alert.alert(
+        wasReplying ? t('article.reply_sent_title', 'Balasan Terkirim') : t('article.comment_sent_title', 'Komentar Terkirim'),
+        wasReplying ? t('article.reply_sent_desc', 'Balasan Anda berhasil dikirim dan menunggu moderasi.') : t('article.comment_sent_desc', 'Komentar Anda berhasil dikirim dan menunggu moderasi oleh tim redaksi.')
+      );
     } catch (err) {
       console.error(err);
       Alert.alert('Gagal', 'Gagal mengirim komentar. Coba lagi.');
@@ -325,6 +332,10 @@ export default function ArticleDetail() {
   const displayKeyPoints = (translatedArticle && !showOriginal && translatedArticle.keyPoints?.length > 0)
     ? translatedArticle.keyPoints
     : (article?.keyPoints || []);
+
+  const displayImageCaption = (translatedArticle && !showOriginal && translatedArticle.imageCaption)
+    ? translatedArticle.imageCaption
+    : (article?.imageCaption ? translateText(article.imageCaption) : '');
 
   let dateStr = 'Baru saja';
   if (article?.publishedAt) {
@@ -476,8 +487,8 @@ export default function ArticleDetail() {
         </Animated.View>
 
         <View style={[styles.contentContainer, dyn.bg]}>
-          {article.imageCaption ? (
-            <Text style={[styles.imageCaptionTextOutside, dyn.imageCaptionOutside]}>{article.imageCaption}</Text>
+          {displayImageCaption ? (
+            <Text style={[styles.imageCaptionTextOutside, dyn.imageCaptionOutside]}>{displayImageCaption}</Text>
           ) : null}
 
           {/* Kolom Excerpt: Hanya tampil untuk artikel biasa (non-video) */}
@@ -501,7 +512,7 @@ export default function ArticleDetail() {
           <ArticleAudioPlayer article={{ ...article, title: displayTitle, content: displayContent }} />
 
           {/* ⚡ 3 Detik Paham (Poin Utama / TL;DR) */}
-          <ArticleKeyPoints article={{ ...article, keyPoints: displayKeyPoints }} />
+          <ArticleKeyPoints article={{ ...article, keyPoints: displayKeyPoints, content: displayContent }} />
 
           {/* Isi Artikel */}
           <View style={styles.articleBody}>
@@ -728,15 +739,15 @@ export default function ArticleDetail() {
             {/* REAKSI PEMBACA */}
             <View style={{ marginTop: 16, marginBottom: 4 }}>
               <Text style={{ fontSize: 13, fontWeight: '800', color: dyn.textMain.color, marginBottom: 10, textAlign: 'center' }}>
-                Bagaimana reaksi Anda?
+                {t('article.reaction_title', 'Bagaimana reaksi Anda?')}
               </Text>
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                 {[
-                  { id: 'like', emoji: '👍', label: 'Suka' },
-                  { id: 'love', emoji: '❤️', label: 'Keren' },
-                  { id: 'surprised', emoji: '😲', label: 'Kaget' },
-                  { id: 'sad', emoji: '😢', label: 'Sedih' },
-                  { id: 'angry', emoji: '😡', label: 'Marah' },
+                  { id: 'like', emoji: '👍', label: t('article.reactions.like', 'Suka') },
+                  { id: 'love', emoji: '❤️', label: t('article.reactions.love', 'Keren') },
+                  { id: 'surprised', emoji: '😲', label: t('article.reactions.surprised', 'Kaget') },
+                  { id: 'sad', emoji: '😢', label: t('article.reactions.sad', 'Sedih') },
+                  { id: 'angry', emoji: '😡', label: t('article.reactions.angry', 'Marah') },
                 ].map((reaction) => {
                   const isSelected = selectedReaction === reaction.id;
                   const count = article?.reactions?.[reaction.id] || 0;
@@ -789,7 +800,7 @@ export default function ArticleDetail() {
 
             {/* Topik / Label Terkait */}
             <View style={[styles.tagsContainer, dyn.borderB]}>
-              <Text style={styles.tagsLabel}>TOPIK TERKAIT:</Text>
+              <Text style={styles.tagsLabel}>{t('article.related_topics', 'TOPIK TERKAIT:')}</Text>
               <ScrollView 
                 horizontal 
                 showsHorizontalScrollIndicator={false} 
@@ -818,12 +829,12 @@ export default function ArticleDetail() {
 
             {/* Kolom Komentar */}
             <View style={[styles.commentSection, dyn.borderB]}>
-              <Text style={[styles.commentHeader, dyn.textMain]}>Komentar ({comments.length})</Text>
+              <Text style={[styles.commentHeader, dyn.textMain]}>{t('article.comments', 'Komentar')} ({comments.length})</Text>
               
               <View style={[styles.commentInputContainer, { flexDirection: 'column', alignItems: 'stretch' }]}>
                 {replyingTo && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', borderRadius: 8, alignSelf: 'flex-start' }}>
-                    <Text style={{ fontSize: 12, color: dyn.textMain.color }}>Membalas <Text style={{ fontWeight: '700' }}>{replyingTo.name}</Text></Text>
+                    <Text style={{ fontSize: 12, color: dyn.textMain.color }}>{t('article.replying_to', 'Membalas')} <Text style={{ fontWeight: '700' }}>{replyingTo.name}</Text></Text>
                     <TouchableOpacity onPress={() => setReplyingTo(null)} style={{ marginLeft: 12 }}>
                       <Ionicons name="close-circle" size={16} color="#94a3b8" />
                     </TouchableOpacity>
@@ -836,7 +847,7 @@ export default function ArticleDetail() {
                   <View style={[styles.commentInputWrapper, dyn.commentInputWrapper, { flex: 1, marginLeft: 12 }]}>
                     <TextInput
                       style={[styles.commentInput, dyn.textMain]}
-                      placeholder={replyingTo ? "Tulis balasan..." : "Tulis komentar..."}
+                      placeholder={replyingTo ? t('article.write_reply', 'Tulis balasan...') : t('article.write_comment', 'Tulis komentar...')}
                       placeholderTextColor="#94a3b8"
                       value={commentText}
                       onChangeText={setCommentText}
@@ -852,7 +863,7 @@ export default function ArticleDetail() {
               {comments.length === 0 ? (
                 <View style={[styles.emptyCommentState, dyn.emptyComment]}>
                   <Ionicons name="chatbubbles-outline" size={32} color={isDarkMode ? '#334155' : '#e2e8f0'} />
-                  <Text style={[styles.emptyCommentText, dyn.textMuted]}>Belum ada komentar. Jadilah yang pertama memberikan tanggapan!</Text>
+                  <Text style={[styles.emptyCommentText, dyn.textMuted]}>{t('article.no_comments', 'Belum ada komentar. Jadilah yang pertama memberikan tanggapan!')}</Text>
                 </View>
               ) : (
                 <View style={{ gap: 16 }}>
@@ -860,7 +871,7 @@ export default function ArticleDetail() {
                     let cDate = 'Baru saja';
                     if (c.createdAt) {
                       const d = typeof c.createdAt.toDate === 'function' ? c.createdAt.toDate() : new Date(c.createdAt);
-                      cDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                      cDate = d.toLocaleDateString(lang === 'en' ? 'en-US' : (lang === 'zh' ? 'zh-CN' : 'id-ID'), { day: 'numeric', month: 'long', year: 'numeric' });
                     }
                     
                     const replies = comments
@@ -886,7 +897,7 @@ export default function ArticleDetail() {
                             
                             <TouchableOpacity onPress={() => setReplyingTo({ id: c.id, name: c.authorName })} style={{ marginTop: 6, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                               <Ionicons name="arrow-undo-outline" size={14} color="#3b82f6" />
-                              <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>Balas</Text>
+                              <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>{t('article.reply_btn', 'Balas')}</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -895,7 +906,7 @@ export default function ArticleDetail() {
                           <View style={{ marginLeft: 32, marginTop: 4 }}>
                             {!expandedReplies[c.id] ? (
                               <TouchableOpacity onPress={() => toggleReplies(c.id)} style={{ paddingVertical: 8, flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>Lihat {replies.length} balasan...</Text>
+                                <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>{t('article.view_replies_prefix', 'Lihat')} {replies.length} {t('article.view_replies_suffix', 'balasan...')}</Text>
                               </TouchableOpacity>
                             ) : (
                               <>
@@ -904,7 +915,7 @@ export default function ArticleDetail() {
                                     let rDate = 'Baru saja';
                                     if (r.createdAt) {
                                       const rd = typeof r.createdAt.toDate === 'function' ? r.createdAt.toDate() : new Date(r.createdAt);
-                                      rDate = rd.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                                      rDate = rd.toLocaleDateString(lang === 'en' ? 'en-US' : (lang === 'zh' ? 'zh-CN' : 'id-ID'), { day: 'numeric', month: 'long', year: 'numeric' });
                                     }
                                     return (
                                       <View key={r.id} style={{ flexDirection: 'row', gap: 10 }}>
@@ -923,7 +934,7 @@ export default function ArticleDetail() {
                                   })}
                                 </View>
                                 <TouchableOpacity onPress={() => toggleReplies(c.id)} style={{ paddingVertical: 8, marginTop: 4, paddingLeft: 12, flexDirection: 'row', alignItems: 'center' }}>
-                                  <Text style={{ color: dyn.textMuted.color, fontSize: 12, fontWeight: '600' }}>Sembunyikan balasan</Text>
+                                  <Text style={{ color: dyn.textMuted.color, fontSize: 12, fontWeight: '600' }}>{t('article.hide_replies', 'Sembunyikan balasan')}</Text>
                                 </TouchableOpacity>
                               </>
                             )}
@@ -940,14 +951,14 @@ export default function ArticleDetail() {
             {relatedArticles.length > 0 && (
               <View style={[styles.relatedBottomContainer, dyn.borderB]}>
                 <View style={styles.relatedBottomHeader}>
-                  <Text style={[styles.relatedBottomTitle, dyn.textMain]}>BERITA TERKAIT</Text>
+                  <Text style={[styles.relatedBottomTitle, dyn.textMain]}>{t('article.related_news', 'BERITA TERKAIT')}</Text>
                   <View style={[styles.relatedBottomLine, { backgroundColor: dyn.borderB.borderBottomColor }]} />
                 </View>
                 <View style={styles.relatedBottomList}>
                   {relatedArticles.slice(0, 5).map((item, idx) => (
                     <TouchableOpacity key={idx} style={[styles.relatedBottomItem, dyn.borderB]} onPress={() => router.push(`/article/${item.id}` as any)}>
-                      <Text style={styles.relatedBottomItemCategory}>{item.category?.toUpperCase() || 'BERITA'}</Text>
-                      <Text style={[styles.relatedBottomItemTitle, dyn.textMain]}>{item.title}</Text>
+                      <Text style={styles.relatedBottomItemCategory}>{getCategoryName(item.category).toUpperCase() || 'BERITA'}</Text>
+                      <Text style={[styles.relatedBottomItemTitle, dyn.textMain]}>{getArticleTitle(item)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -958,7 +969,7 @@ export default function ArticleDetail() {
             {recommendedArticles.length > 0 && (
               <View style={[styles.recommendationContainer, dyn.borderB]}>
                 <View style={styles.relatedBottomHeader}>
-                  <Text style={[styles.relatedBottomTitle, dyn.textMain]}>REKOMENDASI</Text>
+                  <Text style={[styles.relatedBottomTitle, dyn.textMain]}>{t('article.recommendations', 'REKOMENDASI')}</Text>
                   <View style={[styles.relatedBottomLine, { backgroundColor: dyn.borderB.borderBottomColor }]} />
                 </View>
                 <View style={styles.recommendationGrid}>
@@ -966,7 +977,7 @@ export default function ArticleDetail() {
                     <TouchableOpacity key={idx} style={[styles.recommendationCard, dyn.card]} onPress={() => router.push(`/article/${item.id}` as any)}>
                       <Image source={{ uri: item.coverImage || item.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80' }} style={styles.recommendationImage} />
                       <View style={styles.recommendationContent}>
-                        <Text style={[styles.recommendationTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
+                        <Text style={[styles.recommendationTitle, dyn.textMain]} numberOfLines={3}>{getArticleTitle(item)}</Text>
                       </View>
                     </TouchableOpacity>
                   ))}

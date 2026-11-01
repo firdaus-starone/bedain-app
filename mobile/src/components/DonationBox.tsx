@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DonationBoxProps {
   settings?: any;
@@ -20,6 +21,7 @@ interface DonationBoxProps {
 
 export const DonationBox: React.FC<DonationBoxProps> = ({ settings, containerStyle }) => {
   const { isDarkMode } = useTheme();
+  const { t, translateText } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState<'15k' | '30k' | '75k'>('15k');
   const [copiedFeedback, setCopiedFeedback] = useState(false);
 
@@ -32,33 +34,33 @@ export const DonationBox: React.FC<DonationBoxProps> = ({ settings, containerSty
   const trakteerUrl = settings?.trakteerUrl?.trim() || '';
   const generalDonationUrl = saweriaUrl || trakteerUrl;
 
-  const title = settings?.donationTitle || 'Dukung Jurnalisme Independen Bedain News';
-  const desc = settings?.donationDesc || 'Bantu tim redaksi kami tetap menyajikan berita berimbang, tajam, dan bebas pengaruh dengan mentraktir secangkir kopi.';
+  const title = settings?.donationTitle ? translateText(settings.donationTitle) : t('donation.default_title', 'Dukung Jurnalisme Independen Bedain News');
+  const desc = settings?.donationDesc ? translateText(settings.donationDesc) : t('donation.default_desc', 'Bantu tim redaksi kami tetap menyajikan berita berimbang, tajam, dan bebas pengaruh dengan mentraktir secangkir kopi.');
 
   const presets = [
     {
       id: '15k' as const,
       amount: 'Rp 15.000',
-      label: '1 Kopi',
+      label: t('donation.presets.coffee_1', '1 Kopi'),
       emoji: '☕',
-      note: 'Dukungan segar untuk 1 laporan independen',
+      note: t('donation.presets.note_1', 'Dukungan segar untuk 1 laporan independen'),
       badge: null,
     },
     {
       id: '30k' as const,
       amount: 'Rp 30.000',
-      label: '2 Kopi',
+      label: t('donation.presets.coffee_2', '2 Kopi'),
       emoji: '☕☕',
-      note: 'Bahan bakar tim riset investigasi harian',
-      badge: 'POPULER 🔥',
+      note: t('donation.presets.note_2', 'Bahan bakar tim riset investigasi harian'),
+      badge: t('donation.presets.popular', 'POPULER 🔥'),
     },
     {
       id: '75k' as const,
       amount: 'Rp 75.000',
-      label: 'Sponsor Riset',
+      label: t('donation.presets.sponsor', 'Sponsor Riset'),
       emoji: '🚀',
-      note: 'Mitra utama penopang independensi ruang redaksi',
-      badge: 'SPONSOR',
+      note: t('donation.presets.note_3', 'Mitra utama penopang independensi ruang redaksi'),
+      badge: t('donation.presets.sponsor_badge', 'SPONSOR'),
     },
   ];
 
@@ -126,10 +128,10 @@ export const DonationBox: React.FC<DonationBoxProps> = ({ settings, containerSty
           <View style={styles.badgeRow}>
             <View style={styles.tagBadge}>
               <Ionicons name="heart" size={11} color="#f59e0b" style={{ marginRight: 4 }} />
-              <Text style={styles.tagBadgeText}>DUKUNGAN PEMBACA</Text>
+              <Text style={styles.tagBadgeText}>{t('donation.badge', 'DUKUNGAN PEMBACA')}</Text>
             </View>
             <View style={styles.greenBadge}>
-              <Text style={styles.greenBadgeText}>100% Untuk Redaksi</Text>
+              <Text style={styles.greenBadgeText}>{t('donation.editorial_100', '100% Untuk Redaksi')}</Text>
             </View>
           </View>
           <Text style={[styles.title, { color: isDarkMode ? '#f8fafc' : '#1e293b' }]}>
@@ -208,7 +210,7 @@ export const DonationBox: React.FC<DonationBoxProps> = ({ settings, containerSty
         >
           <Ionicons name="cafe" size={17} color="#ffffff" style={{ marginRight: 6 }} />
           <Text style={styles.primaryButtonText}>
-            Traktir {currentPresetObj.amount}
+            {t('donation.treat_btn', 'Traktir')} {currentPresetObj.amount}
           </Text>
           <Ionicons name="open-outline" size={14} color="#ffffff" style={{ marginLeft: 6 }} />
         </TouchableOpacity>

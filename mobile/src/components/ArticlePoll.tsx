@@ -10,6 +10,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PollOption {
   id: string;
@@ -24,6 +25,7 @@ interface ArticlePollProps {
 
 export const ArticlePoll: React.FC<ArticlePollProps> = ({ article, containerStyle }) => {
   const { isDarkMode } = useTheme();
+  const { lang, t, translateText } = useLanguage();
   const articleId = article?.id || 'default';
   const storageKey = `bedain_poll_vote_${articleId}`;
 
@@ -36,10 +38,10 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({ article, containerStyl
   const pollData: { question: string; options: PollOption[] } = useMemo(() => {
     if (article?.poll && article.poll.question && Array.isArray(article.poll.options)) {
       return {
-        question: article.poll.question,
+        question: translateText(article.poll.question),
         options: article.poll.options.map((opt: any, i: number) => ({
           id: `opt_${i}`,
-          label: typeof opt === 'string' ? opt : opt.label,
+          label: translateText(typeof opt === 'string' ? opt : opt.label),
           color: opt.color || (i === 0 ? '#10b981' : i === 1 ? '#ef4444' : '#f59e0b'),
         })),
       };
@@ -47,14 +49,14 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({ article, containerStyl
 
     // Default relevan berdasarkan topik artikel
     return {
-      question: 'Bagaimana pandangan Anda terhadap isu dalam berita ini?',
+      question: t('article.poll_default_question', 'Bagaimana pandangan Anda terhadap isu dalam berita ini?'),
       options: [
-        { id: 'opt_0', label: '👍 Setuju / Mendukung Langkah Ini', color: '#10b981' },
-        { id: 'opt_1', label: '👎 Kurang Tepat / Perlu Dikaji Ulang', color: '#ef4444' },
-        { id: 'opt_2', label: '🤔 Masih Netral / Menunggu Hasil Nyata', color: '#f59e0b' },
+        { id: 'opt_0', label: t('article.poll_opt_agree', '👍 Setuju / Mendukung Langkah Ini'), color: '#10b981' },
+        { id: 'opt_1', label: t('article.poll_opt_disagree', '👎 Kurang Tepat / Perlu Dikaji Ulang'), color: '#ef4444' },
+        { id: 'opt_2', label: t('article.poll_opt_neutral', '🤔 Masih Netral / Menunggu Hasil Nyata'), color: '#f59e0b' },
       ],
     };
-  }, [article]);
+  }, [article, lang]);
 
   // Generate deterministic seed counts agar polling terlihat hidup
   useEffect(() => {
@@ -157,10 +159,10 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({ article, containerStyl
           <View>
             <View style={styles.titleBadgeRow}>
               <Ionicons name="sparkles" size={11} color="#6366f1" style={{ marginRight: 3 }} />
-              <Text style={styles.badgeText}>POLLING PEMBACA</Text>
+              <Text style={styles.badgeText}>{t('article.poll_badge', 'POLLING PEMBACA')}</Text>
             </View>
             <Text style={[styles.subtitle, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
-              Suara Anda menentukan perspektif publik
+              {t('article.poll_subtitle', 'Suara Anda menentukan perspektif publik')}
             </Text>
           </View>
         </View>
@@ -168,7 +170,7 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({ article, containerStyl
         <View style={[styles.votesCountBadge, { backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', borderColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
           <Ionicons name="people" size={11} color="#6366f1" style={{ marginRight: 4 }} />
           <Text style={[styles.votesCountText, { color: isDarkMode ? '#cbd5e1' : '#475569' }]}>
-            {totalVotes.toLocaleString('id-ID')} Suara
+            {totalVotes.toLocaleString(lang === 'en' ? 'en-US' : (lang === 'zh' ? 'zh-CN' : 'id-ID'))} {t('article.votes', 'Suara')}
           </Text>
         </View>
       </View>
@@ -257,11 +259,11 @@ export const ArticlePoll: React.FC<ArticlePollProps> = ({ article, containerStyl
       {hasVoted && (
         <View style={styles.footerRow}>
           <Text style={[styles.votedStatusText, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
-            Terima kasih atas partisipasi Anda!
+            {t('article.poll_thank_you', 'Terima kasih atas partisipasi Anda!')}
           </Text>
           <TouchableOpacity onPress={handleResetVote} activeOpacity={0.7} style={styles.resetBtn}>
             <Ionicons name="refresh" size={12} color="#6366f1" style={{ marginRight: 3 }} />
-            <Text style={styles.resetBtnText}>Ubah Pilihan</Text>
+            <Text style={styles.resetBtnText}>{t('article.poll_change_vote', 'Ubah Pilihan')}</Text>
           </TouchableOpacity>
         </View>
       )}

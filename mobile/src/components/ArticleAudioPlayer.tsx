@@ -12,6 +12,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ArticleAudioPlayerProps {
   article: any;
@@ -53,6 +54,7 @@ const cleanArticleForTTS = (title: string, rawContent: string): string => {
 
 export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article, containerStyle }) => {
   const { isDarkMode } = useTheme();
+  const { lang, t } = useLanguage();
   const webViewRef = useRef<WebView>(null);
 
   const [status, setStatus] = useState<'idle' | 'playing' | 'paused'>('idle');
@@ -117,9 +119,10 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
       const fullSpeechText = cleanArticleForTTS(article.title || '', article.content || '');
       if (!fullSpeechText) return;
 
+      const ttsLang = lang === 'en' ? 'en' : (lang === 'zh' ? 'zh-CN' : 'id');
       const js = `
         if (window.speakArticle) {
-          window.speakArticle(${JSON.stringify(fullSpeechText)}, ${rate});
+          window.speakArticle(${JSON.stringify(fullSpeechText)}, ${rate}, ${JSON.stringify(ttsLang)});
         }
         true;
       `;
@@ -197,6 +200,7 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
           let chunks = [];
           let currentChunkIndex = 0;
           let currentRate = 1.0;
+          let currentTtsLang = 'id';
           let isPaused = false;
           let isSpeaking = false;
 
@@ -245,7 +249,7 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
             }
 
             const sentence = chunks[currentChunkIndex];
-            const ttsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=' + encodeURIComponent(sentence);
+            const ttsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' + encodeURIComponent(currentTtsLang || 'id') + '&client=tw-ob&q=' + encodeURIComponent(sentence);
 
             player.src = ttsUrl;
             player.playbackRate = currentRate;
@@ -266,7 +270,7 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
               if (window.speechSynthesis) {
                 try {
                   const utter = new SpeechSynthesisUtterance(sentence);
-                  utter.lang = 'id-ID';
+                  utter.lang = currentTtsLang === 'en' ? 'en-US' : (currentTtsLang === 'zh-CN' ? 'zh-CN' : 'id-ID');
                   utter.rate = currentRate;
                   utter.onend = function() {
                     if (isSpeaking && !isPaused) {
@@ -291,11 +295,12 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
             }
           }
 
-          window.speakArticle = function(text, rate) {
+          window.speakArticle = function(text, rate, targetLang) {
             if (!text) return;
             isPaused = false;
             isSpeaking = true;
             currentRate = rate || 1.0;
+            currentTtsLang = targetLang || 'id';
             currentChunkIndex = 0;
             chunks = splitTextIntoSentences(text);
 
@@ -409,26 +414,26 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
           <View style={{ flex: 1 }}>
             <View style={styles.titleRow}>
               <Text style={[styles.title, { color: isDarkMode ? '#f8fafc' : '#0f172a' }]}>
-                Dengarkan Berita AI
+                {t('article.audio_title', 'Dengarkan Berita AI')}
               </Text>
               {status === 'playing' && (
                 <View style={styles.liveBadge}>
                   <View style={styles.liveDot} />
-                  <Text style={styles.liveBadgeText}>LIVE {currentProgress}</Text>
+                  <Text style={styles.liveBadgeText}>{t('article.audio_live', 'LIVE')} {currentProgress}</Text>
                 </View>
               )}
               {status === 'paused' && (
                 <View style={styles.pausedBadge}>
-                  <Text style={styles.pausedBadgeText}>DIJEDA</Text>
+                  <Text style={styles.pausedBadgeText}>{t('article.audio_paused', 'DIJEDA')}</Text>
                 </View>
               )}
             </View>
             <Text style={[styles.subtitle, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
               {status === 'playing'
-                ? 'Narator AI sedang membacakan artikel ini...'
+                ? t('article.audio_playing_desc', 'Narator AI sedang membacakan artikel ini...')
                 : status === 'paused'
-                ? 'Narasi dijeda. Ketuk tombol untuk lanjut.'
-                : 'Dengarkan layaknya podcast saat beraktivitas'}
+                ? t('article.audio_paused_desc', 'Narasi dijeda. Ketuk tombol untuk lanjut.')
+                : t('article.audio_idle_desc', 'Dengarkan layaknya podcast saat beraktivitas')}
             </Text>
           </View>
         </View>
@@ -464,7 +469,11 @@ export const ArticleAudioPlayer: React.FC<ArticleAudioPlayerProps> = ({ article,
             style={{ marginRight: 6 }}
           />
           <Text style={styles.playButtonText}>
-            {status === 'playing' ? 'Jeda Suara' : status === 'paused' ? 'Lanjutkan' : 'Putar Suara'}
+            {status === 'playing'
+              ? t('article.audio_pause_btn', 'Jeda Suara')
+              : status === 'paused'
+              ? t('article.audio_resume_btn', 'Lanjutkan')
+              : t('article.audio_play_btn', 'Putar Suara')}
           </Text>
         </TouchableOpacity>
 

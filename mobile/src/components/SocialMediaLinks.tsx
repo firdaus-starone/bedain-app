@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface SocialMediaLinksProps {
   settings?: any;
@@ -23,6 +24,7 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
   containerStyle,
 }) => {
   const { isDarkMode } = useTheme();
+  const { t } = useLanguage();
 
   const socialItems = [
     {
@@ -59,7 +61,7 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
     },
     {
       id: 'whatsapp',
-      name: 'Saluran WhatsApp',
+      name: t('profile.wa_channel', 'Saluran WhatsApp'),
       icon: 'logo-whatsapp' as const,
       color: '#25D366',
       bgColor: isDarkMode ? 'rgba(37, 211, 102, 0.15)' : '#f0fdf4',
@@ -96,10 +98,10 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
         <View style={styles.articleHeaderRow}>
           <View style={styles.articleBadge}>
             <Ionicons name="share-social" size={13} color="#ef4444" style={{ marginRight: 4 }} />
-            <Text style={styles.articleBadgeText}>IKUTI BEDAINS</Text>
+            <Text style={styles.articleBadgeText}>{t('article.follow_bedain', 'IKUTI BEDAINS')}</Text>
           </View>
           <Text style={[styles.articleText, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
-            Dapatkan berita terkini di medsos kami:
+            {t('article.follow_desc', 'Dapatkan berita terkini di medsos kami:')}
           </Text>
         </View>
 
@@ -144,10 +146,10 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
           </View>
           <View>
             <Text style={[styles.fullTitle, { color: isDarkMode ? '#f8fafc' : '#0f172a' }]}>
-              Komunitas & Media Sosial
+              {t('profile.social_title', 'Komunitas & Media Sosial')}
             </Text>
             <Text style={[styles.fullSubtitle, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
-              Terhubung langsung dengan redaksi Bedain News
+              {t('profile.social_subtitle', 'Terhubung langsung dengan redaksi Bedain News')}
             </Text>
           </View>
         </View>

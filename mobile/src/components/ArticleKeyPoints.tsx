@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 /**
  * Pembersih string mendalam untuk teks editorial berita
@@ -69,6 +70,7 @@ interface ArticleKeyPointsProps {
 
 export const ArticleKeyPoints: React.FC<ArticleKeyPointsProps> = ({ article, containerStyle }) => {
   const { isDarkMode } = useTheme();
+  const { t, translateText } = useLanguage();
   const [isOpen, setIsOpen] = useState(true);
 
   const points = useMemo(() => {
@@ -170,15 +172,15 @@ export const ArticleKeyPoints: React.FC<ArticleKeyPointsProps> = ({ article, con
           <View>
             <View style={styles.titleRow}>
               <Text style={[styles.title, { color: isDarkMode ? '#f8fafc' : '#0f172a' }]}>
-                3 Detik Paham
+                {t('article.keypoints_title', '3 Detik Paham')}
               </Text>
               <View style={styles.aiBadge}>
                 <Ionicons name="sparkles" size={10} color="#ea580c" style={{ marginRight: 2 }} />
-                <Text style={styles.aiBadgeText}>POIN UTAMA</Text>
+                <Text style={styles.aiBadgeText}>{t('article.keypoints_badge', 'POIN UTAMA')}</Text>
               </View>
             </View>
             <Text style={[styles.subtitle, { color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
-              Ringkasan inti berita terpenting
+              {t('article.keypoints_subtitle', 'Ringkasan inti berita terpenting')}
             </Text>
           </View>
         </View>
@@ -206,7 +208,7 @@ export const ArticleKeyPoints: React.FC<ArticleKeyPointsProps> = ({ article, con
                   { color: isDarkMode ? '#e2e8f0' : '#1e293b' },
                 ]}
               >
-                {point}
+                {translateText(point)}
               </Text>
             </View>
           ))}
@@ -215,7 +217,7 @@ export const ArticleKeyPoints: React.FC<ArticleKeyPointsProps> = ({ article, con
           <View style={[styles.footerRow, { borderTopColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(249, 115, 22, 0.15)' }]}>
             <Ionicons name="sparkles-outline" size={12} color="#f97316" style={{ marginRight: 4 }} />
             <Text style={[styles.footerText, { color: isDarkMode ? '#94a3b8' : '#78716c' }]}>
-              Disarikan cerdas untuk membaca lebih cepat & efisien
+              {t('article.keypoints_footer', 'Disarikan cerdas untuk membaca lebih cepat & efisien')}
             </Text>
           </View>
         </View>

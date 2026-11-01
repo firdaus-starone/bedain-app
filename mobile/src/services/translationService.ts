@@ -252,6 +252,7 @@ export interface TranslatedArticlePayload {
   excerpt: string;
   content: string;
   keyPoints?: string[];
+  imageCaption?: string;
   targetLang: string;
 }
 
@@ -266,6 +267,8 @@ export const translateFullArticle = async (
     description?: string;
     content?: string;
     keyPoints?: string[];
+    imageCaption?: string;
+    caption?: string;
     title_en?: string;
     title_zh?: string;
     content_en?: string;
@@ -308,6 +311,7 @@ export const translateFullArticle = async (
           excerpt: data.excerpt || data.seoDescription || '',
           content: data.content,
           keyPoints: data.keyPoints || [],
+          imageCaption: data.imageCaption || '',
           targetLang,
         };
         articleMemoryCache.set(cacheKey, payload);
@@ -325,13 +329,14 @@ export const translateFullArticle = async (
   const title = (targetLang === 'en' && article.title_en) ? article.title_en : ((targetLang === 'zh' && article.title_zh) ? article.title_zh : (article.title || ''));
   const excerpt = (targetLang === 'en' && article.excerpt_en) ? article.excerpt_en : ((targetLang === 'zh' && article.excerpt_zh) ? article.excerpt_zh : (article.excerpt || article.summary || article.seoDescription || article.description || ''));
   const content = (targetLang === 'en' && article.content_en) ? article.content_en : ((targetLang === 'zh' && article.content_zh) ? article.content_zh : (article.content || ''));
+  const imageCaption = article.imageCaption || article.caption || '';
   const keyPoints = article.keyPoints || [];
 
   const kpBlock = Array.isArray(keyPoints) && keyPoints.length > 0
     ? '<ul>' + keyPoints.map(k => '<li>' + k + '</li>').join('') + '</ul>'
     : '<!--no-kp-->';
 
-  const combined = (title || '') + DELIM + (excerpt || '') + DELIM + kpBlock + DELIM + (content || '');
+  const combined = (title || '') + DELIM + (excerpt || '') + DELIM + kpBlock + DELIM + (imageCaption || '') + DELIM + (content || '');
 
   try {
     const body = new URLSearchParams({
@@ -369,13 +374,15 @@ export const translateFullArticle = async (
           }
         }
 
-        const transContent = parts.slice(3).join(DELIM)?.trim() || content;
+        const transImageCaption = parts[3]?.trim() || imageCaption;
+        const transContent = parts.slice(4).join(DELIM)?.trim() || content;
 
         const result: TranslatedArticlePayload = {
           title: transTitle,
           excerpt: transExcerpt,
           content: transContent,
           keyPoints: transKeyPoints.length > 0 ? transKeyPoints : (article.keyPoints || []),
+          imageCaption: transImageCaption,
           targetLang,
         };
 
@@ -383,11 +390,15 @@ export const translateFullArticle = async (
         articleMemoryCache.set(cacheKey, result);
         AsyncStorage.setItem(`bedain_art_full_${cacheKey}`, JSON.stringify(result)).catch(() => {});
 
-        // Cache title in text cache
+        // Cache title & imageCaption in text cache
         if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
         if (article.title) {
           textMemoryCache[targetLang][article.title] = transTitle;
           textMemoryCache[targetLang][article.title.trim()] = transTitle;
+        }
+        if (imageCaption) {
+          textMemoryCache[targetLang][imageCaption] = transImageCaption;
+          textMemoryCache[targetLang][imageCaption.trim()] = transImageCaption;
         }
 
         // Cache to Firestore for future readers
