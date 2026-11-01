@@ -26,14 +26,14 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Capacitor } from '@capacitor/core';
 // TextToSpeech di-load secara dinamis untuk menghindari SSR error
 import { useI18n } from '../hooks/useI18n';
-import { useTranslation } from '../hooks/useTranslation';
+import { useTranslation, getCachedArticleTranslation } from '../hooks/useTranslation';
 import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { useAuth } from '../hooks/useAuth';
 import { getPublicArticleUrl, isMobileDevice, shareArticleWithImage } from '../lib/shareHelper';
 
 const ArticleDetail = ({ initialArticle = null }) => {
   const { currentUser, loading: authLoading } = useAuth();
-  const { lang, t } = useI18n();
+  const { lang, t, changeLanguage } = useI18n();
   const { slug } = useParams();
   const router = useRouter();
   const isInitialDraftOrSched = initialArticle?.status === 'draft' || initialArticle?.status === 'scheduled';
@@ -87,19 +87,22 @@ const ArticleDetail = ({ initialArticle = null }) => {
     if (!article) return null;
     
     // Choose title and content based on language or AI translation
+    const cached = getCachedArticleTranslation(article.id, currentTargetLang || lang);
+    const activeTrans = (translatedArticle && translatedArticle.title) ? translatedArticle : cached;
+
     let title = article.title;
     let content = article.content;
     let excerpt = article.excerpt || article.seoDescription || '';
     let seoDescription = article.seoDescription || article.excerpt || '';
     let keyPoints = article.keyPoints || [];
     
-    if (translatedArticle) {
-      title = translatedArticle.title || title;
-      content = translatedArticle.content || content;
-      excerpt = translatedArticle.excerpt || translatedArticle.seoDescription || excerpt;
-      seoDescription = translatedArticle.seoDescription || translatedArticle.excerpt || seoDescription;
-      if (translatedArticle.keyPoints) {
-        keyPoints = translatedArticle.keyPoints;
+    if (activeTrans && activeTrans.title && (currentTargetLang !== 'id' || lang !== 'id')) {
+      title = activeTrans.title || title;
+      content = activeTrans.content || content;
+      excerpt = activeTrans.excerpt || activeTrans.seoDescription || excerpt;
+      seoDescription = activeTrans.seoDescription || activeTrans.excerpt || seoDescription;
+      if (activeTrans.keyPoints && activeTrans.keyPoints.length > 0) {
+        keyPoints = activeTrans.keyPoints;
       }
     } else if (lang === 'en') {
       if (article.title_en) title = article.title_en;
@@ -125,11 +128,11 @@ const ArticleDetail = ({ initialArticle = null }) => {
       seoDescription,
       keyPoints
     };
-  }, [article, lang, translatedArticle]);
+  }, [article, lang, currentTargetLang, translatedArticle]);
 
-  // Otomatis translate jika bahasa aktif aplikasi berubah (misal dari Navbar)
+  // Otomatis translate jika bahasa aktif aplikasi berubah (misal dari Navbar atau PWA switcher)
   useEffect(() => {
-    if (article?.id && lang && lang !== 'id') {
+    if (article?.id && article?.content && lang && lang !== 'id') {
       const hasStatic = lang === 'en' ? (article.title_en && article.content_en) : (article.title_zh && article.content_zh);
       if (!hasStatic) {
         triggerTranslation(lang);
@@ -137,7 +140,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
     } else if (lang === 'id' && currentTargetLang !== 'id') {
       resetTranslation();
     }
-  }, [lang, article?.id]);
+  }, [lang, article?.id, article?.content, currentTargetLang, triggerTranslation, resetTranslation]);
 
   useEffect(() => {
     setIsClient(true);
@@ -925,52 +928,35 @@ const ArticleDetail = ({ initialArticle = null }) => {
   };
 
   const formatDate = (val) => {
-    if (!val) return 'Hari ini';
+    if (!val) return lang === 'zh' ? '今天' : lang === 'en' ? 'Today' : 'Hari ini';
+    let d = null;
     if (typeof val.toDate === 'function') {
-      try {
-        return val.toDate().toLocaleDateString('id-ID', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }) + ' WIB';
-      } catch (e) {}
+      try { d = val.toDate(); } catch (e) {}
+    } else if (val && typeof val.seconds === 'number') {
+      try { d = new Date(val.seconds * 1000); } catch (e) {}
+    } else {
+      try { d = new Date(val); } catch (e) {}
     }
-    if (val && typeof val.seconds === 'number') {
-      try {
-        const d = new Date(val.seconds * 1000);
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : lang === 'en' ? 'en-US' : 'id-ID', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          }) + (lang === 'id' ? ' WIB' : '');
-        }
-      } catch (e) {}
-    }
+    if (!d || isNaN(d.getTime())) return lang === 'zh' ? '今天' : lang === 'en' ? 'Today' : 'Hari ini';
+
+    const locale = lang === 'zh' ? 'zh-CN' : lang === 'en' ? 'en-US' : 'id-ID';
     try {
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('id-ID', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }) + ' WIB';
-      }
-    } catch (e) {}
-    return 'Hari ini';
+      const formatted = d.toLocaleDateString(locale, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      return lang === 'id' ? `${formatted} WIB` : formatted;
+    } catch (e) {
+      return lang === 'zh' ? '今天' : lang === 'en' ? 'Today' : 'Hari ini';
+    }
   };
 
   const timeAgo = (val) => {
-    if (!val) return 'Baru saja';
+    if (!val) return t('time.just_now') || (lang === 'zh' ? '刚刚' : lang === 'en' ? 'Just now' : 'Baru saja');
     let date = null;
     if (typeof val.toDate === 'function') {
       try { date = val.toDate(); } catch (e) {}
@@ -979,25 +965,29 @@ const ArticleDetail = ({ initialArticle = null }) => {
     } else {
       try { date = new Date(val); } catch (e) {}
     }
-    if (!date || isNaN(date.getTime())) return 'Baru saja';
+    if (!date || isNaN(date.getTime())) return t('time.just_now') || (lang === 'zh' ? '刚刚' : lang === 'en' ? 'Just now' : 'Baru saja');
 
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
-    
-    // Fallback if future date
-    if (seconds < 0) return 'Baru saja';
-    
+    if (seconds < 0) return t('time.just_now') || (lang === 'zh' ? '刚刚' : lang === 'en' ? 'Just now' : 'Baru saja');
+
     let interval = Math.floor(seconds / 31536000);
-    if (interval >= 1) return interval + " tahun lalu";
+    if (interval >= 1) return `${interval} ${t('time.years_ago') || (lang === 'zh' ? '年前' : lang === 'en' ? 'years ago' : 'tahun lalu')}`;
     interval = Math.floor(seconds / 2592000);
-    if (interval >= 1) return interval + " bulan lalu";
+    if (interval >= 1) return `${interval} ${t('time.months_ago') || (lang === 'zh' ? '个月前' : lang === 'en' ? 'months ago' : 'bulan lalu')}`;
     interval = Math.floor(seconds / 86400);
-    if (interval >= 1) return interval + " hari lalu";
+    if (interval >= 1) return `${interval} ${t('time.days_ago') || (lang === 'zh' ? '天前' : lang === 'en' ? 'days ago' : 'hari lalu')}`;
     interval = Math.floor(seconds / 3600);
-    if (interval >= 1) return interval + " jam lalu";
+    if (interval >= 1) return `${interval} ${t('time.hours_ago') || (lang === 'zh' ? '小时前' : lang === 'en' ? 'hours ago' : 'jam lalu')}`;
     interval = Math.floor(seconds / 60);
-    if (interval >= 1) return interval + " menit lalu";
-    return Math.floor(seconds) + " detik lalu";
+    if (interval >= 1) return `${interval} ${t('time.minutes_ago') || (lang === 'zh' ? '分钟前' : lang === 'en' ? 'minutes ago' : 'menit lalu')}`;
+    return `${Math.floor(seconds)} ${t('time.seconds_ago') || (lang === 'zh' ? '秒前' : lang === 'en' ? 'seconds ago' : 'detik lalu')}`;
+  };
+
+  const getCategoryLabel = (cat) => {
+    if (!cat) return t('categories.berita') || (lang === 'zh' ? '新闻' : lang === 'en' ? 'News' : 'Berita');
+    const catSlug = String(cat).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return t(`categories.${catSlug}`) || cat;
   };
 
   // Moved useEffect above early returns to fix React hook order (#310/#418)
@@ -1097,7 +1087,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
   // Pisahkan konten menjadi array blok paragraf untuk menyisipkan Iklan dan Baca Juga
   const getProcessedContentBlocks = () => {
     if (!displayArticle || typeof displayArticle.content !== 'string' || !displayArticle.content) {
-      return ['<p>Konten berita sedang dimuat...</p>'];
+      return [lang === 'zh' ? '<p>正在加载新闻内容...</p>' : lang === 'en' ? '<p>Loading article content...</p>' : '<p>Konten berita sedang dimuat...</p>'];
     }
 
     let contentHtml = displayArticle.content.replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ');
@@ -1215,7 +1205,12 @@ const ArticleDetail = ({ initialArticle = null }) => {
               }}>
                 <span style={{ fontSize: '22px', flexShrink: 0 }}>🔒</span>
                 <div>
-                  <strong>Mode Pratinjau Redaksi:</strong> Artikel ini berstatus <em>{article.status === 'scheduled' ? `Terjadwal (${article.scheduledAt ? article.scheduledAt.replace('T', ' ') : 'Belum Tayang'})` : 'Draf'}</em>. Artikel ini belum diterbitkan untuk umum (pengunjung biasa tidak dapat melihat isi artikel ini).
+                  <strong>{t('article.editorial_preview') || (lang === 'zh' ? '编辑预览模式:' : lang === 'en' ? 'Editorial Preview Mode:' : 'Mode Pratinjau Redaksi:')}</strong>{' '}
+                  {lang === 'zh'
+                    ? `本文处于 ${article.status === 'scheduled' ? `预排 (${article.scheduledAt ? article.scheduledAt.replace('T', ' ') : '尚未发布'})` : '草稿'} 状态，尚未公开发布。`
+                    : lang === 'en'
+                    ? `This article is in ${article.status === 'scheduled' ? `Scheduled (${article.scheduledAt ? article.scheduledAt.replace('T', ' ') : 'Not yet published'})` : 'Draft'} status and is not yet publicly published.`
+                    : `Artikel ini berstatus ${article.status === 'scheduled' ? `Terjadwal (${article.scheduledAt ? article.scheduledAt.replace('T', ' ') : 'Belum Tayang'})` : 'Draf'}. Artikel ini belum diterbitkan untuk umum.`}
                 </div>
               </div>
             )}
@@ -1301,7 +1296,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                     onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                     onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                   >
-                    {t(`categories.${article.category?.toLowerCase()?.replace(/[^a-z0-9]+/g, '-')}`) || article.category || 'Berita'}
+                    {getCategoryLabel(article.category)}
                   </Link>
                 </li>
                 
@@ -1396,7 +1391,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
               </div>
             )}
 
-            {/* AI Multi-Language Switcher Toolbar for Article (Desktop Only, on Mobile handled in Profile Menu) */}
+            {/* AI Multi-Language Switcher Toolbar for Article */}
             <div 
               className="article-ai-translate-banner"
               style={{
@@ -1424,19 +1419,20 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="translate-options-group" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {[
                   { code: 'id', label: '🇮🇩 Asli (ID)' },
                   { code: 'en', label: '🇺🇸 English' },
                   { code: 'zh', label: '🇨🇳 中文' }
                 ].map(item => {
-                  const isActive = currentTargetLang === item.code;
+                  const isActive = (currentTargetLang || lang) === item.code;
                   return (
                     <button
                       key={item.code}
                       type="button"
                       disabled={translating}
                       onClick={() => {
+                        changeLanguage(item.code);
                         if (item.code === 'id') {
                           resetTranslation();
                         } else {
@@ -1465,6 +1461,30 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 })}
               </div>
             </div>
+
+            {translating && (
+              <div style={{
+                background: 'linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(168, 85, 247, 0.12))',
+                border: '1px solid rgba(37, 99, 235, 0.3)',
+                borderRadius: '10px',
+                padding: '8px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '12.5px',
+                color: 'var(--color-text-primary)'
+              }}>
+                <Sparkles size={15} color="var(--color-accent)" />
+                <span>
+                  {lang === 'zh'
+                    ? 'AI 正在为您将全文翻译为中文...'
+                    : lang === 'en'
+                    ? 'AI is translating the full article into English...'
+                    : 'AI sedang menerjemahkan artikel...'}
+                </span>
+              </div>
+            )}
 
             {/* Hero Image Section & Meta */}
             {videoData ? (
@@ -1581,7 +1601,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 {/* Breadcrumb / Category */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
                   <span style={{ color: 'var(--color-accent)', fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {article.category || 'Berita'}
+                    {getCategoryLabel(article.category)}
                   </span>
                 </div>
                 
@@ -1669,7 +1689,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
               <>
                 {/* Fallback for no image */}
                  <span style={{ background: 'var(--color-accent)', color: '#fff', padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase' }}>
-                   {article.category || 'Berita'}
+                   {getCategoryLabel(article.category)}
                  </span>
                  <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.2rem)', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.25, margin: '12px 0', fontFamily: 'var(--font-heading)' }}>
                    {displayArticle.title}
@@ -2068,7 +2088,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                           <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--color-accent)', boxShadow: '0 0 10px var(--color-accent)' }}></div>
                           <span style={{ fontSize: '14px', color: 'var(--color-accent)', fontFamily: 'var(--font-heading)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                            {t('article.readAlso') || 'BACA JUGA'}
+                            {t('article.readAlso') || (lang === 'zh' ? '相关阅读' : lang === 'en' ? 'READ ALSO' : 'BACA JUGA')}
                           </span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -2109,9 +2129,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
             {/* Author / Editor Info at bottom */}
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '14px', color: 'var(--color-text-primary)', borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
-              <span><span style={{ color: 'var(--color-text-secondary)' }}>{t('article.contributor') || 'Kontributor'}:</span> <strong>{article.contributorName || article.author?.name || t('article.editorial')}</strong></span>
+              <span><span style={{ color: 'var(--color-text-secondary)' }}>{t('article.contributor') || (lang === 'zh' ? '撰稿人' : lang === 'en' ? 'Contributor' : 'Kontributor')}:</span> <strong>{article.contributorName || article.author?.name || t('article.editorial')}</strong></span>
               <span style={{ opacity: 0.5 }}>|</span>
-              <span><span style={{ color: 'var(--color-text-secondary)' }}>{t('article.editor') || 'Editor'}:</span> <strong>{t('article.editorial')}</strong></span>
+              <span><span style={{ color: 'var(--color-text-secondary)' }}>{t('article.editor') || (lang === 'zh' ? '编辑' : lang === 'en' ? 'Editor' : 'Editor')}:</span> <strong>{t('article.editorial') || (lang === 'zh' ? 'Bedain 编辑部' : lang === 'en' ? 'Bedain Editorial' : 'Redaksi Bedain')}</strong></span>
             </div>
 
             {/* Tags Section */}
@@ -2381,7 +2401,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
             {relatedArticles.length > 0 && (
               <div style={{ marginTop: '24px', borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-primary)' }}>
-                  <Flame size={20} color="var(--color-accent)" /> {t('article.readAlso') || 'Baca Juga'}
+                  <Flame size={20} color="var(--color-accent)" /> {t('article.readAlso') || (lang === 'zh' ? '相关阅读' : lang === 'en' ? 'Related News' : 'Baca Juga')}
                 </h3>
                 <div className="related-grid">
                   {relatedArticles.slice(0, 6).map(rel => (
@@ -2802,7 +2822,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
                      const publicUrl = getPublicArticleUrl(article);
                      const title = displayArticle?.title || article?.title || 'Bedain News';
                      const desc = displayArticle?.seoDescription || displayArticle?.excerpt || article?.seoDescription || article?.excerpt || '';
-                     const shareText = `*${title}*\n\n${desc ? desc + '\n\n' : ''}Baca selengkapnya di Bedain News:\n${publicUrl}`;
+                     const shareLead = lang === 'zh' ? '在 Bedain News 阅读更多:' : lang === 'en' ? 'Read more at Bedain News:' : 'Baca selengkapnya di Bedain News:';
+                     const shareText = `*${title}*\n\n${desc ? desc + '\n\n' : ''}${shareLead}\n${publicUrl}`;
                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
                      setShowShareModal(false);
                    }}

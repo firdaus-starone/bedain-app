@@ -4512,12 +4512,25 @@ body {
     display: none !important;
   }
   .mobile-only-lang {
-    display: none !important;
+    display: flex !important;
+    align-items: center;
   }
 }
 @media (max-width: 768px) {
   .article-ai-translate-banner {
-    display: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+  .article-ai-translate-banner .translate-options-group {
+    width: 100% !important;
+    display: flex !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+    -webkit-overflow-scrolling: touch;
   }
 }
 .language-switcher-container:hover .language-dropdown {
