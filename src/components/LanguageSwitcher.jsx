@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useI18n } from '../hooks/useI18n';
-import { Globe, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export default function LanguageSwitcher({ variant = 'dropdown', className = '' }) {
   const { lang, changeLanguage, languages } = useI18n();
@@ -68,8 +68,7 @@ export default function LanguageSwitcher({ variant = 'dropdown', className = '' 
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
       >
-        <Globe size={14} className="lang-icon" />
-        <span style={{ fontSize: '12px' }}>{currentLangObj.flag}</span>
+        <span style={{ fontSize: '13px', lineHeight: 1 }}>{currentLangObj.flag}</span>
         <span style={{ fontWeight: '800', letterSpacing: '0.5px' }}>{currentLangObj.shortLabel || lang.toUpperCase()}</span>
       </button>
 
