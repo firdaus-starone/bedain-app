@@ -83,16 +83,16 @@ const AdBanner = ({ slot = 'article' }) => {
             className="sponsor-banner-link"
             style={{ display: 'block', textDecoration: 'none', position: 'relative', overflow: 'hidden', color: '#ffffff' }}
           >
-            {/* Gambar banner parallax */}
+            {/* Gambar banner header responsif */}
             {banner.imageUrl && (
               <div
                 style={{
                   width: '100%',
                   height: '190px',
                   backgroundImage: `url(${banner.imageUrl})`,
-                  backgroundAttachment: 'fixed',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
+                  backgroundColor: '#070a12',
                   display: 'block'
                 }}
               />
