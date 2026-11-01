@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { MessageCircle } from 'lucide-react';
+import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 const RECENT_COMMENTS_CACHE_TTL = 15 * 60 * 1000;
 const readRecentCommentsCache = () => {
@@ -26,6 +28,8 @@ const writeRecentCommentsCache = (data) => {
 };
 
 const RecentCommentsWidget = () => {
+  const { lang } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const [recentComments, setRecentComments] = useState(() => {
     return readRecentCommentsCache() || [];
   });
@@ -94,9 +98,11 @@ const RecentCommentsWidget = () => {
       <div className="sidebar-widget recent-comments-widget" style={{ marginBottom: '24px' }}>
         <h3 className="widget-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <MessageCircle size={18} color="var(--color-accent)" />
-          Komentar Terbaru
+          {lang === 'zh' ? '最新评论' : lang === 'en' ? 'Recent Comments' : 'Komentar Terbaru'}
         </h3>
-        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>Memuat komentar...</p>
+        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+          {lang === 'zh' ? '正在加载评论...' : lang === 'en' ? 'Loading comments...' : 'Memuat komentar...'}
+        </p>
       </div>
     );
   }
@@ -105,12 +111,12 @@ const RecentCommentsWidget = () => {
     <div className="sidebar-widget recent-comments-widget" style={{ marginBottom: '24px' }}>
       <h3 className="widget-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <MessageCircle size={18} color="var(--color-accent)" />
-        Komentar Terbaru
+        {lang === 'zh' ? '最新评论' : lang === 'en' ? 'Recent Comments' : 'Komentar Terbaru'}
       </h3>
       <div className="trending-list">
         {recentComments.length === 0 ? (
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', padding: '10px 0', fontStyle: 'italic' }}>
-            Belum ada diskusi terbaru.
+            {lang === 'zh' ? '暂无最新讨论。' : lang === 'en' ? 'No recent discussions yet.' : 'Belum ada diskusi terbaru.'}
           </p>
         ) : (
           <>
@@ -119,7 +125,7 @@ const RecentCommentsWidget = () => {
                 <div className="trending-item" style={{ cursor: 'pointer', padding: '12px 0', borderBottom: index < recentComments.length - 1 ? '1px solid var(--color-border)' : 'none', flexDirection: 'column', alignItems: 'flex-start' }}>
 
                   <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {article.articleTitle}
+                    {translateArticleTitle({ title: article.articleTitle })}
                   </h4>
 
                   <div style={{ background: 'var(--color-bg-secondary)', padding: '10px 12px', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}>
@@ -127,7 +133,9 @@ const RecentCommentsWidget = () => {
                       <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold' }}>
                         {(article.latestComment.authorName || 'A').charAt(0).toUpperCase()}
                       </div>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{article.latestComment.authorName || 'Anonim'}</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                        {article.latestComment.authorName || (lang === 'zh' ? '匿名用户' : lang === 'en' ? 'Anonymous' : 'Anonim')}
+                      </span>
                     </div>
 
                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.4' }}>
@@ -166,7 +174,7 @@ const RecentCommentsWidget = () => {
                 e.currentTarget.style.border = '1px solid var(--color-border)';
               }}
             >
-              Lihat Topik Lainnya
+              {lang === 'zh' ? '查看更多话题' : lang === 'en' ? 'Explore More Topics' : 'Lihat Topik Lainnya'}
             </Link>
           </>
         )}

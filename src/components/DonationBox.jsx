@@ -11,7 +11,7 @@ import { useI18n } from '../hooks/useI18n';
  */
 const DonationBox = ({ className = '', style = {} }) => {
   const { settings } = useSiteSettings();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [selectedPreset, setSelectedPreset] = useState('15k');
   const [copied, setCopied] = useState(false);
 
@@ -24,33 +24,45 @@ const DonationBox = ({ className = '', style = {} }) => {
   const trakteerUrl = settings?.trakteerUrl?.trim() || '';
   const generalDonationUrl = saweriaUrl || trakteerUrl;
 
-  const title = settings?.donationTitle || 'Dukung Jurnalisme Independen Bedain News';
-  const desc = settings?.donationDesc || 'Bantu tim redaksi kami tetap menyajikan berita berimbang, tajam, dan bebas pengaruh dengan mentraktir secangkir kopi.';
+  const defaultTitle = lang === 'zh'
+    ? '支持 Bedain News 独立新闻报道'
+    : lang === 'en'
+    ? 'Support Bedain News Independent Journalism'
+    : 'Dukung Jurnalisme Independen Bedain News';
+
+  const defaultDesc = lang === 'zh'
+    ? '请编辑部喝杯咖啡，支持我们持续提供客观、深入且不受利益影响的新闻报道。'
+    : lang === 'en'
+    ? 'Help our editorial team provide balanced, sharp, and independent journalism by buying us a cup of coffee.'
+    : 'Bantu tim redaksi kami tetap menyajikan berita berimbang, tajam, dan bebas pengaruh dengan mentraktir secangkir kopi.';
+
+  const title = (lang === 'id' ? settings?.donationTitle : null) || defaultTitle;
+  const desc = (lang === 'id' ? settings?.donationDesc : null) || defaultDesc;
 
   const presets = [
     {
       id: '15k',
       amount: 'Rp 15.000',
-      label: '1 Kopi',
+      label: lang === 'zh' ? '1杯咖啡' : lang === 'en' ? '1 Coffee' : '1 Kopi',
       emoji: '☕',
       amountNum: 15000,
-      note: 'Dukungan segar untuk 1 laporan independen'
+      note: lang === 'zh' ? '为1篇独立深度报道提供支持' : lang === 'en' ? 'Fresh support for 1 independent report' : 'Dukungan segar untuk 1 laporan independen'
     },
     {
       id: '30k',
       amount: 'Rp 30.000',
-      label: '2 Kopi',
+      label: lang === 'zh' ? '2杯咖啡' : lang === 'en' ? '2 Coffees' : '2 Kopi',
       emoji: '☕☕',
       amountNum: 30000,
-      note: 'Bahan bakar tim riset berita investigasi harian'
+      note: lang === 'zh' ? '每日调查新闻研究团队的助力燃料' : lang === 'en' ? 'Fuel for daily investigative journalism team' : 'Bahan bakar tim riset berita investigasi harian'
     },
     {
       id: '75k',
       amount: 'Rp 75.000',
-      label: 'Sponsor Riset',
+      label: lang === 'zh' ? '研究赞助人' : lang === 'en' ? 'Research Sponsor' : 'Sponsor Riset',
       emoji: '🚀',
       amountNum: 75000,
-      note: 'Mitra utama penopang kebebasan ruang redaksi'
+      note: lang === 'zh' ? '捍卫编辑室独立性的核心伙伴' : lang === 'en' ? 'Key partner supporting editorial freedom' : 'Mitra utama penopang kebebasan ruang redaksi'
     },
   ];
 
@@ -206,7 +218,7 @@ const DonationBox = ({ className = '', style = {} }) => {
                 gap: '5px'
               }}
             >
-              <Heart size={12} fill="#f59e0b" /> Dukungan Pembaca
+              <Heart size={12} fill="#f59e0b" /> {lang === 'zh' ? '读者支持' : lang === 'en' ? 'Reader Support' : 'Dukungan Pembaca'}
             </span>
             <span
               style={{
@@ -222,7 +234,7 @@ const DonationBox = ({ className = '', style = {} }) => {
                 gap: '4px'
               }}
             >
-              <Sparkles size={11} /> 100% Untuk Riset Redaksi
+              <Sparkles size={11} /> {lang === 'zh' ? '100% 用于编辑部独立调查' : lang === 'en' ? '100% For Editorial Research' : '100% Untuk Riset Redaksi'}
             </span>
           </div>
 
@@ -256,7 +268,7 @@ const DonationBox = ({ className = '', style = {} }) => {
       <div style={{ marginTop: '20px', position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
           <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-text-secondary, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-            Pilih Paket Apresiasi:
+            {lang === 'zh' ? '选择赞赏方案:' : lang === 'en' ? 'CHOOSE APPRECIATION PLAN:' : 'PILIH PAKET APRESIASI:'}
           </span>
           <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600 }}>
             {currentPresetObj.note}
@@ -368,7 +380,9 @@ const DonationBox = ({ className = '', style = {} }) => {
           }}
         >
           <Coffee size={17} strokeWidth={2.4} />
-          <span>Traktir {currentPresetObj.amount} Sekarang</span>
+          <span>
+            {lang === 'zh' ? `立即赞助 ${currentPresetObj.amount}` : lang === 'en' ? `Treat ${currentPresetObj.amount} Now` : `Traktir ${currentPresetObj.amount} Sekarang`}
+          </span>
           <ExternalLink size={15} />
         </a>
 
@@ -393,7 +407,7 @@ const DonationBox = ({ className = '', style = {} }) => {
               transition: 'all 0.2s ease'
             }}
           >
-            <span>Dukung via Trakteer</span>
+            <span>{lang === 'zh' ? '通过 Trakteer 支持' : lang === 'en' ? 'Support via Trakteer' : 'Dukung via Trakteer'}</span>
             <ExternalLink size={13} />
           </a>
         )}
@@ -402,7 +416,7 @@ const DonationBox = ({ className = '', style = {} }) => {
         <button
           type="button"
           onClick={handleCopyLink}
-          title="Salin Tautan Dukungan"
+          title={lang === 'zh' ? '复制赞赏链接' : lang === 'en' ? 'Copy Support Link' : 'Salin Tautan Dukungan'}
           style={{
             background: 'var(--color-bg-secondary, rgba(255,255,255,0.05))',
             border: '1px solid var(--color-border, rgba(255,255,255,0.12))',
@@ -419,7 +433,7 @@ const DonationBox = ({ className = '', style = {} }) => {
           }}
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          <span>{copied ? 'Tersalin!' : 'Salin Info'}</span>
+          <span>{copied ? (lang === 'zh' ? '已复制!' : lang === 'en' ? 'Copied!' : 'Tersalin!') : (lang === 'zh' ? '复制信息' : lang === 'en' ? 'Copy Info' : 'Salin Info')}</span>
         </button>
 
         <span

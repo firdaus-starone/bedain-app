@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,15 +13,15 @@ import FAQSection from '../components/FAQSection';
 import { isMobileDevice } from '../lib/shareHelper';
 
 
-const StaticPageView = () => {
+const StaticPageView = ({ initialPage = null }) => {
   const { slug: paramSlug } = useParams();
   const router = useRouter();
-  const slug = paramSlug || (typeof window !== 'undefined' && window.location.pathname.includes('/faq') ? 'faq' : null);
-  const [page, setPage] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const slug = paramSlug || initialPage?.slug || (typeof window !== 'undefined' && window.location.pathname.includes('/faq') ? 'faq' : null);
+  const [page, setPage] = useState(initialPage);
+  const [loading, setLoading] = useState(!initialPage);
   const [error, setError] = useState(null);
   const [headings, setHeadings] = useState([]);
-  const [contentHtml, setContentHtml] = useState('');
+  const [contentHtml, setContentHtml] = useState(() => initialPage?.content || '');
   const [activeId, setActiveId] = useState(null);
   const [allPages, setAllPages] = useState([]);
   const contentRef = useRef(null);
@@ -29,6 +30,12 @@ const StaticPageView = () => {
     window.scrollTo(0, 0);
     if (slug === 'kontak' || slug === 'contact') {
       router.push('/kontak', { replace: true });
+      return;
+    }
+
+    if (initialPage && initialPage.slug === slug) {
+      setPage(initialPage);
+      setLoading(false);
       return;
     }
     const fetchPage = async () => {

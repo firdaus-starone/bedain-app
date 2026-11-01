@@ -6,6 +6,7 @@ import { Clock, TrendingUp } from 'lucide-react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 const FbIcon = () => (
   <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -41,6 +42,7 @@ let fetchTopicsPromise = null;
 const BreakingNews = () => {
   const { settings } = useSiteSettings();
   const { t, lang } = useI18n();
+  const { translateText } = useAutoTranslate();
   const alertColor = 'var(--color-accent)';
   
   const [topics, setTopics] = useState(() => cachedTopicsMemory || []);
@@ -198,7 +200,7 @@ const BreakingNews = () => {
           </div>
           <div className="breaking-ticker" style={{ display: 'flex', alignItems: 'center', gap: '16px', overflow: 'hidden' }}>
             <span className="breaking-label" style={{ backgroundColor: alertColor, position: 'sticky', left: 0, zIndex: 2 }}>
-              {allTickerItems.some(i => i.type === 'breaking') ? 'BREAKING NEWS' : t('navigation.trending').toUpperCase()}
+              {allTickerItems.some(i => i.type === 'breaking') ? (t('breaking_news.breaking') || 'BREAKING NEWS') : (t('navigation.trending') || 'TRENDING').toUpperCase()}
             </span>
             <div className="breaking-text-container" style={{ display: 'flex', gap: '20px', alignItems: 'center', whiteSpace: 'nowrap', transition: 'opacity 0.4s ease', opacity: fade === 'fade-in' ? 1 : 0 }}>
               {currentItem ? (
@@ -206,21 +208,21 @@ const BreakingNews = () => {
                   {currentItem.type === 'breaking' ? (
                     <Link href={currentItem.link} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
                       <span style={{ color: '#ef4444', marginRight: '6px' }}>🔴</span>
-                      {currentItem.text}
+                      {translateText(currentItem.text)}
                     </Link>
                   ) : currentItem.type === 'topic' ? (
                     <Link href={`/cari?q=${encodeURIComponent(currentItem.text)}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
                       <TrendingUp size={16} style={{ display: 'inline-block', verticalAlign: 'text-bottom', marginRight: '6px', color: alertColor }} />
-                      #{currentItem.text.replace(/\s+/g, '')}
+                      #{translateText(currentItem.text).replace(/\s+/g, '')}
                     </Link>
                   ) : currentItem.type === 'custom' ? (
-                    <span>{currentItem.text}</span>
+                    <span>{translateText(currentItem.text)}</span>
                   ) : null}
                 </span>
               ) : loading ? (
                 <span className="breaking-text">{lang === 'zh' ? '加载热门话题...' : lang === 'en' ? 'Loading trending topics...' : 'Memuat topik hangat...'}</span>
               ) : (
-                <span className="breaking-text">{lang === 'zh' ? '欢迎来到 BEDAIN NEWS' : lang === 'en' ? 'Welcome to BEDAIN NEWS' : 'Selamat datang di BEDAIN NEWS, Berita Berbeda Menginspirasi Semua.'}</span>
+                <span className="breaking-text">{t('breaking_news.welcome') || 'Selamat datang di BEDAIN NEWS, Berita Berbeda Menginspirasi Semua.'}</span>
               )}
             </div>
           </div>

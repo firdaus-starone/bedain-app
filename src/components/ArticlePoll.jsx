@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, CheckCircle2, Users, Sparkles, RefreshCw } from 'lucide-react';
+import { useI18n } from '../hooks/useI18n';
 
 /**
  * Komponen ArticlePoll (📊 Polling Cepat Isu Hangat)
  * Meningkatkan keterlibatan pembaca dengan survei opini interaktif di akhir berita.
  */
 const ArticlePoll = ({ article, className = '', style = {} }) => {
+  const { lang } = useI18n();
   const articleId = article?.id || 'default';
   const storageKey = `bedain_poll_vote_${articleId}`;
 
@@ -28,16 +30,36 @@ const ArticlePoll = ({ article, className = '', style = {} }) => {
       };
     }
 
-    // Default relevan berdasarkan topik/judul artikel
+    // Default relevan berdasarkan topik/judul artikel disesuaikan dengan bahasa aktif
+    const questionText = lang === 'zh'
+      ? '您对本篇报道中的议题有何看法？'
+      : lang === 'en'
+      ? 'What is your view on the issue in this report?'
+      : 'Bagaimana pandangan Anda terhadap isu dalam berita ini?';
+
+    const defaultOptions = [
+      {
+        id: 'opt_0',
+        label: lang === 'zh' ? '👍 赞同 / 支持这一举措' : lang === 'en' ? '👍 Agree / Support This Move' : '👍 Setuju / Mendukung Langkah Ini',
+        color: '#10b981'
+      },
+      {
+        id: 'opt_1',
+        label: lang === 'zh' ? '👎 不太恰当 / 需要重新评估' : lang === 'en' ? '👎 Inappropriate / Needs Review' : '👎 Kurang Tepat / Perlu Dikaji Ulang',
+        color: '#ef4444'
+      },
+      {
+        id: 'opt_2',
+        label: lang === 'zh' ? '🤔 保持中立 / 观望实际成果' : lang === 'en' ? '🤔 Neutral / Waiting for Real Results' : '🤔 Masih Netral / Menunggu Hasil Nyata',
+        color: '#f59e0b'
+      }
+    ];
+
     return {
-      question: `Bagaimana pandangan Anda terhadap isu dalam berita ini?`,
-      options: [
-        { id: 'opt_0', label: '👍 Setuju / Mendukung Langkah Ini', color: '#10b981' },
-        { id: 'opt_1', label: '👎 Kurang Tepat / Perlu Dikaji Ulang', color: '#ef4444' },
-        { id: 'opt_2', label: '🤔 Masih Netral / Menunggu Hasil Nyata', color: '#f59e0b' }
-      ]
+      question: questionText,
+      options: defaultOptions
     };
-  }, [article]);
+  }, [article, lang]);
 
   // Generate deterministic seed counts agar polling terlihat hidup
   useEffect(() => {
@@ -189,10 +211,10 @@ const ArticlePoll = ({ article, className = '', style = {} }) => {
                 gap: '4px'
               }}
             >
-              <Sparkles size={11} /> POLLING KOMUNITAS BEDAINS
+              <Sparkles size={11} /> {lang === 'zh' ? 'BEDAINS 社区民意调查' : lang === 'en' ? 'BEDAINS COMMUNITY POLL' : 'POLLING KOMUNITAS BEDAINS'}
             </span>
             <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-              Suara Anda menentukan perspektif publik
+              {lang === 'zh' ? '您的发声决定公众视角' : lang === 'en' ? 'Your voice shapes the public perspective' : 'Suara Anda menentukan perspektif publik'}
             </div>
           </div>
         </div>
@@ -211,7 +233,10 @@ const ArticlePoll = ({ article, className = '', style = {} }) => {
           }}
         >
           <Users size={12} />
-          <span>{totalVotes.toLocaleString('id-ID')} Suara Masuk</span>
+          <span>
+            {totalVotes.toLocaleString(lang === 'zh' ? 'zh-CN' : lang === 'en' ? 'en-US' : 'id-ID')}{' '}
+            {lang === 'zh' ? '票已投' : lang === 'en' ? 'Votes Recorded' : 'Suara Masuk'}
+          </span>
         </div>
       </div>
 
@@ -311,7 +336,10 @@ const ArticlePoll = ({ article, className = '', style = {} }) => {
         }}
       >
         <span>
-          {hasVoted ? '✅ Terima kasih telah berpartisipasi!' : '👆 Klik salah satu opsi untuk memberikan suara Anda.'}
+          {hasVoted
+            ? (lang === 'zh' ? '✅ 感谢您的参与！' : lang === 'en' ? '✅ Thank you for participating!' : '✅ Terima kasih telah berpartisipasi!')
+            : (lang === 'zh' ? '👆 点击任一选项即可参与投票。' : lang === 'en' ? '👆 Click an option to cast your vote.' : '👆 Klik salah satu opsi untuk memberikan suara Anda.')
+          }
         </span>
 
         {hasVoted && (
@@ -331,7 +359,7 @@ const ArticlePoll = ({ article, className = '', style = {} }) => {
               padding: '2px 6px'
             }}
           >
-            <RefreshCw size={11} /> Ubah Pilihan
+            <RefreshCw size={11} /> {lang === 'zh' ? '更改选择' : lang === 'en' ? 'Change Vote' : 'Ubah Pilihan'}
           </button>
         )}
       </div>

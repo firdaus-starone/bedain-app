@@ -1,10 +1,19 @@
 {
   "navigation": {
-    "home": "主页",
-    "trending": "热门话题",
+    "home": "首页",
+    "trending": "热门",
     "search": "搜索新闻...",
+    "search_btn": "搜索",
+    "send": "投稿",
     "contact": "联系编辑",
-    "send_article": "提交文章"
+    "send_article": "提交文章",
+    "main_nav": "主要导航",
+    "featured_categories": "精选分类",
+    "language_choice": "语言选择",
+    "public_participation": "公众参与",
+    "submit_opinion": "投稿观点 / 公民新闻",
+    "info_services": "信息与服务",
+    "contact_coop": "联系与合作"
   },
   "article": {
     "readTime": "分钟阅读",
@@ -25,10 +34,13 @@
     "latest": "最新",
     "popular": "当下热门",
     "seeMore": "查看更多",
+    "view_all": "查看全部",
+    "local_news": "您身边的资讯",
+    "nearby": "附近",
     "editorialDesk": "编辑部",
     "editorialChoice": "编辑精选文章",
-    "new_articles_available": "有新文章",
-    "click_to_load": "点击加载",
+    "new_articles_available": "有新文章发布",
+    "click_to_load": "点击刷新",
     "hot_topics": "热门话题",
     "opinion": "精选观点",
     "latest_news": "最新新闻"
@@ -42,29 +54,74 @@
     "budaya": "文化",
     "kementerian": "部委",
     "internasional": "国际",
-    "gadget": "小工具",
+    "gadget": "数码科技",
     "hukum-kriminal": "法律与犯罪",
     "politik": "政治",
     "opini": "观点",
     "pendidikan": "教育",
     "sorotan": "焦点",
     "sport": "体育",
+    "olahraga": "体育",
     "kesehatan": "健康",
     "otomotif": "汽车",
-    "meja-redaksi": "编辑部"
+    "meja-redaksi": "编辑部",
+    "sosial": "社会",
+    "pemerintahan": "政务",
+    "kuliner": "美食",
+    "daerah": "地方",
+    "hiburan": "娱乐",
+    "teknologi": "科技",
+    "ekonomi": "经济",
+    "bisnis": "商业",
+    "wisata": "旅游",
+    "gaya-hidup": "生活方式",
+    "hukum": "法律",
+    "kriminal": "犯罪",
+    "video": "视频",
+    "properti": "房产"
+  },
+  "user_menu": {
+    "profile": "个人资料",
+    "notifications": "消息通知",
+    "bookmarks": "稍后阅读",
+    "dark_mode": "暗黑模式",
+    "light_mode": "明亮模式"
+  },
+  "sidebar": {
+    "newsletter_title": "Bedain 独家简报",
+    "newsletter_desc": "每天早晨将最重要的头条新闻精粹直接送达您的收件箱。",
+    "newsletter_placeholder": "请输入您的电子邮箱",
+    "subscribe": "立即订阅",
+    "subscribing": "正在提交..."
+  },
+  "breaking_news": {
+    "breaking": "快讯",
+    "topic": "热门话题",
+    "welcome": "欢迎来到 BEDAIN NEWS，与众不同的新闻启发每一个人。"
   },
   "ads": {
     "reach_audience": "覆盖数百万受众",
     "promo_desc": "在领先的新闻门户网站上推广您的品牌和产品。",
     "advertise_now": "立即投放",
     "ads_label": "BEDAIN NEWS 广告",
-    "premium_ad": "高级广告"
+    "premium_ad": "高级广告",
+    "sponsor": "赞助商",
+    "ad": "广告",
+    "sponsor_slot_open": "赞助广告位招租",
+    "place_sponsor_here": "在此投放您的品牌赞助广告",
+    "reach_readers": "每日触达数万名 Bedain News 忠实读者。",
+    "contact_editorial": "联系编辑部"
   },
   "footer": {
     "part_of": "所属",
+    "connect_with_us": "关注我们",
+    "all_rights_reserved": "保留所有权利。",
     "cols": {
       "informasi": "信息",
-      "kategori": "类别"
+      "kategori": "分类",
+      "jaringan media": "媒体网络",
+      "jaringan-media": "媒体网络",
+      "media network": "媒体网络"
     }
   },
   "time": {
@@ -77,3 +134,4 @@
     "just_now": "刚刚"
   }
 }
+

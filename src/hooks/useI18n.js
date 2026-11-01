@@ -8,62 +8,93 @@ import zh from '../dictionaries/zh.json';
 
 const dictionaries = { id, en, zh };
 
+export const AVAILABLE_LANGUAGES = [
+  { code: 'id', label: 'ID - Indonesia', shortLabel: 'ID', flag: '🇮🇩' },
+  { code: 'en', label: 'EN - English', shortLabel: 'EN', flag: '🇺🇸' },
+  { code: 'zh', label: 'ZH - 中文', shortLabel: 'ZH', flag: '🇨🇳' },
+];
+
 const I18nContext = createContext({
   lang: 'id',
   t: (key) => key,
   changeLanguage: () => {},
+  languages: AVAILABLE_LANGUAGES,
 });
 
-export const I18nProvider = ({ children }) => {
-  const [lang, setLang] = useState('id');
+export const I18nProvider = ({ children, initialLang = 'id' }) => {
+  const [lang, setLang] = useState(initialLang || 'id');
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    setLang('id');
-  }, []);
+    // 1. Cek dari cookie browser
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(^|;)\s*NEXT_LOCALE\s*=\s*([^;]+)/);
+      if (match && ['id', 'en', 'zh'].includes(match[2])) {
+        setLang(match[2]);
+        return;
+      }
+      try {
+        const stored = localStorage.getItem('bedain_lang');
+        if (stored && ['id', 'en', 'zh'].includes(stored)) {
+          setLang(stored);
+          return;
+        }
+      } catch (e) {}
+    }
+    // 2. Fallback ke initialLang dari server
+    if (initialLang && ['id', 'en', 'zh'].includes(initialLang)) {
+      setLang(initialLang);
+    }
+  }, [initialLang]);
 
   const changeLanguage = (newLang) => {
-    if (newLang === lang) return;
-    
-    // Construct new URL
-    const currentPath = pathname;
-    
-    // Remove existing language prefix if any
-    let newPath = currentPath;
-    if (currentPath.startsWith('/en/')) newPath = currentPath.replace('/en/', '/');
-    else if (currentPath === '/en') newPath = '/';
-    else if (currentPath.startsWith('/zh/')) newPath = currentPath.replace('/zh/', '/');
-    else if (currentPath === '/zh') newPath = '/';
-    
-    // Add new language prefix if not default 'id'
-    if (newLang !== 'id') {
-      newPath = `/${newLang}${newPath === '/' ? '' : newPath}`;
+    if (!newLang || newLang === lang) return;
+    setLang(newLang);
+
+    // Simpan pilihan bahasa ke Cookie & LocalStorage (1 tahun)
+    if (typeof document !== 'undefined') {
+      document.cookie = `NEXT_LOCALE=${newLang}; path=/; max-age=31536000; SameSite=Lax`;
+      try {
+        localStorage.setItem('bedain_lang', newLang);
+      } catch (e) {}
     }
-    
-    // Update cookie so the server remembers the preference
-    document.cookie = `NEXT_LOCALE=${newLang}; path=/; max-age=31536000`;
-    // Force hard reload to ensure server-side rewrites and headers apply correctly
-    window.location.href = newPath;
   };
 
   const t = (key) => {
     if (typeof key !== 'string') return null;
     const keys = key.split('.');
-    let value = dictionaries['id'];
-    
+
+    // Coba ambil dari kamus bahasa aktif
+    const activeDict = dictionaries[lang] || dictionaries['id'];
+    let value = activeDict;
     for (const k of keys) {
       if (value && value[k] !== undefined) {
         value = value[k];
       } else {
-        return null; // Fallback to null so that || 'Fallback' works
+        value = null;
+        break;
       }
     }
+
+    // Jika belum ada di bahasa target (misal zh atau en), fallback ke id
+    if (value === null && lang !== 'id') {
+      let fallback = dictionaries['id'];
+      for (const k of keys) {
+        if (fallback && fallback[k] !== undefined) {
+          fallback = fallback[k];
+        } else {
+          return null;
+        }
+      }
+      return fallback;
+    }
+
     return value;
   };
 
   return (
-    <I18nContext.Provider value={{ lang, t, changeLanguage }}>
+    <I18nContext.Provider value={{ lang, t, changeLanguage, languages: AVAILABLE_LANGUAGES }}>
       {children}
     </I18nContext.Provider>
   );

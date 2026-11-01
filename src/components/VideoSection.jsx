@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getYouTubeId, getArticleCardImage, getArticleVideoData } from '../lib/videoHelpers';
+import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 // Global memory cache for VideoSection
 let cachedVideosMemory = null;
@@ -30,6 +32,8 @@ const writeVideosCache = (data) => {
 };
 
 const VideoSection = () => {
+  const { t } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const [videoArticles, setVideoArticles] = useState(() => {
     const disk = readVideosCache();
     return disk || cachedVideosMemory || [];
@@ -144,8 +148,8 @@ const VideoSection = () => {
   return (
     <section className="video-section-inline" id="kategori-video">
       <div className="video-header">
-          <h2 className="video-section-title" style={{ color: '#e63946' }}>Video</h2>
-          <Link href="/cari?q=video" className="video-section-link">Lihat Semua Video &rarr;</Link>
+          <h2 className="video-section-title" style={{ color: '#e63946' }}>{t('categories.video') || 'Video'}</h2>
+          <Link href="/cari?q=video" className="video-section-link">{t('home.view_all') || 'Lihat Semua Video'} &rarr;</Link>
         </div>
         
         <div className="video-grid">
@@ -170,7 +174,7 @@ const VideoSection = () => {
                   }}
                 />
                 <div className="video-overlay" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,10,12,1) 0%, rgba(10,10,12,0.6) 40%, rgba(10,10,12,0) 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '30px' }}>
-                   <h3 className="video-main-title" style={{ margin: 0, zIndex: 3, position: 'relative', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{mainVideo.title}</h3>
+                   <h3 className="video-main-title" style={{ margin: 0, zIndex: 3, position: 'relative', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{translateArticleTitle(mainVideo)}</h3>
                 </div>
                 <div className="play-button-large" style={{ marginTop: '-40px' }}>
                   <svg viewBox="0 0 24 24" fill="currentColor">
@@ -206,7 +210,7 @@ const VideoSection = () => {
                       </svg>
                     </div>
                   </div>
-                  <h4 className="video-item-title">{video.title}</h4>
+                  <h4 className="video-item-title">{translateArticleTitle(video)}</h4>
                 </div>
               </Link>
             ))}

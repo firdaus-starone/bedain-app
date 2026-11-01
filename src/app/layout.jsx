@@ -62,6 +62,13 @@ export default async function RootLayout({ children }) {
       <head>
         <meta name="google-adsense-account" content="ca-pub-0471041173994802" />
         <Script
+          id="google-adsense-script"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0471041173994802"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+        <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-1YDVGEPDH6"
           strategy="lazyOnload"
         />

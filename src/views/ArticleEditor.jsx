@@ -13,6 +13,7 @@ import AIAssistantModal from '../components/AIAssistantModal';
 import AIGeneratorModal from '../components/AIGeneratorModal';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { getGeminiApiKey } from '../lib/geminiSecrets';
+import { logActivity } from '../lib/activityLogger';
 
 const ArticleEditor = () => {
   const router = useRouter();
@@ -756,6 +757,17 @@ PENTING: Jangan ada koma di akhir item terakhir sebelum kurung tutup. Pastikan J
         setFormData(prev => ({ ...prev, category: newCat.name }));
         
         showNotif(`Kategori '${newCat.name}' berhasil ditambahkan!`, 'success');
+        await logActivity({
+          userId: currentUser?.uid,
+          userName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin',
+          userEmail: currentUser?.email || '',
+          userRole: userRole || 'admin',
+          action: 'CREATE_CATEGORY',
+          targetTitle: catNameTrimmed,
+          targetId: docRef.id,
+          targetType: 'category',
+          details: `Menambahkan kategori baru "${catNameTrimmed}" lewat Editor Berita`
+        });
     } catch (e) {
         showNotif('Gagal menambahkan kategori', 'error');
         console.error(e);
@@ -1097,6 +1109,49 @@ Konten Asli: ${formData.content}`;
         ? userSnap.data().name 
         : (currentUser.displayName || currentUser.email.split('@')[0]);
 
+      // ==========================================
+      // AUTO-TRANSLATE MULTI-BAHASA (EN & ZH)
+      // Otomatis terjemahkan Judul & Ringkasan Berita ke EN dan ZH saat disimpan/diterbitkan
+      // ==========================================
+      let autoTitleEn = formData.title_en || '';
+      let autoTitleZh = formData.title_zh || '';
+      let autoDescEn = formData.seoDescription_en || formData.excerpt_en || '';
+      let autoDescZh = formData.seoDescription_zh || formData.excerpt_zh || '';
+
+      const needsTranslation = (!autoTitleEn || !autoTitleZh || !autoDescEn || !autoDescZh) && formData.title;
+
+      if (needsTranslation) {
+        try {
+          const rawExcerpt = formData.seoDescription || formData.excerpt || '';
+          const texts = [formData.title, rawExcerpt].filter(Boolean);
+
+          const [transEnRes, transZhRes] = await Promise.all([
+            fetch('/api/translate-text', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ texts, targetLang: 'en' })
+            }).then(r => r.json()).catch(() => null),
+            fetch('/api/translate-text', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ texts, targetLang: 'zh' })
+            }).then(r => r.json()).catch(() => null)
+          ]);
+
+          if (transEnRes?.translations) {
+            if (!autoTitleEn && transEnRes.translations[0]) autoTitleEn = transEnRes.translations[0];
+            if (!autoDescEn && transEnRes.translations[1]) autoDescEn = transEnRes.translations[1];
+          }
+
+          if (transZhRes?.translations) {
+            if (!autoTitleZh && transZhRes.translations[0]) autoTitleZh = transZhRes.translations[0];
+            if (!autoDescZh && transZhRes.translations[1]) autoDescZh = transZhRes.translations[1];
+          }
+        } catch (transErr) {
+          console.warn('Auto-translate on save notice:', transErr);
+        }
+      }
+
       if (editId) {
         const articleRef = doc(db, 'articles', editId);
         await updateDoc(articleRef, {
@@ -1116,9 +1171,14 @@ Konten Asli: ${formData.content}`;
           location: formData.location || '',
           updatedAt: Timestamp.now(),
           contributorName: formData.contributorName || '',
-          title_en: formData.title_en || '',
+          title_en: autoTitleEn || formData.title_en || '',
+          title_zh: autoTitleZh || formData.title_zh || '',
           content_en: formData.content_en || '',
           content_zh: formData.content_zh || '',
+          excerpt_en: autoDescEn || formData.excerpt_en || '',
+          seoDescription_en: autoDescEn || formData.seoDescription_en || '',
+          excerpt_zh: autoDescZh || formData.excerpt_zh || '',
+          seoDescription_zh: autoDescZh || formData.seoDescription_zh || '',
           isBreakingNews: formData.isBreakingNews || false,
           autoShareFacebook: formData.autoShareFacebook !== false,
           facebookPostId: formData.facebookPostId || null,
@@ -1128,9 +1188,29 @@ Konten Asli: ${formData.content}`;
             ? (originalPublishedAt ? originalPublishedAt : Timestamp.now()) 
             : (finalStatus === 'scheduled' && formData.scheduledAt ? Timestamp.fromDate(new Date(formData.scheduledAt)) : null),
         });
+
+        logActivity({
+          userId: currentUser?.uid,
+          userName: authorName || currentUser?.displayName || currentUser?.email,
+          userEmail: currentUser?.email,
+          userRole,
+          action: finalStatus === 'published' ? 'PUBLISH_ARTICLE' : 'UPDATE_ARTICLE',
+          targetTitle: formData.title || '',
+          targetId: editId,
+          targetType: 'article',
+          details: `Memperbarui artikel "${formData.title}" (Kategori: ${formData.category || '-'}, Status: ${finalStatus})`
+        });
       } else {
         const articleData = {
           ...formData,
+          title_en: autoTitleEn || formData.title_en || '',
+          title_zh: autoTitleZh || formData.title_zh || '',
+          content_en: formData.content_en || '',
+          content_zh: formData.content_zh || '',
+          excerpt_en: autoDescEn || formData.excerpt_en || '',
+          seoDescription_en: autoDescEn || formData.seoDescription_en || '',
+          excerpt_zh: autoDescZh || formData.excerpt_zh || '',
+          seoDescription_zh: autoDescZh || formData.seoDescription_zh || '',
           content: finalContentWithBold,
           slug: finalSlug,
           coverImage: formData.imageUrl || '',
@@ -1165,6 +1245,19 @@ Konten Asli: ${formData.content}`;
         justCreatedRef.current = true;
         setOriginalStatus(finalStatus);
         setOriginalPublishedAt(articleData.publishedAt);
+
+        logActivity({
+          userId: currentUser?.uid,
+          userName: authorName || currentUser?.displayName || currentUser?.email,
+          userEmail: currentUser?.email,
+          userRole,
+          action: finalStatus === 'published' ? 'PUBLISH_ARTICLE' : 'CREATE_ARTICLE',
+          targetTitle: formData.title || '',
+          targetId: newDocRef.id,
+          targetType: 'article',
+          details: `Membuat artikel baru "${formData.title}" (Kategori: ${formData.category || '-'}, Status: ${finalStatus})`
+        });
+
         router.replace(`/admin/editor?id=${newDocRef.id}`);
       }
       

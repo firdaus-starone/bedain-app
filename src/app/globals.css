@@ -4505,14 +4505,19 @@ body {
   box-shadow: 0 8px 32px #00000026;
 }
 .mobile-only-lang {
-  display: none;
+  display: none !important;
 }
 @media (max-width: 991px) {
   .desktop-only-lang {
     display: none !important;
   }
   .mobile-only-lang {
-    display: flex !important;
+    display: none !important;
+  }
+}
+@media (max-width: 768px) {
+  .article-ai-translate-banner {
+    display: none !important;
   }
 }
 .language-switcher-container:hover .language-dropdown {

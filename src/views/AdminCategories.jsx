@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
+import { logActivity } from '../lib/activityLogger';
 import {
   Tag, Trash2, Edit2, Plus, Check, X, ChevronUp, ChevronDown, Hash, Globe, ToggleLeft, ToggleRight, Layers, LayoutTemplate
 } from 'lucide-react';
@@ -78,12 +79,34 @@ const AdminCategories = () => {
           name: form.name.trim(), slug, color: form.color, homeLayout: form.homeLayout || 'none'
         });
         showToast('Kategori berhasil diperbarui!');
+        await logActivity({
+          userId: currentUser?.uid,
+          userName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin',
+          userEmail: currentUser?.email || '',
+          userRole: userRole || 'admin',
+          action: 'UPDATE_CATEGORY',
+          targetTitle: form.name.trim(),
+          targetId: editingCat.id,
+          targetType: 'category',
+          details: `Memperbarui pengaturan kategori "${form.name.trim()}" (Layout: ${form.homeLayout || 'none'})`
+        });
       } else {
-        await addDoc(collection(db, 'categories'), {
+        const docRef = await addDoc(collection(db, 'categories'), {
           name: form.name.trim(), slug, color: form.color, homeLayout: form.homeLayout || 'none',
           order: categories.length, active: true,
         });
         showToast('Kategori berhasil ditambahkan!');
+        await logActivity({
+          userId: currentUser?.uid,
+          userName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin',
+          userEmail: currentUser?.email || '',
+          userRole: userRole || 'admin',
+          action: 'CREATE_CATEGORY',
+          targetTitle: form.name.trim(),
+          targetId: docRef.id,
+          targetType: 'category',
+          details: `Menambahkan kategori baru "${form.name.trim()}" ke portal`
+        });
       }
       setShowAddModal(false);
       await fetchCategories();
@@ -95,19 +118,43 @@ const AdminCategories = () => {
   };
 
   const handleToggleActive = async (cat) => {
+    const nextActive = !cat.active;
     try {
-      await updateDoc(doc(db, 'categories', cat.id), { active: !cat.active });
-      setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, active: !c.active } : c));
+      await updateDoc(doc(db, 'categories', cat.id), { active: nextActive });
+      setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, active: nextActive } : c));
       showToast(cat.active ? 'Kategori dinonaktifkan' : 'Kategori diaktifkan');
+      await logActivity({
+        userId: currentUser?.uid,
+        userName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin',
+        userEmail: currentUser?.email || '',
+        userRole: userRole || 'admin',
+        action: nextActive ? 'ACTIVATE_CATEGORY' : 'DEACTIVATE_CATEGORY',
+        targetTitle: cat.name,
+        targetId: cat.id,
+        targetType: 'category',
+        details: `${nextActive ? 'Mengaktifkan' : 'Menonaktifkan'} kategori "${cat.name}" di portal`
+      });
     } catch { showToast('Gagal mengubah status', 'error'); }
   };
 
   const handleDelete = async (id) => {
+    const catToDelete = categories.find(c => c.id === id);
     if (!window.confirm('Yakin ingin menghapus kategori ini? Aksi ini tidak bisa dibatalkan.')) return;
     try {
       await deleteDoc(doc(db, 'categories', id));
       setCategories(prev => prev.filter(c => c.id !== id));
       showToast('Kategori dihapus');
+      await logActivity({
+        userId: currentUser?.uid,
+        userName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Admin',
+        userEmail: currentUser?.email || '',
+        userRole: userRole || 'admin',
+        action: 'DELETE_CATEGORY',
+        targetTitle: catToDelete?.name || id,
+        targetId: id,
+        targetType: 'category',
+        details: `Menghapus kategori "${catToDelete?.name || id}" dari portal`
+      });
     } catch { showToast('Gagal menghapus kategori', 'error'); }
   };
 

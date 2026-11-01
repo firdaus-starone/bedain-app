@@ -1,6 +1,6 @@
-"use client";
 import React, { useState, useMemo } from 'react';
 import { Zap, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { useI18n } from '../hooks/useI18n';
 
 /**
  * Pembersih string mendalam untuk teks editorial berita
@@ -59,6 +59,7 @@ const trimToSentence = (text, maxLen = 160) => {
  * Komponen ArticleKeyPoints (⚡ Poin Penting / 3 Detik Paham)
  */
 const ArticleKeyPoints = ({ article, className = '', style = {} }) => {
+  const { lang } = useI18n();
   const [isOpen, setIsOpen] = useState(true);
 
   const points = useMemo(() => {
@@ -195,7 +196,7 @@ const ArticleKeyPoints = ({ article, className = '', style = {} }) => {
                   textTransform: 'uppercase'
                 }}
               >
-                ⚡ 3 DETIK PAHAM
+                {lang === 'en' ? '⚡ 3-SEC SUMMARY' : lang === 'zh' ? '⚡ 3秒速读' : '⚡ 3 DETIK PAHAM'}
               </span>
               <span
                 style={{
@@ -207,7 +208,7 @@ const ArticleKeyPoints = ({ article, className = '', style = {} }) => {
                   borderRadius: '6px'
                 }}
               >
-                Intisari Berita
+                {lang === 'en' ? 'Key Takeaways' : lang === 'zh' ? '新闻要点' : 'Intisari Berita'}
               </span>
             </div>
             <h4
@@ -219,7 +220,7 @@ const ArticleKeyPoints = ({ article, className = '', style = {} }) => {
                 fontFamily: 'var(--font-heading)'
               }}
             >
-              Poin Kunci Yang Perlu Anda Tahu
+              {lang === 'en' ? 'Key Points You Need To Know' : lang === 'zh' ? '您需要知道的核心要点' : 'Poin Kunci Yang Perlu Anda Tahu'}
             </h4>
           </div>
         </div>
@@ -301,10 +302,10 @@ const ArticleKeyPoints = ({ article, className = '', style = {} }) => {
             }}
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Sparkles size={12} style={{ color: '#f59e0b' }} /> Dirangkum otomatis untuk baca kilat
+              <Sparkles size={12} style={{ color: '#f59e0b' }} /> {lang === 'en' ? 'Auto-summarized for quick reading' : lang === 'zh' ? '自动提炼速读要点' : 'Dirangkum otomatis untuk baca kilat'}
             </span>
             <span style={{ fontStyle: 'italic', opacity: 0.8 }}>
-              Gulir ke bawah untuk naskah lengkap
+              {lang === 'en' ? 'Scroll down for full text' : lang === 'zh' ? '向下滑动阅读完整内容' : 'Gulir ke bawah untuk naskah lengkap'}
             </span>
           </div>
         </div>

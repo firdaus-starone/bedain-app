@@ -10,6 +10,8 @@ import {
 import { functions } from '../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 import { getYouTubeId, getArticleVideoData } from '../lib/videoHelpers';
+import { logActivity } from '../lib/activityLogger';
+
 const AdminArticles = () => {
   const { currentUser, userRole, loading: authLoading } = useAuth();
   const [articles, setArticles] = useState([]);
@@ -130,8 +132,22 @@ const AdminArticles = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Yakin ingin menghapus berita ini secara permanen dari portal?')) {
       try {
+        const deletedArticle = articles.find(a => a.id === id);
         await deleteDoc(doc(db, 'articles', id));
         setArticles(articles.filter(a => a.id !== id));
+
+        logActivity({
+          userId: currentUser?.uid,
+          userName: currentUser?.displayName || currentUser?.email,
+          userEmail: currentUser?.email,
+          userRole,
+          action: 'DELETE_ARTICLE',
+          targetTitle: deletedArticle?.title || id,
+          targetId: id,
+          targetType: 'article',
+          details: `Menghapus artikel "${deletedArticle?.title || id}" secara permanen dari portal`
+        });
+
         alert('Artikel berhasil dihapus');
       } catch (error) {
         console.error("Error deleting article:", error);

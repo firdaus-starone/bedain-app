@@ -4,12 +4,16 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ExternalLink, Sparkles } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 const bannersCache = new Map();
 const bannersPromiseMap = new Map();
 
 const AdBanner = ({ slot = 'article' }) => {
   const { settings } = useSiteSettings();
+  const { t } = useI18n();
+  const { translateText } = useAutoTranslate();
   const [banner, setBanner] = useState(() => bannersCache.has(slot) ? bannersCache.get(slot) : null);
   const [loading, setLoading] = useState(() => !bannersCache.has(slot));
 
@@ -101,8 +105,8 @@ const AdBanner = ({ slot = 'article' }) => {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <div>
-                <div className="sponsor-banner-text-title" style={{ color: '#fff', fontWeight: 800, fontSize: '13px', lineHeight: 1.2 }}>{banner.title}</div>
-                {banner.subtitle && <div className="sponsor-banner-text-subtitle" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', marginTop: '2px' }}>{banner.subtitle}</div>}
+                <div className="sponsor-banner-text-title" style={{ color: '#fff', fontWeight: 800, fontSize: '13px', lineHeight: 1.2 }}>{translateText(banner.title)}</div>
+                {banner.subtitle && <div className="sponsor-banner-text-subtitle" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', marginTop: '2px' }}>{translateText(banner.subtitle)}</div>}
               </div>
               <div style={{
                 background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
@@ -111,7 +115,7 @@ const AdBanner = ({ slot = 'article' }) => {
                 padding: '3px 8px', borderRadius: '20px', letterSpacing: '0.5px',
                 display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap'
               }}>
-                IKLAN <ExternalLink size={9} />
+                {(t('ads.ad') || 'IKLAN')} <ExternalLink size={9} />
               </div>
             </div>
           </a>
@@ -166,12 +170,12 @@ const AdBanner = ({ slot = 'article' }) => {
                 <div style={{ padding: slot === 'sidebar' ? '12px 14px' : '12px 16px', background: 'var(--color-bg-secondary)' }}>
                   {banner.title && (
                     <div className="sponsor-banner-text-title" style={{ fontWeight: 700, fontSize: slot === 'sidebar' ? '13px' : '14px', color: 'var(--color-text-primary)', lineHeight: 1.3 }}>
-                      {banner.title}
+                      {translateText(banner.title)}
                     </div>
                   )}
                   {banner.subtitle && (
                     <div className="sponsor-banner-text-subtitle" style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
-                      {banner.subtitle}
+                      {translateText(banner.subtitle)}
                     </div>
                   )}
                 </div>
@@ -179,8 +183,8 @@ const AdBanner = ({ slot = 'article' }) => {
             </>
           ) : (
             <div style={{ padding: '28px 20px', background: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', textAlign: 'center' }}>
-              <h4 className="sponsor-banner-text-title" style={{ margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: 800 }}>{banner.title || 'Sponsor Bedain News'}</h4>
-              {banner.subtitle && <p className="sponsor-banner-text-subtitle" style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{banner.subtitle}</p>}
+              <h4 className="sponsor-banner-text-title" style={{ margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: 800 }}>{translateText(banner.title || 'Sponsor Bedain News')}</h4>
+              {banner.subtitle && <p className="sponsor-banner-text-subtitle" style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{translateText(banner.subtitle)}</p>}
             </div>
           )}
           <div style={{
@@ -192,7 +196,7 @@ const AdBanner = ({ slot = 'article' }) => {
             zIndex: 2,
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
           }}>
-            SPONSOR <ExternalLink size={10} />
+            {(t('ads.sponsor') || 'SPONSOR')} <ExternalLink size={10} />
           </div>
         </a>
       </div>
@@ -238,13 +242,13 @@ const AdBanner = ({ slot = 'article' }) => {
         </div>
         <div>
           <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-accent, #e63946)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Slot Sponsor Terbuka ({slot.toUpperCase()})
+            {t('ads.sponsor_slot_open') || 'Slot Sponsor Terbuka'} ({slot.toUpperCase()})
           </div>
           <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary, #fff)', marginTop: '2px' }}>
-            Pasang Iklan Sponsor Usaha Anda Di Sini
+            {t('ads.place_sponsor_here') || 'Pasang Iklan Sponsor Usaha Anda Di Sini'}
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary, #aaa)', marginTop: '2px' }}>
-            Jangkau ribuan pembaca setia Bedain News setiap hari.
+            {t('ads.reach_readers') || 'Jangkau ribuan pembaca setia Bedain News setiap hari.'}
           </div>
         </div>
       </div>
@@ -260,7 +264,7 @@ const AdBanner = ({ slot = 'article' }) => {
           boxShadow: '0 4px 14px rgba(230,57,70,0.3)', transition: 'transform 0.2s'
         }}
       >
-        Hubungi Redaksi
+        {t('ads.contact_editorial') || 'Hubungi Redaksi'}
       </a>
     </div>
   );

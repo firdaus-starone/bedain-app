@@ -40,10 +40,14 @@ const LANG_NAMES = {
   id: 'Indonesia'
 };
 
-export const useTranslation = (article) => {
+// Global in-memory cache to prevent duplicate fetches within the session
+const memoryArticleCache = new Map();
+
+export const useTranslation = (article, activeLanguage) => {
   const [translating, setTranslating] = useState(false);
   const [translatedArticle, setTranslatedArticle] = useState(null);
   const [detectedLang, setDetectedLang] = useState('id'); // Default to Indonesia
+  const [currentTargetLang, setCurrentTargetLang] = useState(activeLanguage || 'id');
   const [showBanner, setShowBanner] = useState(false);
   const [error, setError] = useState(null);
 
@@ -85,170 +89,146 @@ export const useTranslation = (article) => {
     detectLocation();
   }, [article?.id]);
 
-  const triggerTranslation = async () => {
-    if (detectedLang === 'id') return;
+  const triggerTranslation = async (targetLangOverride) => {
+    const targetLang = targetLangOverride || detectedLang || 'en';
+    if (targetLang === 'id') {
+      setTranslatedArticle(null);
+      setCurrentTargetLang('id');
+      setShowBanner(false);
+      return;
+    }
+
+    if (!article || !article.id || !article.content) return;
+
+    // Avoid redundant translating if already translated to this lang
+    if (translatedArticle && currentTargetLang === targetLang && translatedArticle.title) {
+      return;
+    }
+
+    const cacheKey = `${article.id}_${targetLang}`;
+    setCurrentTargetLang(targetLang);
+
+    // 1. Cek Memory Cache
+    if (memoryArticleCache.has(cacheKey)) {
+      setTranslatedArticle(memoryArticleCache.get(cacheKey));
+      setShowBanner(false);
+      return;
+    }
+
+    // 2. Cek LocalStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const localCached = localStorage.getItem(`bedain_art_trans_${cacheKey}`);
+        if (localCached) {
+          const parsed = JSON.parse(localCached);
+          if (parsed && parsed.title && parsed.content) {
+            memoryArticleCache.set(cacheKey, parsed);
+            setTranslatedArticle(parsed);
+            setShowBanner(false);
+            return;
+          }
+        }
+      } catch (e) {}
+    }
+
     setTranslating(true);
     setError(null);
 
     try {
-      // Check Firestore Cache first
-      const translationRef = doc(db, `articles/${article.id}/translations`, detectedLang);
-      const translationSnap = await getDoc(translationRef);
+      // 3. Cek Firestore Cache
+      let cachedInFirestore = null;
+      try {
+        const translationRef = doc(db, `articles/${article.id}/translations`, targetLang);
+        const translationSnap = await getDoc(translationRef);
 
-      if (translationSnap.exists()) {
-        setTranslatedArticle(translationSnap.data());
+        if (translationSnap.exists()) {
+          const cachedData = translationSnap.data();
+          if (cachedData && cachedData.title && cachedData.content) {
+            cachedInFirestore = cachedData;
+          }
+        }
+      } catch (firestoreErr) {
+        console.warn("Firestore translation cache check notice:", firestoreErr);
+      }
+
+      if (cachedInFirestore) {
+        memoryArticleCache.set(cacheKey, cachedInFirestore);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`bedain_art_trans_${cacheKey}`, JSON.stringify(cachedInFirestore));
+          } catch (e) {}
+        }
+        setTranslatedArticle(cachedInFirestore);
         setShowBanner(false);
         setTranslating(false);
         return;
       }
 
-      // Need to translate via Gemini API
-      let siteKey = null;
-      try {
-        const cached = typeof window !== 'undefined' ? localStorage.getItem('bedain_settings_cache') : null;
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          siteKey = parsed?.geminiApiKey;
-        }
-      } catch (e) {}
-
-      if (!siteKey) {
-        try {
-          const settingsSnap = await getDoc(doc(db, 'settings', 'site'));
-          if (settingsSnap.exists()) {
-            siteKey = settingsSnap.data()?.geminiApiKey;
-          }
-        } catch (e) {}
-      }
-
-      const apiKey = (siteKey && siteKey.trim())
-        || (typeof window !== 'undefined' ? localStorage.getItem('bedain_gemini_api_key')?.trim() : null)
-        || process.env.NEXT_PUBLIC_GEMINI_API_KEY
-        || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY);
-
-      if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY') {
-         console.error("Gemini API key not found for translation.");
-         setTranslating(false);
-         return;
-      }
-
-      const prompt = `Translate the following news article from Indonesian to ${LANG_NAMES[detectedLang]}.
-Preserve all HTML tags perfectly, do not remove any <p> or <br> or <strong> etc.
-Only translate the textual content.
-
-Title: ${article.title}
-SEO Description: ${article.seoDescription || ''}
-Content HTML:
-${article.content}
-
-Return a valid JSON object with the exact keys: "title", "seoDescription", "content".
-Do not wrap with markdown backticks, just raw JSON.`;
-
-      const requestBody = JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+      // 4. Terjemahkan via server endpoint /api/translate-article
+      const response = await fetch('/api/translate-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          articleId: article.id,
+          title: article.title,
+          seoDescription: article.seoDescription || article.excerpt || '',
+          keyPoints: article.keyPoints || [],
+          content: article.content,
+          targetLang
+        })
       });
 
-      const modelsToTry = [
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-2.0-flash-exp',
-        'gemini-2.0-flash',
-        'gemini-pro'
-      ];
+      if (!response.ok) {
+        throw new Error(`Terjemahan gagal status ${response.status}`);
+      }
 
-      let response;
-      let data;
-      let success = false;
+      const resData = await response.json();
+      if (resData.success && resData.translation) {
+        const translatedData = resData.translation;
+        memoryArticleCache.set(cacheKey, translatedData);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`bedain_art_trans_${cacheKey}`, JSON.stringify(translatedData));
+          } catch (e) {}
+        }
+        setTranslatedArticle(translatedData);
+        setShowBanner(false);
 
-      // 1. Coba daftar model standar terlebih dahulu
-      for (const modelName of modelsToTry) {
+        // Simpan ke cache Firestore publik untuk pembaca lain
         try {
-          response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: requestBody
-          });
-          data = await response.json();
-          if (response.ok && !data.error && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-            success = true;
-            break;
-          }
-        } catch (e) {
-          console.warn(`useTranslation model ${modelName} gagal dipanggil:`, e);
-        }
-      }
-
-      // 2. Jika semua model standar gagal, lakukan auto-discovery model loop
-      if (!success) {
-        console.log('Model standar gagal di useTranslation, mencoba auto-discovery model...');
-        try {
-          const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-          const listData = await listResponse.json();
-          if (listData.models && listData.models.length > 0) {
-            const availableModels = listData.models
-              .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-              .filter(m => !m.name.includes('vision') && !m.name.includes('embedding') && !m.name.includes('aqa'))
-              .sort((a, b) => {
-                const score = (name) => {
-                  if (name.includes('1.5-flash')) return 10;
-                  if (name.includes('1.5-pro')) return 9;
-                  if (name.includes('2.0-flash')) return 8;
-                  if (name.includes('gemini-pro')) return 7;
-                  if (name.includes('2.5')) return 1;
-                  return 5;
-                };
-                return score(b.name) - score(a.name);
-              });
-
-            for (const model of availableModels) {
-              const resolvedModelName = model.name.replace('models/', '');
-              try {
-                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${resolvedModelName}:generateContent?key=${apiKey}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: requestBody
-                });
-                data = await response.json();
-                if (response.ok && !data.error && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-                  console.log('Auto-discovery useTranslation berhasil dengan model:', resolvedModelName);
-                  success = true;
-                  break;
-                }
-              } catch (err) {
-                console.warn(`Auto-discovery model ${resolvedModelName} gagal:`, err);
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Gagal mengambil daftar model auto-discovery:', err);
-        }
-      }
-
-      if (!success || !response?.ok || data?.error) {
-        throw new Error(data?.error?.message || 'Gagal menghubungi Gemini API di useTranslation');
-      }
-
-      if (data.candidates && data.candidates[0].content.parts[0].text) {
-        const jsonText = data.candidates[0].content.parts[0].text;
-        const translatedData = JSON.parse(jsonText);
-        if (translatedData.title && translatedData.content) {
-          setTranslatedArticle(translatedData);
-          setShowBanner(false);
-          setDoc(translationRef, translatedData, { merge: true }).catch(e => console.error(e));
-        } else {
-           throw new Error("Invalid translation response structure");
-        }
+          const translationRef = doc(db, `articles/${article.id}/translations`, targetLang);
+          setDoc(translationRef, {
+            ...translatedData,
+            targetLang,
+            translatedAt: new Date().toISOString()
+          }, { merge: true }).catch(err => console.warn("Firestore cache save notice:", err));
+        } catch (e) {}
       } else {
-        throw new Error("No translation returned");
+        throw new Error(resData.error || 'Respons terjemahan tidak valid');
       }
     } catch (err) {
       console.error("Auto-translation failed:", err);
-      setError("Failed to translate article.");
+      setError("Gagal menerjemahkan artikel.");
     } finally {
       setTranslating(false);
     }
   };
 
-  return { translating, translatedArticle, detectedLang, showBanner, error, LANG_NAMES, triggerTranslation };
+  const resetTranslation = () => {
+    setTranslatedArticle(null);
+    setCurrentTargetLang('id');
+  };
+
+  return { 
+    translating, 
+    translatedArticle, 
+    detectedLang, 
+    currentTargetLang,
+    showBanner, 
+    setShowBanner,
+    error, 
+    LANG_NAMES, 
+    triggerTranslation,
+    resetTranslation
+  };
 };

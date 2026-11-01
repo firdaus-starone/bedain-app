@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '../lib/firebase';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useI18n } from '../hooks/useI18n';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Footer = () => {
   const router = useRouter();
@@ -101,6 +102,142 @@ const Footer = () => {
     fetchMenus();
   }, []);
 
+  const getColTitle = (title) => {
+    if (!title) return '';
+    const clean = title.trim();
+    const lower = clean.toLowerCase();
+    const hyphenated = lower.replace(/\s+/g, '-');
+    const fromDict = t(`footer.cols.${lower}`) || t(`footer.cols.${hyphenated}`);
+    if (fromDict && !fromDict.startsWith('footer.cols.')) return fromDict;
+
+    if (lower.includes('jaringan') || lower.includes('media network') || lower.includes('partner')) {
+      return lang === 'zh' ? '媒体网络' : lang === 'en' ? 'Media Network' : 'Jaringan Media';
+    }
+    if (lower.includes('kategori') || lower.includes('category')) {
+      return lang === 'zh' ? '分类' : lang === 'en' ? 'Categories' : 'Kategori';
+    }
+    if (lower.includes('informasi') || lower.includes('info')) {
+      return lang === 'zh' ? '信息' : lang === 'en' ? 'Information' : 'Informasi';
+    }
+    return clean;
+  };
+
+  const getLocalizedCategoryName = (cat) => {
+    if (!cat) return '';
+    const slug = (cat.slug || cat.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || '').trim();
+    const name = (cat.name || '').trim();
+    const lowerName = name.toLowerCase();
+
+    const fromDict = t(`categories.${slug}`);
+    if (fromDict && !fromDict.startsWith('categories.')) return fromDict;
+
+    if (lang === 'en' && cat.name_en) return cat.name_en;
+    if (lang === 'zh' && cat.name_zh) return cat.name_zh;
+
+    const catMap = {
+      'sosial': { zh: '社会', en: 'Social' },
+      'pemerintahan': { zh: '政务', en: 'Government' },
+      'kuliner': { zh: '美食', en: 'Culinary' },
+      'berita': { zh: '新闻', en: 'News' },
+      'ekonomi': { zh: '经济', en: 'Economy' },
+      'bisnis': { zh: '商业', en: 'Business' },
+      'ekonomi-bisnis': { zh: '经济与商业', en: 'Economy & Business' },
+      'budaya': { zh: '文化', en: 'Culture' },
+      'pendidikan': { zh: '教育', en: 'Education' },
+      'sorotan': { zh: '焦点', en: 'Focus' },
+      'sport': { zh: '体育', en: 'Sports' },
+      'olahraga': { zh: '体育', en: 'Sports' },
+      'lifestyle': { zh: '生活方式', en: 'Lifestyle' },
+      'gaya-hidup': { zh: '生活方式', en: 'Lifestyle' },
+      'pariwisata': { zh: '旅游', en: 'Tourism' },
+      'wisata': { zh: '旅游', en: 'Tourism' },
+      'gadget': { zh: '数码科技', en: 'Gadgets' },
+      'teknologi': { zh: '科技', en: 'Technology' },
+      'hukum-kriminal': { zh: '法律与犯罪', en: 'Law & Crime' },
+      'hukum': { zh: '法律', en: 'Law' },
+      'kriminal': { zh: '犯罪', en: 'Crime' },
+      'politik': { zh: '政治', en: 'Politics' },
+      'opini': { zh: '观点', en: 'Opinion' },
+      'kesehatan': { zh: '健康', en: 'Health' },
+      'otomotif': { zh: '汽车', en: 'Automotive' },
+      'internasional': { zh: '国际', en: 'International' },
+      'daerah': { zh: '地方', en: 'Regional' },
+      'hiburan': { zh: '娱乐', en: 'Entertainment' },
+      'parlemen': { zh: '议会', en: 'Parliament' },
+      'kementerian': { zh: '部委', en: 'Ministry' },
+      'meja-redaksi': { zh: '编辑部', en: 'Editorial Desk' },
+      'video': { zh: '视频', en: 'Video' },
+      'properti': { zh: '房产', en: 'Property' }
+    };
+
+    const matched = catMap[slug] || catMap[lowerName];
+    if (matched && matched[lang]) {
+      return matched[lang];
+    }
+    return name;
+  };
+
+  const getLocalizedPageTitle = (page) => {
+    if (!page) return '';
+    const slug = (page.slug || '').toLowerCase();
+    const title = (page.title || '').toLowerCase();
+
+    if (lang === 'zh') {
+      if (slug === 'faq' || title.includes('faq') || title.includes('bantuan')) return '常见问题与帮助 (FAQ)';
+      if (slug === 'tentang-kami' || title.includes('tentang kami') || title.includes('profil')) return '关于我们 - Bedain News 简介';
+      if (slug === 'redaksi' || title.includes('redaksi') || title.includes('susunan tim')) return '编辑部与团队架构';
+      if (slug === 'kebijakan-privasi' || title.includes('privasi') || title.includes('privacy')) return '隐私政策 (Privacy Policy)';
+      if (slug === 'kontak' || title.includes('kontak') || title.includes('kemitraan') || title.includes('hubungi')) return '联系我们与商务合作';
+      if (slug === 'pedoman-pemberitaan-media-siber' || title.includes('pedoman') || title.includes('siber')) return '网络媒体报道准则';
+    } else if (lang === 'en') {
+      if (slug === 'faq' || title.includes('faq') || title.includes('bantuan')) return 'FAQ & Help Center';
+      if (slug === 'tentang-kami' || title.includes('tentang kami') || title.includes('profil')) return 'About Us - Bedain News Profile';
+      if (slug === 'redaksi' || title.includes('redaksi') || title.includes('susunan tim')) return 'Editorial Board & Team';
+      if (slug === 'kebijakan-privasi' || title.includes('privasi') || title.includes('privacy')) return 'Privacy Policy';
+      if (slug === 'kontak' || title.includes('kontak') || title.includes('kemitraan') || title.includes('hubungi')) return 'Contact & Partnership';
+      if (slug === 'pedoman-pemberitaan-media-siber' || title.includes('pedoman') || title.includes('siber')) return 'Cyber Media News Guidelines';
+    }
+
+    return page.title || '';
+  };
+
+  const getLocalizedLinkText = (link) => {
+    if (!link) return '';
+    const label = link.label || '';
+    const lower = label.toLowerCase();
+    const url = (link.url || '').toLowerCase();
+
+    if (lang === 'zh') {
+      if (url.includes('faq') || lower.includes('faq') || lower.includes('bantuan')) return '常见问题与帮助 (FAQ)';
+      if (url.includes('tentang') || lower.includes('tentang')) return '关于我们 - Bedain News 简介';
+      if (url.includes('redaksi') || lower.includes('redaksi')) return '编辑部与团队架构';
+      if (url.includes('privasi') || lower.includes('privacy') || lower.includes('privasi')) return '隐私政策 (Privacy Policy)';
+      if (url.includes('kontak') || lower.includes('kontak') || lower.includes('hubungi')) return '联系我们与商务合作';
+      if (url.includes('pedoman') || lower.includes('pedoman') || lower.includes('siber')) return '网络媒体报道准则';
+    } else if (lang === 'en') {
+      if (url.includes('faq') || lower.includes('faq') || lower.includes('bantuan')) return 'FAQ & Help Center';
+      if (url.includes('tentang') || lower.includes('tentang')) return 'About Us - Bedain News Profile';
+      if (url.includes('redaksi') || lower.includes('redaksi')) return 'Editorial Board & Team';
+      if (url.includes('privasi') || lower.includes('privacy') || lower.includes('privasi')) return 'Privacy Policy';
+      if (url.includes('kontak') || lower.includes('kontak') || lower.includes('hubungi')) return 'Contact & Partnership';
+      if (url.includes('pedoman') || lower.includes('pedoman') || lower.includes('siber')) return 'Cyber Media News Guidelines';
+    }
+
+    return label;
+  };
+
+  const renderCopyright = () => {
+    const currentYear = new Date().getFullYear();
+    const siteName = settings?.siteName || 'Bedain News';
+    if (lang === 'zh') {
+      return `© ${currentYear} ${siteName}. 保留所有权利。`;
+    }
+    if (lang === 'en') {
+      return `© ${currentYear} ${siteName}. All rights reserved.`;
+    }
+    return settings?.footerText || `© ${currentYear} ${siteName}. Semua hak dilindungi.`;
+  };
+
   return (
     <footer className="footer-complex">
       <div className="container">
@@ -113,14 +250,13 @@ const Footer = () => {
               </div>
             </Link>
             <div className="footer-part-of">
-              <span>part of</span>
               <div style={{fontSize: '0.8rem', color: 'var(--color-text-tertiary)', letterSpacing: '1px', textTransform: 'uppercase'}}>
-                {t('footer.part_of') || 'Bagian dari'} <span className="text-accent" style={{fontWeight: 'bold'}}>bedain</span>network
+                {t('footer.part_of') || (lang === 'zh' ? '所属' : lang === 'en' ? 'PART OF' : 'BAGIAN DARI')} <span className="text-accent" style={{fontWeight: 'bold'}}>bedain</span>network
               </div>
             </div>
             
             <div className="footer-socials-wrapper">
-              <span className="socials-title">Connect With Us</span>
+              <span className="socials-title">{t('footer.connect_with_us') || (lang === 'zh' ? '关注我们' : lang === 'en' ? 'Connect With Us' : 'Ikuti Kami')}</span>
               <div className="footer-socials">
                 {(settings?.waChannelUrl || settings?.contactWhatsapp) && (
                   <a 
@@ -172,8 +308,15 @@ const Footer = () => {
               </div>
             </div>
             
+            <div style={{ margin: '16px 0 12px 0' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                {lang === 'en' ? 'Language / Bahasa' : lang === 'zh' ? '语言 / Language' : 'Bahasa / Language'}
+              </div>
+              <LanguageSwitcher variant="inline" />
+            </div>
+            
             <div className="footer-copyright" style={{ whiteSpace: 'pre-line' }}>
-              {settings?.footerText || `Copyright @ ${new Date().getFullYear()} ${settings?.siteName || 'bedainnews.com'}.\nAll rights reserved`}
+              {renderCopyright()}
             </div>
           </div>
 
@@ -188,7 +331,7 @@ const Footer = () => {
 
               return (
               <div className={`footer-col ${isCategoryCol ? 'footer-col-kategori' : ''}`} key={col.id}>
-                <h3 className="footer-heading">{t(`footer.cols.${col.title.toLowerCase()}`) || col.title}</h3>
+                <h3 className="footer-heading">{getColTitle(col.title)}</h3>
                 {isCategoryCol ? (
                   <div className="footer-links-grid">
                     <ul className="footer-links">
@@ -208,7 +351,7 @@ const Footer = () => {
                               }
                             }}
                           >
-                            {t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}
+                            {getLocalizedCategoryName(cat)}
                           </a>
                         </li>
                       ))}
@@ -230,7 +373,7 @@ const Footer = () => {
                               }
                             }}
                           >
-                            {t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}
+                            {getLocalizedCategoryName(cat)}
                           </a>
                         </li>
                       ))}
@@ -240,7 +383,7 @@ const Footer = () => {
                   <ul className="footer-links">
                     {pages.map(page => (
                       <li key={page.id}>
-                        <Link href={`/page/${page.slug}`}>{page.title}</Link>
+                        <Link href={`/page/${page.slug}`}>{getLocalizedPageTitle(page)}</Link>
                       </li>
                     ))}
                     {col.links && col.links.map(link => {
@@ -259,9 +402,9 @@ const Footer = () => {
                       return (
                         <li key={link.id}>
                           {link.url.startsWith('/') ? (
-                            <Link href={link.url}>{link.label}</Link>
+                            <Link href={link.url}>{getLocalizedLinkText(link)}</Link>
                           ) : (
-                            <a href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
+                            <a href={link.url} target="_blank" rel="noreferrer">{getLocalizedLinkText(link)}</a>
                           )}
                         </li>
                       );
@@ -272,9 +415,9 @@ const Footer = () => {
                     {col.links.map(link => (
                       <li key={link.id}>
                         {link.url.startsWith('/') ? (
-                          <Link href={link.url}>{link.label}</Link>
+                          <Link href={link.url}>{getLocalizedLinkText(link)}</Link>
                         ) : (
-                          <a href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
+                          <a href={link.url} target="_blank" rel="noreferrer">{getLocalizedLinkText(link)}</a>
                         )}
                       </li>
                     ))}
@@ -286,11 +429,11 @@ const Footer = () => {
 
           {pages.length > 0 && !footerMenus.some(col => col.title.toLowerCase() === 'informasi') && (
             <div className="footer-col" key="auto-informasi-col">
-              <h3 className="footer-heading">{t('footer.cols.informasi') || 'Informasi'}</h3>
+              <h3 className="footer-heading">{getColTitle('informasi')}</h3>
               <ul className="footer-links">
                 {pages.map(page => (
                   <li key={page.id}>
-                    <Link href={`/page/${page.slug}`}>{page.title}</Link>
+                    <Link href={`/page/${page.slug}`}>{getLocalizedPageTitle(page)}</Link>
                   </li>
                 ))}
               </ul>

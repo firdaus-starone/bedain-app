@@ -9,8 +9,10 @@ import { useAuth } from '../hooks/useAuth';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { 
   LayoutDashboard, PenTool, Globe, LogOut, FileText, 
-  Image as ImageIcon, Users, Settings, Tag, Newspaper, Menu, MessageSquare, DollarSign, Inbox, Mail, BookOpen
+  Image as ImageIcon, Users, Settings, Tag, Newspaper, Menu, MessageSquare, DollarSign, Inbox, Mail, BookOpen,
+  ShieldCheck, Activity
 } from 'lucide-react';
+
 
 
 const AdminSidebar = () => {
@@ -149,6 +151,17 @@ const AdminSidebar = () => {
           <Link onClick={handleNavClick} href="/admin/panduan-seo" className={`admin-nav-item ${isActive('/admin/panduan-seo') ? 'active' : ''}`}>
             <BookOpen size={18} className="admin-nav-icon" style={{ color: isActive('/admin/panduan-seo') ? '' : '#3b82f6' }} /> Panduan SEO Jurnalis
           </Link>
+
+          {userRole === 'superadmin' && (
+            <>
+              <div style={{ fontSize: '11px', color: '#e63946', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 12px 8px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldCheck size={14} /> Khusus Superadmin
+              </div>
+              <Link onClick={handleNavClick} href="/admin/monitoring" className={`admin-nav-item ${isActive('/admin/monitoring') ? 'active' : ''}`}>
+                <Activity size={18} className="admin-nav-icon" style={{ color: isActive('/admin/monitoring') ? '' : '#ef4444' }} /> Pantau Tim & Log
+              </Link>
+            </>
+          )}
 
           {['superadmin', 'admin'].includes(userRole) && (
             <>

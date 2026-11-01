@@ -3,8 +3,17 @@
     "home": "Beranda",
     "trending": "Topik Hangat",
     "search": "Cari berita...",
+    "search_btn": "Cari",
+    "send": "Kirim",
     "contact": "Hubungi Redaksi",
-    "send_article": "Kirim Tulisan"
+    "send_article": "Kirim Tulisan",
+    "main_nav": "NAVIGASI UTAMA",
+    "featured_categories": "KATEGORI PILIHAN",
+    "language_choice": "PILIHAN BAHASA / LANGUAGE",
+    "public_participation": "PARTISIPASI PUBLIK",
+    "submit_opinion": "Kirim Opini / Berita Warga",
+    "info_services": "Informasi & Layanan",
+    "contact_coop": "Hubungi & Kerja Sama"
   },
   "article": {
     "readTime": "menit baca",
@@ -25,6 +34,9 @@
     "latest": "Terbaru",
     "popular": "Sedang Hangat",
     "seeMore": "Lihat Selengkapnya",
+    "view_all": "Lihat Semua",
+    "local_news": "Berita Sekitar Anda",
+    "nearby": "Terdekat",
     "editorialDesk": "Meja Redaksi",
     "editorialChoice": "Pilihan Artikel Terbaik dari Redaksi Kami",
     "new_articles_available": "Berita Baru Tersedia",
@@ -42,29 +54,74 @@
     "budaya": "Budaya",
     "kementerian": "Kementerian",
     "internasional": "Internasional",
-    "gadget": "Gadget",
+    "gadget": "Gadget & Teknologi",
     "hukum-kriminal": "Hukum & Kriminal",
     "politik": "Politik",
     "opini": "Opini",
     "pendidikan": "Pendidikan",
     "sorotan": "Sorotan",
     "sport": "Sport",
+    "olahraga": "Olahraga",
     "kesehatan": "Kesehatan",
     "otomotif": "Otomotif",
-    "meja-redaksi": "Meja Redaksi"
+    "meja-redaksi": "Meja Redaksi",
+    "sosial": "Sosial",
+    "pemerintahan": "Pemerintahan",
+    "kuliner": "Kuliner",
+    "daerah": "Daerah",
+    "hiburan": "Hiburan",
+    "teknologi": "Teknologi",
+    "ekonomi": "Ekonomi",
+    "bisnis": "Bisnis",
+    "wisata": "Wisata",
+    "gaya-hidup": "Gaya Hidup",
+    "hukum": "Hukum",
+    "kriminal": "Kriminal",
+    "video": "Video",
+    "properti": "Properti"
+  },
+  "user_menu": {
+    "profile": "Profil Saya",
+    "notifications": "Notifikasi",
+    "bookmarks": "Baca Nanti",
+    "dark_mode": "Mode Gelap",
+    "light_mode": "Mode Terang"
+  },
+  "sidebar": {
+    "newsletter_title": "Bedain Newsletter",
+    "newsletter_desc": "Dapatkan ringkasan berita terpenting setiap pagi langsung ke kotak masuk Anda.",
+    "newsletter_placeholder": "Alamat Email Anda",
+    "subscribe": "Berlangganan",
+    "subscribing": "Menyimpan..."
+  },
+  "breaking_news": {
+    "breaking": "BREAKING NEWS",
+    "topic": "Topik Hangat",
+    "welcome": "Selamat datang di BEDAIN NEWS, Berita Berbeda Menginspirasi Semua."
   },
   "ads": {
     "reach_audience": "JANGKAU JUTAAN AUDIENS",
     "promo_desc": "Promosikan brand & produk Anda di portal berita terdepan.",
     "advertise_now": "Pasang Sekarang",
     "ads_label": "BEDAIN NEWS ADS",
-    "premium_ad": "IKLAN PREMIUM"
+    "premium_ad": "IKLAN PREMIUM",
+    "sponsor": "SPONSOR",
+    "ad": "IKLAN",
+    "sponsor_slot_open": "Slot Sponsor Terbuka",
+    "place_sponsor_here": "Pasang Iklan Sponsor Usaha Anda Di Sini",
+    "reach_readers": "Jangkau ribuan pembaca setia Bedain News setiap hari.",
+    "contact_editorial": "Hubungi Redaksi"
   },
   "footer": {
     "part_of": "Bagian dari",
+    "connect_with_us": "Ikuti Kami",
+    "all_rights_reserved": "Semua hak dilindungi.",
     "cols": {
       "informasi": "Informasi",
-      "kategori": "Kategori"
+      "kategori": "Kategori",
+      "jaringan media": "Jaringan Media",
+      "jaringan-media": "Jaringan Media",
+      "media network": "Jaringan Media"
     }
   },
   "time": {
@@ -77,3 +134,4 @@
     "just_now": "Baru saja"
   }
 }
+

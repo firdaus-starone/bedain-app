@@ -6,10 +6,12 @@ import LazyImage from './LazyImage';
 import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from './VideoBadge';
 import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { ThumbsUp, MessageSquare } from 'lucide-react';
 
 const HeadlineGrid = ({ articles, loading }) => {
   const { t, lang } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const fallbackHeadlines = [
     {
       id: 'fallback-1',
@@ -144,7 +146,7 @@ const HeadlineGrid = ({ articles, loading }) => {
         {headlineItems.slice(0, 5).map((item, index) => {
           const itemSlug = getSlug(item);
           const itemImg = getArticleCardImage(item);
-          const displayTitle = (lang === 'en' && item.title_en ? item.title_en : item.title) || '';
+          const displayTitle = translateArticleTitle(item);
 
           return (
             <Link key={item.id || index} href={`/article/${itemSlug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
@@ -174,7 +176,7 @@ const HeadlineGrid = ({ articles, loading }) => {
           {headlineItems.map((item, index) => {
             const itemSlug = getSlug(item);
             const itemImg = getArticleCardImage(item);
-            const displayTitle = (lang === 'en' && item.title_en ? item.title_en : item.title) || '';
+            const displayTitle = translateArticleTitle(item);
             
             let hotTopicsText = (t('home.hot_topics') || 'TOPIK HANGAT').toUpperCase();
             if (hotTopicsText === 'TOPIK HANGAT') {

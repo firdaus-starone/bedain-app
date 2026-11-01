@@ -2,10 +2,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { ThumbsUp, MessageSquare } from 'lucide-react';
 
 const LatestNews = ({ articles, loading }) => {
   const { t, lang } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   // Fallback data yang persis seperti Gambar 1
   const fallbackMain = {
     id: 'spotlight-main',
@@ -40,7 +42,7 @@ const LatestNews = ({ articles, loading }) => {
     return `${author} | ${time}`;
   };
 
-  const getDisplayTitle = (item) => (lang === 'en' && item.title_en ? item.title_en : item.title) || '';
+  const getDisplayTitle = (item) => translateArticleTitle(item);
 
   const getSlug = (item) => {
     if (item.slug && item.slug !== '#') return item.slug;

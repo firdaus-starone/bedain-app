@@ -5,8 +5,12 @@ import Image from 'next/image';
 import { MapPin } from 'lucide-react';
 import { useArticles } from '../hooks/useArticles';
 import { getArticleCardImage } from '../lib/videoHelpers';
+import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 const LocalNewsWidget = () => {
+  const { t } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   // Mode hemat kuota: limit 16 berbagi cache langsung dengan HomeClient (0 extra read)
   const { articles, loading } = useArticles({ limit: 16 });
   const [location, setLocation] = useState(null);
@@ -106,10 +110,10 @@ const LocalNewsWidget = () => {
   return (
     <div className="local-news-widget">
       <div className="local-news-header">
-        <h2 className="local-news-title">Berita Sekitar Anda</h2>
+        <h2 className="local-news-title">{t('home.local_news') || 'Berita Sekitar Anda'}</h2>
         <div className="local-news-location">
           <MapPin size={16} color="#ef4444" />
-          <span>{location ? location.city : 'Terdekat'}</span>
+          <span>{location ? location.city : (t('home.nearby') || 'Terdekat')}</span>
         </div>
       </div>
 
@@ -126,7 +130,7 @@ const LocalNewsWidget = () => {
             <div className="local-featured-gradient"></div>
           </div>
           <div className="local-featured-info">
-            <h3 className="local-featured-title">{topArticle.title}</h3>
+            <h3 className="local-featured-title">{translateArticleTitle(topArticle)}</h3>
             <div className="local-featured-date">
               {formatArticleDate(topArticle)}
             </div>
@@ -138,7 +142,7 @@ const LocalNewsWidget = () => {
           {restArticles.map((article, idx) => (
             <Link href={`/article/${getSlug(article)}`} key={article.id || idx} className="local-list-item">
               <div className="local-list-region">{location ? location.region : article.category}</div>
-              <h4 className="local-list-title">{article.title}</h4>
+              <h4 className="local-list-title">{translateArticleTitle(article)}</h4>
               <div className="local-list-date">{formatArticleDate(article)}</div>
             </Link>
           ))}

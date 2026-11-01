@@ -5,9 +5,11 @@ import LazyImage from './LazyImage';
 import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from './VideoBadge';
 import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 const MoreNewsGrid = ({ articles, loading }) => {
   const { lang } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const scrollRef = useRef(null);
   
   React.useEffect(() => {
@@ -49,7 +51,7 @@ const MoreNewsGrid = ({ articles, loading }) => {
   }
 
   const displayItems = articles.slice(0, 8).map(a => {
-    const displayTitle = (lang === 'en' && a.title_en ? a.title_en : a.title) || '';
+    const displayTitle = translateArticleTitle(a);
     return {
       id: a.id,
       title: displayTitle,

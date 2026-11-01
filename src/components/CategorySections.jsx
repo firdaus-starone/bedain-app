@@ -7,6 +7,7 @@ import VideoBadge from './VideoBadge';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { ThumbsUp, MessageSquare } from 'lucide-react';
 
 // Global memory cache across CategorySections instances
@@ -37,6 +38,7 @@ const writeCatSectionsCache = (key, data) => {
 const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
   const cacheKey = `${startIndex}_${endIndex ?? 'all'}`;
   const { t, lang } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const [categories, setCategories] = useState(() => {
     const disk = readCatSectionsCache(cacheKey);
     return disk || [];
@@ -241,7 +243,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                         <div className="more-news-content">
                           <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)' }}>{categoryName}</span>
                           <h3 className="more-news-title" style={{ fontSize: '1.05rem', lineHeight: 1.4 }}>
-                            {article.title}
+                            {translateArticleTitle(article)}
                           </h3>
                         </div>
                       </article>
@@ -260,7 +262,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                         <div style={{ flex: '1' }}>
                           <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)', marginBottom: '8px', display: 'block' }}>{categoryName}</span>
                           <h3 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '12px', lineHeight: 1.3, color: 'var(--color-text)' }} className="hover-text-accent">
-                            {category.articles[3].title}
+                            {translateArticleTitle(category.articles[3])}
                           </h3>
                           <span suppressHydrationWarning style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span>{timeAgo(category.articles[3].publishedAt)}</span>
@@ -288,7 +290,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                         <div className="more-news-content">
                           <span className="more-news-category" style={{ color: category.color || 'var(--color-accent)' }}>{categoryName}</span>
                           <h3 className="more-news-title">
-                            {article.title}
+                            {translateArticleTitle(article)}
                           </h3>
                         </div>
                       </article>
@@ -303,7 +305,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                     <Link href={`/article/${getSlug(featureArticle)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                       <article className="detik-feature-card">
                         <div className="detik-feature-content">
-                          <h3 className="detik-feature-title">{featureArticle.title}</h3>
+                          <h3 className="detik-feature-title">{translateArticleTitle(featureArticle)}</h3>
                           <span suppressHydrationWarning className="detik-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span>{timeAgo(featureArticle.publishedAt)}</span>
                             <span>•</span>
@@ -328,7 +330,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                             <VideoBadge article={article} />
                           </div>
                           <div className="detik-list-content">
-                            <h4 className="detik-list-title">{article.title}</h4>
+                            <h4 className="detik-list-title">{translateArticleTitle(article)}</h4>
                             <span suppressHydrationWarning className="detik-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               <span>{timeAgo(article.publishedAt)}</span>
                               <span>•</span>
@@ -351,7 +353,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                   <Link href={`/article/${getSlug(featureArticle)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                     <article className="zigzag-feature">
                       <div className="zigzag-content">
-                        <h3 className="zigzag-title">{featureArticle.title}</h3>
+                        <h3 className="zigzag-title">{translateArticleTitle(featureArticle)}</h3>
                         <span suppressHydrationWarning className="zigzag-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           <span>{timeAgo(featureArticle.publishedAt)}</span>
                           <span>•</span>
@@ -384,7 +386,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                             )}
                           </div>
                           <div className="zigzag-content-small">
-                            <h4>{article.title}</h4>
+                            <h4>{translateArticleTitle(article)}</h4>
                             <span suppressHydrationWarning className="zigzag-meta text-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               <span>{timeAgo(article.publishedAt)}</span>
                               <span>•</span>
@@ -404,7 +406,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                   <Link href={`/article/${getSlug(featureArticle)}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                     <article className="detik-feature-card">
                       <div className="detik-feature-content">
-                        <h3 className="detik-feature-title">{featureArticle.title}</h3>
+                        <h3 className="detik-feature-title">{translateArticleTitle(featureArticle)}</h3>
                         <span suppressHydrationWarning className="detik-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           <span>{timeAgo(featureArticle.publishedAt)}</span>
                           <span>•</span>
@@ -437,7 +439,7 @@ const CategorySections = ({ startIndex = 0, endIndex = undefined }) => {
                             )}
                           </div>
                           <div className="detik-list-content">
-                            <h4 className="detik-list-title">{article.title}</h4>
+                            <h4 className="detik-list-title">{translateArticleTitle(article)}</h4>
                             <span suppressHydrationWarning className="detik-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               <span>{timeAgo(article.publishedAt)}</span>
                               <span>•</span>

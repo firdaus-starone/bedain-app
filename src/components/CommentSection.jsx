@@ -4,9 +4,11 @@ import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp } f
 import { db } from '../lib/firebase';
 import { MessageSquare, Send, User, Clock, X, Reply } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../hooks/useI18n';
 
 const CommentSection = ({ articleSlug, articleTitle }) => {
   const { currentUser, userRole } = useAuth();
+  const { lang } = useI18n();
   const isStaff = currentUser && ['superadmin', 'editor', 'reporter'].includes(userRole);
 
   const [comments, setComments] = useState([]);
@@ -67,7 +69,8 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
   const formatDate = (ts) => {
     if (!ts) return '';
     const d = ts.toDate ? ts.toDate() : new Date(ts);
-    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const locale = lang === 'zh' ? 'zh-CN' : lang === 'en' ? 'en-US' : 'id-ID';
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const handleSubmit = async (e) => {
@@ -75,16 +78,16 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
     setError('');
 
     if (!form.name.trim() || !form.content.trim()) {
-      setError('Nama dan isi komentar wajib diisi.');
+      setError(lang === 'zh' ? '称呼和评论内容为必填项。' : lang === 'en' ? 'Name and comment content are required.' : 'Nama dan isi komentar wajib diisi.');
       return;
     }
     if (form.content.trim().length < 5) {
-      setError('Komentar terlalu pendek.');
+      setError(lang === 'zh' ? '评论内容过短。' : lang === 'en' ? 'Comment is too short.' : 'Komentar terlalu pendek.');
       return;
     }
 
     if (lastSubmit && Date.now() - lastSubmit < 30000) {
-      setError('Harap tunggu 30 detik sebelum mengirim komentar lagi.');
+      setError(lang === 'zh' ? '请等待30秒后再发送新评论。' : lang === 'en' ? 'Please wait 30 seconds before submitting another comment.' : 'Harap tunggu 30 detik sebelum mengirim komentar lagi.');
       return;
     }
 
@@ -111,7 +114,7 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
       }
     } catch (err) {
       console.error('Error submitting comment:', err);
-      setError('Gagal mengirim komentar. Coba lagi.');
+      setError(lang === 'zh' ? '提交评论失败，请重试。' : lang === 'en' ? 'Failed to submit comment. Please try again.' : 'Gagal mengirim komentar. Coba lagi.');
     } finally {
       setSubmitting(false);
     }
@@ -120,12 +123,12 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
   const handleReplySubmit = async (e, parentId) => {
     e.preventDefault();
     if (!replyForm.name.trim() || !replyForm.content.trim()) {
-      alert('Nama dan isi komentar wajib diisi.');
+      alert(lang === 'zh' ? '称呼和评论内容为必填项。' : lang === 'en' ? 'Name and comment content are required.' : 'Nama dan isi komentar wajib diisi.');
       return;
     }
     
     if (lastSubmit && Date.now() - lastSubmit < 30000) {
-      alert('Harap tunggu 30 detik sebelum mengirim balasan.');
+      alert(lang === 'zh' ? '请等待30秒后再发送回复。' : lang === 'en' ? 'Please wait 30 seconds before submitting another reply.' : 'Harap tunggu 30 detik sebelum mengirim balasan.');
       return;
     }
 
@@ -142,7 +145,9 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
         createdAt: serverTimestamp(),
         parentId: parentId
       });
-      alert(isStaff ? 'Balasan berhasil dipublikasikan!' : 'Balasan Anda sedang menunggu moderasi.');
+      alert(isStaff 
+        ? (lang === 'zh' ? '回复已成功发布！' : lang === 'en' ? 'Reply published successfully!' : 'Balasan berhasil dipublikasikan!') 
+        : (lang === 'zh' ? '您的回复正在等待审核。' : lang === 'en' ? 'Your reply is awaiting moderation.' : 'Balasan Anda sedang menunggu moderasi.'));
       setReplyingTo(null);
       setLastSubmit(Date.now());
       setReplyForm({ name: '', email: '', content: '' });
@@ -152,7 +157,7 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
       }
     } catch (err) {
       console.error('Error submitting reply:', err);
-      alert('Gagal mengirim balasan. Coba lagi.');
+      alert(lang === 'zh' ? '发送回复失败，请重试。' : lang === 'en' ? 'Failed to submit reply. Please try again.' : 'Gagal mengirim balasan. Coba lagi.');
     } finally {
       setSubmittingReply(false);
     }
@@ -169,17 +174,17 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
             {comments.length > 0 && <span className="trigger-badge">{comments.length}</span>}
           </div>
           <div className="trigger-text">
-            <h4>Komentar & Diskusi Pembaca</h4>
+            <h4>{lang === 'zh' ? '读者评论与探讨' : lang === 'en' ? 'Reader Comments & Discussions' : 'Komentar & Diskusi Pembaca'}</h4>
             <p>
               {comments.length > 0
-                ? `${comments.length} diskusi pada artikel ini. Silakan berikan tanggapan atau opini Anda!`
-                : 'Belum ada komentar. Jadilah yang pertama memberikan tanggapan!'}
+                ? (lang === 'zh' ? `本篇文章共有 ${comments.length} 条讨论。欢迎发表您的观点！` : lang === 'en' ? `${comments.length} discussions on this article. Share your perspective!` : `${comments.length} diskusi pada artikel ini. Silakan berikan tanggapan atau opini Anda!`)
+                : (lang === 'zh' ? '暂无评论。快来抢先留下第一条观点吧！' : lang === 'en' ? 'No comments yet. Be the first to share your thoughts!' : 'Belum ada komentar. Jadilah yang pertama memberikan tanggapan!')}
             </p>
           </div>
         </div>
         <button className="trigger-btn" onClick={() => setIsOpen(true)}>
           <Send size={16} />
-          <span>Tulis Komentar</span>
+          <span>{lang === 'zh' ? '撰写评论' : lang === 'en' ? 'Write a Comment' : 'Tulis Komentar'}</span>
         </button>
       </div>
 
@@ -187,12 +192,14 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
         {loadingComments ? (
           <div className="comment-loading" style={{ padding: '24px 0' }}>
             <div className="spinner" style={{ width: 24, height: 24 }} />
-            <span>Memuat komentar...</span>
+            <span>{lang === 'zh' ? '正在加载评论...' : lang === 'en' ? 'Loading comments...' : 'Memuat komentar...'}</span>
           </div>
         ) : parentComments.length === 0 ? (
           <div className="comment-empty" style={{ padding: '32px 0', background: 'var(--color-bg-primary)', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
             <MessageSquare size={40} strokeWidth={1} />
-            <p>Belum ada komentar. Klik tombol "Tulis Komentar" di atas untuk berdiskusi!</p>
+            <p>
+              {lang === 'zh' ? '暂无评论。点击上方“撰写评论”参与讨论！' : lang === 'en' ? 'No comments yet. Click "Write a Comment" above to start discussion!' : 'Belum ada komentar. Klik tombol "Tulis Komentar" di atas untuk berdiskusi!'}
+            </p>
           </div>
         ) : (
           parentComments.map(c => {
@@ -228,20 +235,22 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
                         <button 
                           onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
                           style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', padding: 0, fontWeight: '600' }}>
-                          <Reply size={14} /> {replyingTo === c.id ? 'Batal Balas' : 'Balas'}
+                          <Reply size={14} /> {replyingTo === c.id ? (lang === 'zh' ? '取消回复' : lang === 'en' ? 'Cancel' : 'Batal Balas') : (lang === 'zh' ? '回复' : lang === 'en' ? 'Reply' : 'Balas')}
                         </button>
                       </div>
 
                       {replyingTo === c.id && (
                         <form onSubmit={(e) => handleReplySubmit(e, c.id)} style={{ marginTop: '15px', background: 'var(--color-bg-secondary, rgba(0,0,0,0.02))', padding: '15px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
-                          <h5 style={{ marginTop: 0, marginBottom: '10px', fontSize: '13px', fontWeight: '600', color: 'var(--color-text-primary)' }}>Balas komentar {c.authorName}</h5>
+                          <h5 style={{ marginTop: 0, marginBottom: '10px', fontSize: '13px', fontWeight: '600', color: 'var(--color-text-primary)' }}>
+                            {lang === 'zh' ? `回复 ${c.authorName} 的评论` : lang === 'en' ? `Reply to ${c.authorName}` : `Balas komentar ${c.authorName}`}
+                          </h5>
                           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                            <input required type="text" placeholder="Nama Anda" value={replyForm.name} onChange={e => setReplyForm({...replyForm, name: e.target.value})} style={{ flex: '1 1 150px', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }} />
-                            <input type="email" placeholder="Email (opsional)" value={replyForm.email} onChange={e => setReplyForm({...replyForm, email: e.target.value})} style={{ flex: '1 1 150px', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }} />
+                            <input required type="text" placeholder={lang === 'zh' ? '您的称呼' : lang === 'en' ? 'Your Name' : 'Nama Anda'} value={replyForm.name} onChange={e => setReplyForm({...replyForm, name: e.target.value})} style={{ flex: '1 1 150px', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }} />
+                            <input type="email" placeholder={lang === 'zh' ? '电子邮箱 (选填)' : lang === 'en' ? 'Email (optional)' : 'Email (opsional)'} value={replyForm.email} onChange={e => setReplyForm({...replyForm, email: e.target.value})} style={{ flex: '1 1 150px', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }} />
                           </div>
-                          <textarea required placeholder="Tulis balasan..." rows={2} value={replyForm.content} onChange={e => setReplyForm({...replyForm, content: e.target.value})} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', marginBottom: '10px', background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }}></textarea>
+                          <textarea required placeholder={lang === 'zh' ? '输入您的回复内容...' : lang === 'en' ? 'Write a reply...' : 'Tulis balasan...'} rows={2} value={replyForm.content} onChange={e => setReplyForm({...replyForm, content: e.target.value})} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '14px', marginBottom: '10px', background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }}></textarea>
                           <button type="submit" disabled={submittingReply} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
-                            <Send size={14} /> {submittingReply ? 'Mengirim...' : 'Kirim Balasan'}
+                            <Send size={14} /> {submittingReply ? (lang === 'zh' ? '发送中...' : lang === 'en' ? 'Sending...' : 'Mengirim...') : (lang === 'zh' ? '发送回复' : lang === 'en' ? 'Send Reply' : 'Kirim Balasan')}
                           </button>
                         </form>
                       )}
@@ -282,9 +291,9 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
             <div className="comment-modal-header">
               <div className="modal-header-title">
                 <MessageSquare size={20} />
-                <h3>Tulis Komentar Baru</h3>
+                <h3>{lang === 'zh' ? '撰写新评论' : lang === 'en' ? 'Write a New Comment' : 'Tulis Komentar Baru'}</h3>
               </div>
-              <button className="comment-modal-close" onClick={() => setIsOpen(false)} title="Tutup">
+              <button className="comment-modal-close" onClick={() => setIsOpen(false)} title={lang === 'zh' ? '关闭' : lang === 'en' ? 'Close' : 'Tutup'}>
                 <X size={20} />
               </button>
             </div>
@@ -295,20 +304,25 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
                   {submitted ? (
                     <div className="comment-success">
                       <div className="comment-success-icon">✅</div>
-                      <h4>Komentar Diterima!</h4>
-                      <p>{isStaff ? 'Komentar Anda telah berhasil dipublikasikan.' : 'Komentar Anda sedang menunggu moderasi. Terima kasih telah berpartisipasi.'}</p>
+                      <h4>{lang === 'zh' ? '评论已提交！' : lang === 'en' ? 'Comment Submitted!' : 'Komentar Diterima!'}</h4>
+                      <p>
+                        {isStaff
+                          ? (lang === 'zh' ? '您的评论已成功发布。' : lang === 'en' ? 'Your comment has been published.' : 'Komentar Anda telah berhasil dipublikasikan.')
+                          : (lang === 'zh' ? '您的评论正在等待审核，感谢您的参与！' : lang === 'en' ? 'Your comment is awaiting moderation. Thank you for participating!' : 'Komentar Anda sedang menunggu moderasi. Terima kasih telah berpartisipasi.')
+                        }
+                      </p>
                       <button onClick={() => { setSubmitted(false); if (isStaff) setIsOpen(false); }} className="comment-send-again-btn">
-                        {isStaff ? 'Tutup' : 'Tulis Komentar Lagi'}
+                        {isStaff ? (lang === 'zh' ? '关闭' : lang === 'en' ? 'Close' : 'Tutup') : (lang === 'zh' ? '再写一条' : lang === 'en' ? 'Write Another' : 'Tulis Komentar Lagi')}
                       </button>
                     </div>
                   ) : (
                     <form onSubmit={handleSubmit} className="comment-form">
                       <div className="comment-form-row">
                         <div className="comment-input-group">
-                          <label>Nama <span style={{ color: '#e63946' }}>*</span></label>
+                          <label>{lang === 'zh' ? '称呼' : lang === 'en' ? 'Name' : 'Nama'} <span style={{ color: '#e63946' }}>*</span></label>
                           <input
                             type="text"
-                            placeholder="Nama Anda"
+                            placeholder={lang === 'zh' ? '您的称呼' : lang === 'en' ? 'Your Name' : 'Nama Anda'}
                             value={form.name}
                             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                             maxLength={60}
@@ -316,7 +330,7 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
                           />
                         </div>
                         <div className="comment-input-group">
-                          <label>Email <span style={{ color: '#888', fontSize: '12px' }}>(opsional)</span></label>
+                          <label>{lang === 'zh' ? '电子邮箱' : lang === 'en' ? 'Email' : 'Email'} <span style={{ color: '#888', fontSize: '12px' }}>({lang === 'zh' ? '选填' : lang === 'en' ? 'optional' : 'opsional'})</span></label>
                           <input
                             type="email"
                             placeholder="email@anda.com"
@@ -327,9 +341,9 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
                         </div>
                       </div>
                       <div className="comment-input-group">
-                        <label>Komentar <span style={{ color: '#e63946' }}>*</span></label>
+                        <label>{lang === 'zh' ? '评论内容' : lang === 'en' ? 'Comment' : 'Komentar'} <span style={{ color: '#e63946' }}>*</span></label>
                         <textarea
-                          placeholder="Tulis komentar Anda di sini..."
+                          placeholder={lang === 'zh' ? '在此输入您的评论...' : lang === 'en' ? 'Write your comment here...' : 'Tulis komentar Anda di sini...'}
                           value={form.content}
                           onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
                           rows={4}
@@ -341,11 +355,11 @@ const CommentSection = ({ articleSlug, articleTitle }) => {
                       {error && <div className="comment-error">{error}</div>}
                       <button type="submit" disabled={submitting} className="comment-submit-btn">
                         <Send size={16} />
-                        {submitting ? 'Mengirim...' : 'Kirim Komentar'}
+                        {submitting ? (lang === 'zh' ? '提交中...' : lang === 'en' ? 'Submitting...' : 'Mengirim...') : (lang === 'zh' ? '提交评论' : lang === 'en' ? 'Post Comment' : 'Kirim Komentar')}
                       </button>
                       {!isStaff && (
                         <p className="comment-moderation-note">
-                          💡 Komentar akan ditampilkan setelah disetujui oleh tim redaksi.
+                          {lang === 'zh' ? '💡 评论经编辑团队审核后将予以公开显示。' : lang === 'en' ? '💡 Comments will be displayed after approval by the editorial team.' : '💡 Komentar akan ditampilkan setelah disetujui oleh tim redaksi.'}
                         </p>
                       )}
                     </form>

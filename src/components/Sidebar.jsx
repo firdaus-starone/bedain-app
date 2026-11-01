@@ -11,6 +11,7 @@ import RecentCommentsWidget from './RecentCommentsWidget';
 import { collection, query, where, orderBy, getDocs, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { ThumbsUp, MessageSquare } from 'lucide-react';
 
 // Global memory cache across mounts for Sidebar
@@ -38,7 +39,8 @@ const writeSidebarCache = (data) => {
 };
 
 const Sidebar = () => {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { translateArticleTitle, translateText } = useAutoTranslate();
   const fallbackTrending = [
     { id: 1, title: 'IHSG Anjlok, Saham Perbankan Jadi Sorotan Investor', slug: 'ihsg-anjlok-saham-perbankan-sorotan', category: 'Bisnis', publishedAt: new Date(Date.now() - 2*3600*1000) },
     { id: 2, title: 'Review Gadget Terbaru: Flagship Killer yang Bikin Penasaran', slug: 'review-gadget-terbaru-flagship-killer', category: 'AI & Tech', publishedAt: new Date(Date.now() - 5*3600*1000) },
@@ -300,9 +302,9 @@ const Sidebar = () => {
                 <div className="trending-item" style={{ cursor: 'pointer' }}>
                   <span className="trending-number">{index + 1}</span>
                   <div className="trending-content">
-                    <h4>{item.title}</h4>
+                    <h4>{translateArticleTitle(item)}</h4>
                     <span className="trending-views" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{item.category || 'Berita'}</span>
+                      <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{t(`categories.${item.category?.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || item.category || 'Berita'}</span>
                       <span style={{ color: 'var(--color-text-secondary)', opacity: 0.5 }}>|</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span>{formatTimeAgo(item.publishedAt)}</span>
@@ -345,7 +347,7 @@ const Sidebar = () => {
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--color-accent)" opacity="0.2"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/></svg>
                     </div>
                     <div className="opinion-content-modern">
-                      <h4>"{opinion.title}"</h4>
+                      <h4>"{translateArticleTitle(opinion)}"</h4>
                     </div>
                     <div className="opinion-author-modern">
                       <div style={{ width: '32px', height: '32px', flexShrink: 0, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--color-bg-secondary)' }}>
@@ -372,12 +374,12 @@ const Sidebar = () => {
         <div style={{ width: '48px', height: '48px', background: 'rgba(230,57,70,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
         </div>
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', fontFamily: 'var(--font-heading)', color: 'var(--color-text-primary)' }}>Bedain Newsletter</h3>
-        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>Dapatkan ringkasan berita terpenting setiap pagi langsung ke kotak masuk Anda.</p>
+        <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', fontFamily: 'var(--font-heading)', color: 'var(--color-text-primary)' }}>{t('sidebar.newsletter_title') || 'Bedain Newsletter'}</h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>{t('sidebar.newsletter_desc') || 'Dapatkan ringkasan berita terpenting setiap pagi langsung ke kotak masuk Anda.'}</p>
         <form onSubmit={handleSubscribe} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <input 
             type="email" 
-            placeholder="Alamat Email Anda" 
+            placeholder={t('sidebar.newsletter_placeholder') || 'Alamat Email Anda'} 
             required 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -390,7 +392,7 @@ const Sidebar = () => {
             className="btn" 
             style={{ width: '100%', padding: '12px', background: subscribing ? 'var(--color-text-tertiary)' : 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: subscribing ? 'not-allowed' : 'pointer', transition: 'background 0.2s', boxSizing: 'border-box' }}
           >
-            {subscribing ? 'Menyimpan...' : 'Berlangganan'}
+            {subscribing ? (t('sidebar.subscribing') || 'Menyimpan...') : (t('sidebar.subscribe') || 'Berlangganan')}
           </button>
         </form>
       </div>
@@ -418,7 +420,7 @@ const Sidebar = () => {
               textDecoration: 'none',
               transition: 'all 0.2s ease'
             }} onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }} onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}>
-              <span style={{ color: 'var(--color-accent)' }}>#</span> {tag}
+              <span style={{ color: 'var(--color-accent)' }}>#</span> {translateText(tag)}
             </Link>
           ))}
         </div>

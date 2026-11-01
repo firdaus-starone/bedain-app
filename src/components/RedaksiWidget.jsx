@@ -5,8 +5,12 @@ import LazyImage from './LazyImage';
 import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getArticleCardImage } from '../lib/videoHelpers';
+import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 const RedaksiWidget = () => {
+  const { t } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
@@ -91,15 +95,15 @@ const RedaksiWidget = () => {
       <div className="redaksi-header">
         <div className="redaksi-logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--color-text-primary)" style={{marginRight: '6px'}}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-          Meja Redaksi
+          {t('home.editorialDesk') || 'Meja Redaksi'}
         </div>
       </div>
 
       {/* Sub Header Box */}
       <div className="redaksi-sub-box">
-        <div className="redaksi-sub-text">Pilihan Artikel Terbaik dari Redaksi Kami</div>
+        <div className="redaksi-sub-text">{t('home.editorialChoice') || 'Pilihan Artikel Terbaik dari Redaksi Kami'}</div>
         <Link href="/cari?q=Meja%20Redaksi" className="redaksi-btn-more">
-          Selengkapnya
+          {t('home.seeMore') || 'Selengkapnya'}
         </Link>
       </div>
 
@@ -119,8 +123,8 @@ const RedaksiWidget = () => {
                     <LazyImage src={item.img || item.coverImage} alt={item.title} />
                   </div>
                   <div className="redaksi-content">
-                    <span className="redaksi-cat">{item.category || 'Meja Redaksi'}</span>
-                    <h4 className="redaksi-title">{item.title}</h4>
+                    <span className="redaksi-cat">{t(`categories.${item.category?.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || item.category || t('home.editorialDesk') || 'Meja Redaksi'}</span>
+                    <h4 className="redaksi-title">{translateArticleTitle(item)}</h4>
                   </div>
                 </article>
               </Link>

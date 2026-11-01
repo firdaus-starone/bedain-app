@@ -98,6 +98,42 @@ export default async function sitemap() {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/page/tentang-kami`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/page/redaksi`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/page/kebijakan-privasi`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/page/pedoman-siber`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/page/kontak-kemitraan`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/kirim-tulisan`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'monthly',
@@ -107,7 +143,7 @@ export default async function sitemap() {
       url: `${baseUrl}/kontak`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'monthly',
-      priority: 0.5,
+      priority: 0.6,
     },
     ...articleUrls,
   ];
