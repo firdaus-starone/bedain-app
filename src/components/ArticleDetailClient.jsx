@@ -20,12 +20,14 @@ import Navbar from './Navbar';
 import BreakingNews from './BreakingNews';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
-import { ArrowLeft, ArrowRight, Share2, Printer, Eye, Calendar, User, Tag, Check, Type, Heart, ThumbsUp, Flame, MessageSquare, Bookmark, Link2, Sparkles, Clock, Headphones, Play, Pause, Square, Volume2, ChevronRight, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Share2, Printer, Eye, Calendar, User, Tag, Check, Type, Heart, ThumbsUp, Flame, MessageSquare, Bookmark, Link2, Sparkles, Clock, Headphones, Play, Pause, Square, Volume2, ChevronRight, Home, Globe } from 'lucide-react';
 import CommentSection from './CommentSection';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Capacitor } from '@capacitor/core';
 // TextToSpeech di-load secara dinamis untuk menghindari SSR error
 import { useI18n } from '../hooks/useI18n';
+import { useTranslation } from '../hooks/useTranslation';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { useAuth } from '../hooks/useAuth';
 import { getPublicArticleUrl, isMobileDevice, shareArticleWithImage } from '../lib/shareHelper';
 
@@ -63,35 +65,79 @@ const ArticleDetail = ({ initialArticle = null }) => {
   const [ttsRate, setTtsRate] = useState(1.0);
   const [ttsVoiceIndex, setTtsVoiceIndex] = useState(0);
   const [availableVoices, setAvailableVoices] = useState([]);
-  const [translating, setTranslating] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [parallaxOffset, setParallaxOffset] = useState(0);
   const { settings } = useSiteSettings();
+
+  const { 
+    translating, 
+    translatedArticle, 
+    detectedLang, 
+    currentTargetLang,
+    showBanner, 
+    setShowBanner, 
+    LANG_NAMES, 
+    triggerTranslation,
+    resetTranslation
+  } = useTranslation(article, lang);
+  const { translateArticleTitle } = useAutoTranslate();
   
   const displayArticle = React.useMemo(() => {
     if (!article) return null;
     
-    // Choose title and content based on language
+    // Choose title and content based on language or AI translation
     let title = article.title;
     let content = article.content;
     let excerpt = article.excerpt || article.seoDescription || '';
+    let seoDescription = article.seoDescription || article.excerpt || '';
+    let keyPoints = article.keyPoints || [];
     
-    if (lang === 'en' && article.title_en && article.content_en) {
-      title = article.title_en;
-      content = article.content_en;
-    } else if (lang === 'zh' && article.title_zh && article.content_zh) {
-      title = article.title_zh;
-      content = article.content_zh;
+    if (translatedArticle) {
+      title = translatedArticle.title || title;
+      content = translatedArticle.content || content;
+      excerpt = translatedArticle.excerpt || translatedArticle.seoDescription || excerpt;
+      seoDescription = translatedArticle.seoDescription || translatedArticle.excerpt || seoDescription;
+      if (translatedArticle.keyPoints) {
+        keyPoints = translatedArticle.keyPoints;
+      }
+    } else if (lang === 'en') {
+      if (article.title_en) title = article.title_en;
+      if (article.content_en) content = article.content_en;
+      if (article.excerpt_en || article.seoDescription_en) {
+        excerpt = article.excerpt_en || article.seoDescription_en;
+        seoDescription = article.seoDescription_en || article.excerpt_en;
+      }
+    } else if (lang === 'zh') {
+      if (article.title_zh) title = article.title_zh;
+      if (article.content_zh) content = article.content_zh;
+      if (article.excerpt_zh || article.seoDescription_zh) {
+        excerpt = article.excerpt_zh || article.seoDescription_zh;
+        seoDescription = article.seoDescription_zh || article.excerpt_zh;
+      }
     }
 
     return {
       ...article,
       title,
       content,
-      excerpt
+      excerpt,
+      seoDescription,
+      keyPoints
     };
-  }, [article, lang]);
+  }, [article, lang, translatedArticle]);
+
+  // Otomatis translate jika bahasa aktif aplikasi berubah (misal dari Navbar)
+  useEffect(() => {
+    if (article?.id && lang && lang !== 'id') {
+      const hasStatic = lang === 'en' ? (article.title_en && article.content_en) : (article.title_zh && article.content_zh);
+      if (!hasStatic) {
+        triggerTranslation(lang);
+      }
+    } else if (lang === 'id' && currentTargetLang !== 'id') {
+      resetTranslation();
+    }
+  }, [lang, article?.id]);
 
   useEffect(() => {
     setIsClient(true);
@@ -551,7 +597,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
         setIsSharing(true);
         const publicUrl = getPublicArticleUrl(article);
         const title = displayArticle?.title || article.title || 'Bedain News';
-        const text = article.seoDescription || article.excerpt || `${title} - Bedain News`;
+        const text = displayArticle?.seoDescription || displayArticle?.excerpt || article.seoDescription || article.excerpt || `${title} - Bedain News`;
 
         await navigator.share({
           title,
@@ -974,7 +1020,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
         <Navbar />
         <div style={{ textAlign: 'center', padding: '150px 0', minHeight: '70vh' }}>
           <div className="spinner" style={{ margin: '0 auto 16px' }}></div>
-          <p style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>Memuat berita terkini untuk Anda...</p>
+          <p style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+            {lang === 'zh' ? '正在为您加载最新新闻...' : lang === 'en' ? 'Loading latest news for you...' : 'Memuat berita terkini untuk Anda...'}
+          </p>
         </div>
         <Footer />
       </div>
@@ -991,19 +1039,25 @@ const ArticleDetail = ({ initialArticle = null }) => {
               <Clock size={36} />
             </div>
             <h1 style={{ fontSize: '1.75rem', marginBottom: '12px', color: 'var(--color-text)', fontFamily: 'var(--font-heading)' }}>
-              Berita Ini Belum Tayang
+              {lang === 'zh' ? '此新闻尚未发布' : lang === 'en' ? 'This News is Not Yet Published' : 'Berita Ini Belum Tayang'}
             </h1>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '15px', marginBottom: '20px', lineHeight: 1.6 }}>
-              Artikel <strong>"{scheduledNotice.title}"</strong> telah dijadwalkan oleh redaksi dan akan tayang otomatis pada:
+              {lang === 'zh' ? (
+                <>文章 <strong>"{scheduledNotice.title}"</strong> 已由编辑部预排，将于以下时间自动发布：</>
+              ) : lang === 'en' ? (
+                <>Article <strong>"{scheduledNotice.title}"</strong> is scheduled and will automatically publish at:</>
+              ) : (
+                <>Artikel <strong>"{scheduledNotice.title}"</strong> telah dijadwalkan oleh redaksi dan akan tayang otomatis pada:</>
+              )}
             </p>
             <div style={{ display: 'inline-block', padding: '12px 24px', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '14px', color: '#d8b4fe', fontWeight: 700, fontSize: '15px', marginBottom: '24px' }}>
               ⏰ {scheduledNotice.timeStr}
             </div>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '32px', opacity: 0.8 }}>
-              Silakan kunjungi kembali saat jam tayang tiba untuk membaca liputan lengkapnya.
+              {lang === 'zh' ? '请于发布时间再次访问以阅读完整报道。' : lang === 'en' ? 'Please return when published to read the full report.' : 'Silakan kunjungi kembali saat jam tayang tiba untuk membaca liputan lengkapnya.'}
             </p>
             <Link href="/" className="btn" style={{ background: 'linear-gradient(135deg, var(--color-accent), #ff5252)', color: 'var(--color-text-primary)', padding: '12px 30px', borderRadius: '30px', textDecoration: 'none', fontWeight: 600, display: 'inline-block', boxShadow: '0 8px 16px rgba(230,57,70,0.3)' }}>
-              Kembali ke Beranda
+              {lang === 'zh' ? '返回首页' : lang === 'en' ? 'Back to Home' : 'Kembali ke Beranda'}
             </Link>
           </div>
         </div>
@@ -1018,9 +1072,11 @@ const ArticleDetail = ({ initialArticle = null }) => {
         <Navbar />
         <div style={{ textAlign: 'center', padding: '100px 20px', minHeight: '60vh' }}>
           <div style={{ maxWidth: '500px', margin: '0 auto', background: 'var(--color-bg-secondary)', padding: '40px', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-            <h1 style={{ fontSize: '2rem', marginBottom: '16px', color: 'var(--color-text)', fontFamily: 'var(--font-heading)' }}>Berita Tidak Ditemukan</h1>
+            <h1 style={{ fontSize: '2rem', marginBottom: '16px', color: 'var(--color-text)', fontFamily: 'var(--font-heading)' }}>
+              {lang === 'zh' ? '未找到新闻' : lang === 'en' ? 'News Not Found' : 'Berita Tidak Ditemukan'}
+            </h1>
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '32px', lineHeight: 1.6 }}>
-              {error || 'Maaf, artikel yang Anda cari tidak tersedia atau sedang diperbarui.'}
+              {error || (lang === 'zh' ? '抱歉，您查找的文章不存在或正在更新。' : lang === 'en' ? 'Sorry, the article you are looking for is unavailable or being updated.' : 'Maaf, artikel yang Anda cari tidak tersedia atau sedang diperbarui.')}
             </p>
             <Link href="/" className="btn" style={{ background: 'linear-gradient(135deg, var(--color-accent), #ff5252)', color: 'var(--color-text-primary)', padding: '14px 32px', borderRadius: '30px', textDecoration: 'none', fontWeight: 600, display: 'inline-block', boxShadow: '0 8px 16px rgba(230,57,70,0.3)' }}>
               {lang === 'zh' ? '返回主页' : lang === 'en' ? 'Back to Home' : 'Kembali ke Beranda'}
@@ -1098,6 +1154,20 @@ const ArticleDetail = ({ initialArticle = null }) => {
   const cleanText = contentString.replace(/<[^>]+>/g, '').trim();
   const wordCount = cleanText ? cleanText.split(/\s+/).length : 0;
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
+  // Tooltips localized for share & reaction bars
+  const likeTooltip = lang === 'zh' ? '赞' : lang === 'en' ? 'Like' : 'Suka';
+  const commentTooltip = lang === 'zh' ? '评论' : lang === 'en' ? 'Comments' : 'Komentar';
+  const bookmarkTooltip = isBookmarked
+    ? (lang === 'zh' ? '取消收藏' : lang === 'en' ? 'Remove Bookmark' : 'Hapus dari Tersimpan')
+    : (lang === 'zh' ? '收藏文章 / 稍后阅读' : lang === 'en' ? 'Bookmark / Read Later' : 'Simpan Artikel / Baca Nanti');
+  const shareTooltip = t('article.share') || (lang === 'zh' ? '分享' : lang === 'en' ? 'Share' : 'Bagikan');
+  const copyTooltip = lang === 'zh' ? '复制链接' : lang === 'en' ? 'Copy Link' : 'Salin Tautan';
+  const fontSizeTooltip = lang === 'zh'
+    ? `字体大小: ${fontSize === 'normal' ? '标准 (点击放大)' : fontSize === 'large' ? '大 (+)' : '特大 (++)'}`
+    : lang === 'en'
+    ? `Font Size: ${fontSize === 'normal' ? 'Normal (Click to enlarge)' : fontSize === 'large' ? 'Large (+)' : 'Extra Large (++)'}`
+    : `Ukuran Font: ${fontSize === 'normal' ? 'Normal (Klik untuk Memperbesar)' : fontSize === 'large' ? 'Besar (+)' : 'Sangat Besar (++)'}`;
 
   return (
     <div className="app-container modern-article" style={{ background: 'var(--color-bg-primary)' }}>
@@ -1231,7 +1301,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                     onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                     onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                   >
-                    {article.category || 'Berita'}
+                    {t(`categories.${article.category?.toLowerCase()?.replace(/[^a-z0-9]+/g, '-')}`) || article.category || 'Berita'}
                   </Link>
                 </li>
                 
@@ -1256,6 +1326,145 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 </li>
               </ol>
             </nav>
+
+            {/* International Visitor AI Translation Banner */}
+            {showBanner && detectedLang !== 'id' && !translatedArticle && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(29, 78, 216, 0.25) 100%)',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                borderRadius: '12px',
+                padding: '12px 18px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'var(--color-accent, #2563eb)', color: '#fff', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Globe size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                      Reading from outside Indonesia?
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                      Translate this article into <strong>{LANG_NAMES[detectedLang] || detectedLang}</strong> automatically with AI.
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    disabled={translating}
+                    onClick={() => triggerTranslation(detectedLang)}
+                    style={{
+                      background: 'var(--color-accent, #2563eb)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: translating ? 'wait' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(37,99,235,0.4)'
+                    }}
+                  >
+                    <Sparkles size={14} />
+                    {translating ? 'Translating...' : `Translate (${detectedLang.toUpperCase()})`}
+                  </button>
+                  <button
+                    onClick={() => setShowBanner(false)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--color-text-secondary)',
+                      cursor: 'pointer',
+                      padding: '8px',
+                      borderRadius: '6px'
+                    }}
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* AI Multi-Language Switcher Toolbar for Article (Desktop Only, on Mobile handled in Profile Menu) */}
+            <div 
+              className="article-ai-translate-banner"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+                background: 'var(--color-bg-secondary, #1a1a1f)',
+                border: '1px solid var(--color-border, #2a2a30)',
+                borderRadius: '12px',
+                padding: '10px 16px',
+                marginBottom: '20px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                <Sparkles size={16} color="var(--color-accent, #2563eb)" />
+                <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {lang === 'zh' ? '新闻AI翻译:' : lang === 'en' ? 'News Translation (AI):' : 'Alih Bahasa Berita (AI):'}
+                </span>
+                {translating && (
+                  <span style={{ fontSize: '12px', color: 'var(--color-accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <span className="spinner-small" style={{ width: '12px', height: '12px' }}></span>
+                    {lang === 'zh' ? '正在翻译中...' : lang === 'en' ? 'Translating...' : 'Sedang menerjemahkan...'}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {[
+                  { code: 'id', label: '🇮🇩 Asli (ID)' },
+                  { code: 'en', label: '🇺🇸 English' },
+                  { code: 'zh', label: '🇨🇳 中文' }
+                ].map(item => {
+                  const isActive = currentTargetLang === item.code;
+                  return (
+                    <button
+                      key={item.code}
+                      type="button"
+                      disabled={translating}
+                      onClick={() => {
+                        if (item.code === 'id') {
+                          resetTranslation();
+                        } else {
+                          triggerTranslation(item.code);
+                        }
+                      }}
+                      style={{
+                        background: isActive ? 'var(--color-accent, #2563eb)' : 'rgba(255, 255, 255, 0.05)',
+                        color: isActive ? '#fff' : 'var(--color-text-secondary)',
+                        border: isActive ? '1px solid var(--color-accent, #2563eb)' : '1px solid var(--color-border, #333)',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: isActive ? 800 : 500,
+                        cursor: translating ? 'wait' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span>{item.label}</span>
+                      {isActive && <Check size={13} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Hero Image Section & Meta */}
             {videoData ? (
@@ -1282,7 +1491,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
                 {/* Horizontal Social Share */}
                 <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-                  <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                  <button className="share-icon-btn" onClick={() => handleReaction('like')} title={likeTooltip} style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
                     <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
                     <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
                   </button>
@@ -1290,25 +1499,25 @@ const ArticleDetail = ({ initialArticle = null }) => {
                       const el = document.getElementById('comment-section-anchor');
                       if (el) el.scrollIntoView({ behavior: 'smooth' });
                       else setShowCommentModal(true);
-                    }} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
+                    }} title={commentTooltip} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
                     <MessageSquare size={18} />
                     <div style={{ position: 'absolute', top: '0px', right: '2px', background: 'var(--color-accent)', color: '#fff', fontSize: '9px', fontWeight: 'bold', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--color-bg-primary)', padding: '0 4px' }}>
                       {realCommentCount}
                     </div>
                   </button>
-                  <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                  <button className="share-icon-btn" onClick={toggleBookmark} title={bookmarkTooltip} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
                   </button>
-                  <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+                  <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title={shareTooltip} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
                     <Share2 size={18} />
                   </button>
-                  <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                  <button className="share-icon-btn" onClick={handleCopyLink} title={copyTooltip} style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     {copied ? <Check size={18} /> : <Link2 size={18} />}
                   </button>
                   <button 
                     className="share-icon-btn font-size-toggle-btn" 
                     onClick={toggleFontSize} 
-                    title={`Ukuran Font: ${fontSize === 'normal' ? 'Normal (Klik untuk Memperbesar)' : fontSize === 'large' ? 'Besar (+)' : 'Sangat Besar (++)'}`} 
+                    title={fontSizeTooltip} 
                     style={{ 
                       background: fontSize !== 'normal' ? 'rgba(230, 32, 32, 0.12)' : 'transparent', 
                       border: fontSize !== 'normal' ? '1px solid var(--color-accent)' : 'none', 
@@ -1398,7 +1607,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
                 {/* Horizontal Social Share */}
                 <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-                  <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                  <button className="share-icon-btn" onClick={() => handleReaction('like')} title={likeTooltip} style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
                     <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
                     <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
                   </button>
@@ -1406,25 +1615,25 @@ const ArticleDetail = ({ initialArticle = null }) => {
                       const el = document.getElementById('comment-section-anchor');
                       if (el) el.scrollIntoView({ behavior: 'smooth' });
                       else setShowCommentModal(true);
-                    }} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
+                    }} title={commentTooltip} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
                     <MessageSquare size={18} />
                     <div style={{ position: 'absolute', top: '0px', right: '2px', background: 'var(--color-accent)', color: '#fff', fontSize: '9px', fontWeight: 'bold', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--color-bg-primary)', padding: '0 4px' }}>
                       {realCommentCount}
                     </div>
                   </button>
-                  <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                  <button className="share-icon-btn" onClick={toggleBookmark} title={bookmarkTooltip} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
                   </button>
-                  <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+                  <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title={shareTooltip} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
                     <Share2 size={18} />
                   </button>
-                  <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                  <button className="share-icon-btn" onClick={handleCopyLink} title={copyTooltip} style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     {copied ? <Check size={18} /> : <Link2 size={18} />}
                   </button>
                   <button 
                     className="share-icon-btn font-size-toggle-btn" 
                     onClick={toggleFontSize} 
-                    title={`Ukuran Font: ${fontSize === 'normal' ? 'Normal (Klik untuk Memperbesar)' : fontSize === 'large' ? 'Besar (+)' : 'Sangat Besar (++)'}`} 
+                    title={fontSizeTooltip} 
                     style={{ 
                       background: fontSize !== 'normal' ? 'rgba(230, 32, 32, 0.12)' : 'transparent', 
                       border: fontSize !== 'normal' ? '1px solid var(--color-accent)' : 'none', 
@@ -1467,9 +1676,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
                    {translating && <span style={{display: 'inline-block', marginLeft: '10px', fontSize: '0.9rem', color: 'var(--color-accent)'}} className="spinner-small" title={t('article.translate')}></span>}
                  </h1>
                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
-                    <span>Kontributor: {article.contributorName || article.author?.name || 'Redaksi'}</span>
+                    <span>{t('article.contributor') || 'Kontributor'}: {article.contributorName || article.author?.name || t('article.editorial')}</span>
                     <span>•</span>
-                    <span>Editor: Admin Redaksi</span>
+                    <span>{t('article.editor') || 'Editor'}: {t('article.editorial')}</span>
                     <span>•</span>
                     <span suppressHydrationWarning>{formatDate(article.publishedAt || article.createdAt)}</span>
                     <span>•</span>
@@ -1480,7 +1689,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
                  {/* Horizontal Social Share */}
                  <div className="sticky-share-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-                   <button className="share-icon-btn" onClick={() => handleReaction('like')} title="Suka" style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
+                   <button className="share-icon-btn" onClick={() => handleReaction('like')} title={likeTooltip} style={{ background: reaction === 'like' ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: reaction === 'like' ? '1px solid var(--color-accent)' : 'none', color: reaction === 'like' ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', gap: '6px' }}>
                      <ThumbsUp size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} />
                      <span className="share-count-text" style={{ fontSize: '13px', fontWeight: 600 }}>{reactionCounts.like || 0}</span>
                    </button>
@@ -1488,25 +1697,25 @@ const ArticleDetail = ({ initialArticle = null }) => {
                        const el = document.getElementById('comment-section-anchor');
                        if (el) el.scrollIntoView({ behavior: 'smooth' });
                        else setShowCommentModal(true);
-                     }} title="Komentar" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
+                     }} title={commentTooltip} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', position: 'relative' }}>
                      <MessageSquare size={18} />
                      <div style={{ position: 'absolute', top: '0px', right: '2px', background: 'var(--color-accent)', color: '#fff', fontSize: '9px', fontWeight: 'bold', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--color-bg-primary)', padding: '0 4px' }}>
                        {realCommentCount}
                      </div>
                    </button>
-                   <button className="share-icon-btn" onClick={toggleBookmark} title={isBookmarked ? "Hapus dari Tersimpan" : "Simpan Artikel / Baca Nanti"} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                   <button className="share-icon-btn" onClick={toggleBookmark} title={bookmarkTooltip} style={{ background: isBookmarked ? 'rgba(37, 99, 235, 0.15)' : 'transparent', border: isBookmarked ? '1px solid var(--color-accent)' : 'none', color: isBookmarked ? 'var(--color-accent)' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                      <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
                    </button>
-                   <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title="Bagikan" style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
+                   <button className="share-icon-btn" onClick={handleShare} disabled={isSharing} title={shareTooltip} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', opacity: isSharing ? 0.6 : 1 }}>
                      <Share2 size={18} />
                    </button>
-                   <button className="share-icon-btn" onClick={handleCopyLink} title="Salin Tautan" style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                   <button className="share-icon-btn" onClick={handleCopyLink} title={copyTooltip} style={{ background: 'transparent', border: 'none', color: copied ? '#4ade80' : 'var(--color-text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                      {copied ? <Check size={18} /> : <Link2 size={18} />}
                    </button>
                     <button 
                       className="share-icon-btn font-size-toggle-btn" 
                       onClick={toggleFontSize} 
-                      title={`Ukuran Font: ${fontSize === 'normal' ? 'Normal (Klik untuk Memperbesar)' : fontSize === 'large' ? 'Besar (+)' : 'Sangat Besar (++)'}`} 
+                      title={fontSizeTooltip} 
                       style={{ 
                         background: fontSize !== 'normal' ? 'rgba(230, 32, 32, 0.12)' : 'transparent', 
                         border: fontSize !== 'normal' ? '1px solid var(--color-accent)' : 'none', 
@@ -1580,7 +1789,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span className="tts-widget-title" style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text-primary)' }}>
-                        Dengarkan Berita AI
+                        {lang === 'zh' ? 'AI 语音播报' : lang === 'en' ? 'AI Audio Broadcast' : 'Dengarkan Berita AI'}
                       </span>
                       {isPlayingTTS && !ttsPaused && (
                         <span style={{
@@ -1594,7 +1803,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                           alignItems: 'center',
                           gap: '4px'
                         }}>
-                          LIVE PLAYING
+                          {lang === 'zh' ? '正在播放' : 'LIVE PLAYING'}
                         </span>
                       )}
                       {isPlayingTTS && ttsPaused && (
@@ -1606,12 +1815,18 @@ const ArticleDetail = ({ initialArticle = null }) => {
                           borderRadius: '10px',
                           fontWeight: 700
                         }}>
-                          PAUSED
+                          {lang === 'zh' ? '已暂停' : 'PAUSED'}
                         </span>
                       )}
                     </div>
                     <div className="tts-widget-desc" style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                      {isPlayingTTS ? (ttsPaused ? 'Narasi dijeda. Klik Play untuk melanjutkan.' : 'Narator AI sedang membacakan artikel ini untuk Anda...') : 'Dengarkan isi artikel layaknya podcast saat Anda sedang beraktivitas.'}
+                      {isPlayingTTS ? (
+                        ttsPaused 
+                          ? (lang === 'zh' ? '播报已暂停，点击播放继续。' : lang === 'en' ? 'Narration paused. Click Play to continue.' : 'Narasi dijeda. Klik Play untuk melanjutkan.')
+                          : (lang === 'zh' ? 'AI 正在为您朗读本文...' : lang === 'en' ? 'AI narrator is reading this article for you...' : 'Narator AI sedang membacakan artikel ini untuk Anda...')
+                      ) : (
+                        lang === 'zh' ? '在忙碌或通勤时像收听播客一样收听文章。' : lang === 'en' ? 'Listen to this article like a podcast while on the move.' : 'Dengarkan isi artikel layaknya podcast saat Anda sedang beraktivitas.'
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1637,13 +1852,18 @@ const ArticleDetail = ({ initialArticle = null }) => {
                     }}
                   >
                     {isPlayingTTS && !ttsPaused ? <Pause size={16} /> : <Play size={16} />}
-                    {isPlayingTTS && !ttsPaused ? 'Jeda Suara' : isPlayingTTS && ttsPaused ? 'Lanjutkan' : 'Putar Suara'}
+                    {isPlayingTTS && !ttsPaused 
+                      ? (lang === 'zh' ? '暂停' : lang === 'en' ? 'Pause' : 'Jeda Suara')
+                      : isPlayingTTS && ttsPaused 
+                      ? (lang === 'zh' ? '继续' : lang === 'en' ? 'Resume' : 'Lanjutkan')
+                      : (lang === 'zh' ? '播放声音' : lang === 'en' ? 'Play Audio' : 'Putar Suara')
+                    }
                   </button>
 
                   {isPlayingTTS && (
                     <button
                       onClick={handleStopTTS}
-                      title="Berhenti"
+                      title={lang === 'zh' ? '停止' : lang === 'en' ? 'Stop' : 'Berhenti'}
                       style={{
                         background: 'var(--color-bg-tertiary)',
                         color: 'var(--color-text-primary)',
@@ -1674,7 +1894,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 borderTop: '1px solid var(--color-border)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Kecepatan:</span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                    {lang === 'zh' ? '语速:' : lang === 'en' ? 'Speed:' : 'Kecepatan:'}
+                  </span>
                   {[0.8, 1.0, 1.25, 1.5].map(rate => (
                     <button
                       className="tts-widget-speed-btn"
@@ -1699,7 +1921,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
                 {availableVoices.length > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Suara:</span>
+                    <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                      {lang === 'zh' ? '声音:' : lang === 'en' ? 'Voice:' : 'Suara:'}
+                    </span>
                     <select
                       className="tts-widget-voice-select"
                       value={ttsVoiceIndex}
@@ -1748,7 +1972,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
             </div>
 
             {/* Excerpt Lead (Hanya untuk artikel biasa, bukan artikel video) */}
-            {(!videoId && !videoData?.embedUrl && (article.seoDescription || article.excerpt || cleanText.length > 50)) && (
+            {(!videoId && !videoData?.embedUrl && (displayArticle?.seoDescription || displayArticle?.excerpt || cleanText.length > 50)) && (
               <div style={{
                 fontSize: '1.05rem',
                 fontWeight: 500,
@@ -1764,8 +1988,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 overflowWrap: 'break-word'
               }}>
                 {(() => {
-                  let text = article.seoDescription || article.excerpt || '';
-                  if (text.length < 100 && cleanText.length > 50) {
+                  let text = (displayArticle?.seoDescription || displayArticle?.excerpt || '').trim();
+                  if (!text && cleanText.length > 50) {
                     let cleaned = cleanText.replace(/&nbsp;/gi, ' ').replace(/\u00A0/g, ' ');
                     let shortText = cleaned.substring(0, 220);
                     let lastSpace = shortText.lastIndexOf(' ');
@@ -1777,7 +2001,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
             )}
 
             {/* Poin Penting / TL;DR (3 Detik Paham) */}
-            <ArticleKeyPoints article={article} />
+            <ArticleKeyPoints article={displayArticle} />
 
             {/* Rich Content Text */}
             <div
@@ -1844,7 +2068,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                           <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--color-accent)', boxShadow: '0 0 10px var(--color-accent)' }}></div>
                           <span style={{ fontSize: '14px', color: 'var(--color-accent)', fontFamily: 'var(--font-heading)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                            BACA JUGA
+                            {t('article.readAlso') || 'BACA JUGA'}
                           </span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1855,7 +2079,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
                                 <VideoBadge article={rel} />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.4, textDecoration: 'none' }}>{rel.title}</h4>
+                                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.4, textDecoration: 'none' }}>
+                                  {translateArticleTitle(rel)}
+                                </h4>
                                 <span suppressHydrationWarning style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}><Clock size={12}/> {timeAgo(rel.publishedAt || rel.createdAt)}</span>
                               </div>
                             </Link>
@@ -1883,16 +2109,16 @@ const ArticleDetail = ({ initialArticle = null }) => {
 
             {/* Author / Editor Info at bottom */}
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '14px', color: 'var(--color-text-primary)', borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
-              <span><span style={{ color: 'var(--color-text-secondary)' }}>Kontributor:</span> <strong>{article.contributorName || article.author?.name || 'Redaksi'}</strong></span>
+              <span><span style={{ color: 'var(--color-text-secondary)' }}>{t('article.contributor') || 'Kontributor'}:</span> <strong>{article.contributorName || article.author?.name || t('article.editorial')}</strong></span>
               <span style={{ opacity: 0.5 }}>|</span>
-              <span><span style={{ color: 'var(--color-text-secondary)' }}>Editor:</span> <strong>Admin Redaksi</strong></span>
+              <span><span style={{ color: 'var(--color-text-secondary)' }}>{t('article.editor') || 'Editor'}:</span> <strong>{t('article.editorial')}</strong></span>
             </div>
 
             {/* Tags Section */}
             {Array.isArray(displayArticle.tags) && displayArticle.tags.length > 0 && (
               <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Tag size={14} /> TOPIK:
+                  <Tag size={14} /> {lang === 'zh' ? '话题' : lang === 'en' ? 'TOPICS' : 'TOPIK'}:
                 </span>
                 {displayArticle.tags.map((tag, idx) => (
                   <span key={idx} style={{
@@ -1958,7 +2184,13 @@ const ArticleDetail = ({ initialArticle = null }) => {
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
                   </svg>
                   <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                    Add <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--color-accent)' }}>{settings?.siteName || 'Bedain News'}</span> as a preferred source on Google
+                    {lang === 'zh' ? (
+                      <>在 Google 上将 <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--color-accent)' }}>{settings?.siteName || 'Bedain News'}</span> 添加为首选新闻源</>
+                    ) : lang === 'en' ? (
+                      <>Add <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--color-accent)' }}>{settings?.siteName || 'Bedain News'}</span> as a preferred source on Google</>
+                    ) : (
+                      <>Tambahkan <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: 'var(--color-accent)' }}>{settings?.siteName || 'Bedain News'}</span> sebagai sumber favorit di Google</>
+                    )}
                   </span>
                 </div>
                 <span style={{ fontSize: '24px', fontWeight: 700, color: '#1a73e8', lineHeight: 1 }}>+</span>
@@ -1970,24 +2202,71 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 color: 'var(--color-text-primary)',
                 fontWeight: 600
               }}>
-                Cek Berita dan Artikel yang lain di{' '}
-                <a 
-                  href={settings?.googleNewsUrl || "https://news.google.com/search?q=bedainnews.com&hl=id&gl=ID&ceid=ID%3Aid"} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
-                >
-                  Google News
-                </a>
-                {' '}dan{' '}
-                <a 
-                  href={settings?.waChannelUrl || (settings?.contactWhatsapp ? `https://api.whatsapp.com/send?phone=${settings.contactWhatsapp}&text=Halo%20Redaksi%20Bedain%20News` : "https://whatsapp.com")} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
-                >
-                  WA Channel
-                </a>
+                {lang === 'zh' ? (
+                  <>
+                    在{' '}
+                    <a 
+                      href={settings?.googleNewsUrl || "https://news.google.com/search?q=bedainnews.com&hl=zh&gl=CN"} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
+                    >
+                      Google News
+                    </a>
+                    {' '}与{' '}
+                    <a 
+                      href={settings?.waChannelUrl || (settings?.contactWhatsapp ? `https://api.whatsapp.com/send?phone=${settings.contactWhatsapp}&text=Halo%20Redaksi%20Bedain%20News` : "https://whatsapp.com")} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
+                    >
+                      WA Channel
+                    </a>
+                    {' '}查看更多新闻与文章
+                  </>
+                ) : lang === 'en' ? (
+                  <>
+                    Explore more news and articles on{' '}
+                    <a 
+                      href={settings?.googleNewsUrl || "https://news.google.com/search?q=bedainnews.com&hl=en&gl=US"} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
+                    >
+                      Google News
+                    </a>
+                    {' '}and{' '}
+                    <a 
+                      href={settings?.waChannelUrl || (settings?.contactWhatsapp ? `https://api.whatsapp.com/send?phone=${settings.contactWhatsapp}&text=Halo%20Redaksi%20Bedain%20News` : "https://whatsapp.com")} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
+                    >
+                      WA Channel
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    Cek Berita dan Artikel yang lain di{' '}
+                    <a 
+                      href={settings?.googleNewsUrl || "https://news.google.com/search?q=bedainnews.com&hl=id&gl=ID&ceid=ID%3Aid"} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
+                    >
+                      Google News
+                    </a>
+                    {' '}dan{' '}
+                    <a 
+                      href={settings?.waChannelUrl || (settings?.contactWhatsapp ? `https://api.whatsapp.com/send?phone=${settings.contactWhatsapp}&text=Halo%20Redaksi%20Bedain%20News` : "https://whatsapp.com")} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#e63946', fontWeight: 800, textDecoration: 'none' }}
+                    >
+                      WA Channel
+                    </a>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1995,12 +2274,12 @@ const ArticleDetail = ({ initialArticle = null }) => {
             {(() => {
               const totalReactions = Object.values(reactionCounts).reduce((a, b) => a + b, 0) || 1;
               const reactionItems = [
-                { type: 'like', emoji: '👍', label: 'Suka', count: reactionCounts.like || 0, color: '#2563eb' },
-                { type: 'insightful', emoji: '💡', label: 'Bermanfaat', count: reactionCounts.insightful || 0, color: '#10b981' },
-                { type: 'fire', emoji: '🔥', label: 'Memukau', count: reactionCounts.fire || 0, color: '#f97316' },
-                { type: 'love', emoji: '❤️', label: 'Inspiratif', count: reactionCounts.love || 0, color: '#ec4899' },
-                { type: 'shock', emoji: '😲', label: 'Mengejutkan', count: reactionCounts.shock || 0, color: '#8b5cf6' },
-                { type: 'sad', emoji: '😢', label: 'Sedih', count: reactionCounts.sad || 0, color: '#06b6d4' }
+                { type: 'like', emoji: '👍', label: lang === 'zh' ? '喜欢' : lang === 'en' ? 'Like' : 'Suka', count: reactionCounts.like || 0, color: '#2563eb' },
+                { type: 'insightful', emoji: '💡', label: lang === 'zh' ? '有益' : lang === 'en' ? 'Insightful' : 'Bermanfaat', count: reactionCounts.insightful || 0, color: '#10b981' },
+                { type: 'fire', emoji: '🔥', label: lang === 'zh' ? '火爆' : lang === 'en' ? 'Fire' : 'Memukau', count: reactionCounts.fire || 0, color: '#f97316' },
+                { type: 'love', emoji: '❤️', label: lang === 'zh' ? '感动' : lang === 'en' ? 'Inspiring' : 'Inspiratif', count: reactionCounts.love || 0, color: '#ec4899' },
+                { type: 'shock', emoji: '😲', label: lang === 'zh' ? '震惊' : lang === 'en' ? 'Shocking' : 'Mengejutkan', count: reactionCounts.shock || 0, color: '#8b5cf6' },
+                { type: 'sad', emoji: '😢', label: lang === 'zh' ? '难过' : lang === 'en' ? 'Sad' : 'Sedih', count: reactionCounts.sad || 0, color: '#06b6d4' }
               ];
 
               return (
@@ -2020,13 +2299,17 @@ const ArticleDetail = ({ initialArticle = null }) => {
                       letterSpacing: '0.5px',
                       marginBottom: '10px'
                     }}>
-                      ✨ RESPONS PEMBACA
+                      ✨ {lang === 'zh' ? '读者反馈' : lang === 'en' ? 'READER REACTIONS' : 'RESPONS PEMBACA'}
                     </span>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', margin: '0 0 6px 0', fontFamily: 'var(--font-heading)' }}>
-                      Bagaimana reaksi Anda terhadap artikel ini?
+                      {lang === 'zh' ? '您对这篇文章有何看法？' : lang === 'en' ? 'How do you feel about this article?' : 'Bagaimana reaksi Anda terhadap artikel ini?'}
                     </h3>
                     <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0 }}>
-                      {totalReactions} pembaca telah memberikan respons
+                      {lang === 'zh'
+                        ? `${totalReactions} 位读者已表达观点`
+                        : lang === 'en'
+                        ? `${totalReactions} readers have reacted`
+                        : `${totalReactions} pembaca telah memberikan respons`}
                     </p>
                   </div>
 
@@ -2064,7 +2347,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                               {item.label}
                             </span>
                             <span style={{ fontSize: '9.5px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                              {item.count} suara
+                              {item.count} {lang === 'zh' ? '票' : lang === 'en' ? 'votes' : 'suara'}
                             </span>
                           </div>
 
@@ -2098,7 +2381,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
             {relatedArticles.length > 0 && (
               <div style={{ marginTop: '24px', borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-primary)' }}>
-                  <Flame size={20} color="var(--color-accent)" /> Baca Juga
+                  <Flame size={20} color="var(--color-accent)" /> {t('article.readAlso') || 'Baca Juga'}
                 </h3>
                 <div className="related-grid">
                   {relatedArticles.slice(0, 6).map(rel => (
@@ -2143,7 +2426,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                               alignItems: 'center',
                               gap: '4px'
                             }}>
-                              <span>{rel.category}</span>
+                              <span>{t(`categories.${rel.category?.toLowerCase()?.replace(/[^a-z0-9]+/g, '-')}`) || rel.category}</span>
                             </div>
                           )}
                           <h4
@@ -2160,7 +2443,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                               overflow: 'hidden'
                             }}
                           >
-                            {rel.title}
+                            {translateArticleTitle(rel)}
                           </h4>
                         </div>
                       </div>
@@ -2191,7 +2474,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'var(--color-accent)', filter: 'blur(60px)', opacity: 0.3 }}></div>
                 <h3 style={{ color: '#fff', marginBottom: '12px', fontSize: '1.4rem', fontFamily: 'var(--font-heading)', position: 'relative', zIndex: 2 }}>BEDAIN<span>NEWS</span> PLUS</h3>
                 <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6, position: 'relative', zIndex: 2 }}>
-                  Tingkatkan pengalaman membaca Anda tanpa iklan dan akses ke konten eksklusif premium.
+                  {lang === 'zh' ? '升级您的阅读体验，享受无广告与独家深度内容。' : lang === 'en' ? 'Upgrade your reading experience with no ads and exclusive premium content.' : 'Tingkatkan pengalaman membaca Anda tanpa iklan dan akses ke konten eksklusif premium.'}
                 </p>
                 <Link href="/page/tentang-kami" className="btn" style={{ 
                   background: '#fff', 
@@ -2206,7 +2489,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   zIndex: 2,
                   boxShadow: '0 4px 12px rgba(255,255,255,0.2)'
                 }}>
-                  Langganan Sekarang
+                  {lang === 'zh' ? '立即订阅' : lang === 'en' ? 'Subscribe Now' : 'Langganan Sekarang'}
                 </Link>
               </div>
             </div>
@@ -2258,10 +2541,10 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   letterSpacing: '0.8px',
                   marginBottom: '10px'
                 }}>
-                  <Sparkles size={14} /> Rekomendasi Redaksi
+                  <Sparkles size={14} /> {lang === 'zh' ? '编辑精选' : lang === 'en' ? 'Editorial Pick' : 'Rekomendasi Redaksi'}
                 </div>
                 <h2 className="related-news-title">
-                  Berita Terkait & Pilihan Untuk Anda
+                  {lang === 'zh' ? '相关新闻与精选推荐' : lang === 'en' ? 'Related News & Top Picks' : 'Berita Terkait & Pilihan Untuk Anda'}
                 </h2>
               </div>
 
@@ -2279,7 +2562,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   background: 'rgba(230, 57, 70, 0.08)'
                 }}
               >
-                Lihat Semua Berita →
+                {lang === 'zh' ? '查看全部新闻 →' : lang === 'en' ? 'View All News →' : 'Lihat Semua Berita →'}
               </Link>
             </div>
 
@@ -2339,7 +2622,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                           letterSpacing: '0.5px',
                           border: '1px solid rgba(255,255,255,0.15)'
                         }}>
-                          {item.category}
+                          {t(`categories.${item.category?.toLowerCase()?.replace(/[^a-z0-9]+/g, '-')}`) || item.category}
                         </div>
                       )}
                     </div>
@@ -2364,7 +2647,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden'
                       }}>
-                        {item.title}
+                        {translateArticleTitle(item)}
                       </h3>
 
                     </div>
@@ -2441,10 +2724,10 @@ const ArticleDetail = ({ initialArticle = null }) => {
               </div>
               <div style={{ overflow: 'hidden' }}>
                 <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  ⚡ BACA SELANJUTNYA
+                  ⚡ {lang === 'zh' ? '阅读下一篇' : lang === 'en' ? 'READ NEXT' : 'BACA SELANJUTNYA'}
                 </span>
                 <h4 style={{ margin: '2px 0 0 0', fontSize: '13px', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>
-                  {nextArt.title}
+                  {translateArticleTitle(nextArt)}
                 </h4>
               </div>
             </Link>
@@ -2466,7 +2749,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                 boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)'
               }}
             >
-              <span>Lanjut</span>
+              <span>{lang === 'zh' ? '继续' : lang === 'en' ? 'Next' : 'Lanjut'}</span>
               <ArrowRight size={14} />
             </Link>
           </div>
@@ -2507,8 +2790,10 @@ const ArticleDetail = ({ initialArticle = null }) => {
                <Share2 size={24} />
              </div>
 
-             <h3 style={{ color: 'var(--color-text-primary)', fontSize: '1.3rem', fontFamily: 'var(--font-heading)', margin: '0 0 6px 0', fontWeight: 800 }}>Bagikan Artikel Ini</h3>
-             <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', margin: '0 0 20px 0', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article?.title}</p>
+             <h3 style={{ color: 'var(--color-text-primary)', fontSize: '1.3rem', fontFamily: 'var(--font-heading)', margin: '0 0 6px 0', fontWeight: 800 }}>
+               {lang === 'zh' ? '分享此文章' : lang === 'en' ? 'Share this Article' : 'Bagikan Artikel Ini'}
+             </h3>
+             <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', margin: '0 0 20px 0', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{displayArticle?.title || article?.title}</p>
              
              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                  {/* WhatsApp */}
@@ -2516,14 +2801,14 @@ const ArticleDetail = ({ initialArticle = null }) => {
                    onClick={() => {
                      const publicUrl = getPublicArticleUrl(article);
                      const title = displayArticle?.title || article?.title || 'Bedain News';
-                     const desc = article?.seoDescription || article?.excerpt || '';
+                     const desc = displayArticle?.seoDescription || displayArticle?.excerpt || article?.seoDescription || article?.excerpt || '';
                      const shareText = `*${title}*\n\n${desc ? desc + '\n\n' : ''}Baca selengkapnya di Bedain News:\n${publicUrl}`;
                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
                      setShowShareModal(false);
                    }}
                    style={{ background: '#25D366', color: '#fff', padding: '13px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'opacity 0.2s' }}
                  >
-                   <span>Bagikan ke WhatsApp</span>
+                   <span>{lang === 'zh' ? '分享到 WhatsApp' : lang === 'en' ? 'Share to WhatsApp' : 'Bagikan ke WhatsApp'}</span>
                  </button>
 
                  {/* Telegram */}
@@ -2536,13 +2821,13 @@ const ArticleDetail = ({ initialArticle = null }) => {
                    }}
                    style={{ background: '#0088cc', color: '#fff', padding: '13px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'opacity 0.2s' }}
                  >
-                   <span>Bagikan ke Telegram</span>
+                   <span>{lang === 'zh' ? '分享到 Telegram' : lang === 'en' ? 'Share to Telegram' : 'Bagikan ke Telegram'}</span>
                  </button>
 
                  {/* Social Media Grid: X, Facebook, LinkedIn */}
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                    <a 
-                     href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article?.title || 'Bedain News')}&url=${encodeURIComponent(getPublicArticleUrl(article))}`} 
+                     href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(displayArticle?.title || article?.title || 'Bedain News')}&url=${encodeURIComponent(getPublicArticleUrl(article))}`} 
                      target="_blank" 
                      rel="noopener noreferrer" 
                      onClick={() => setShowShareModal(false)}
@@ -2577,7 +2862,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                        try {
                          const publicUrl = getPublicArticleUrl(article);
                          const title = displayArticle?.title || article?.title || 'Bedain News';
-                         const text = article?.seoDescription || article?.excerpt || `${title} - Bedain News`;
+                         const text = displayArticle?.seoDescription || displayArticle?.excerpt || article?.seoDescription || article?.excerpt || `${title} - Bedain News`;
                          await navigator.share({ title, text, url: publicUrl });
                          setShowShareModal(false);
                        } catch (e) {
@@ -2589,7 +2874,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                      style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', padding: '12px', borderRadius: '12px', fontWeight: 700, fontSize: '13.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                    >
                      <Share2 size={16} color="var(--color-accent)" />
-                     <span>Aplikasi Lainnya (Sistem)</span>
+                     <span>{lang === 'zh' ? '其他系统应用' : lang === 'en' ? 'Other Apps (System)' : 'Aplikasi Lainnya (Sistem)'}</span>
                    </button>
                  )}
 
@@ -2605,7 +2890,7 @@ const ArticleDetail = ({ initialArticle = null }) => {
                    }}
                  >
                    {copied ? <Check size={18} color="#22c55e" /> : <Link2 size={18} />}
-                   <span>{copied ? 'Tautan Berhasil Disalin!' : 'Salin Tautan'}</span>
+                   <span>{copied ? (lang === 'zh' ? '链接已成功复制!' : lang === 'en' ? 'Link Copied!' : 'Tautan Berhasil Disalin!') : (lang === 'zh' ? '复制链接' : lang === 'en' ? 'Copy Link' : 'Salin Tautan')}</span>
                  </button>
              </div>
           </div>

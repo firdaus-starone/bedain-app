@@ -25,7 +25,12 @@ const writePopularCommentsCache = (data) => {
   } catch (e) {}
 };
 
+import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
+
 const PopularCommentsWidget = () => {
+  const { t, lang } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const [popularArticles, setPopularArticles] = useState(() => {
     return readPopularCommentsCache() || [];
   });
@@ -92,21 +97,27 @@ const PopularCommentsWidget = () => {
   if (loading) return null; // Don't render if loading to avoid flashing
   if (popularArticles.length === 0) return null; // Don't render if no comments yet
 
+  const widgetTitle = t('sidebar.popular_comments') || (lang === 'zh' ? '热评文章' : lang === 'en' ? 'Most Discussed' : 'Banyak Dikomentari');
+
   return (
     <div className="sidebar-widget popular-comments-widget" style={{ marginBottom: '24px' }}>
       <h3 className="widget-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <MessageSquare size={18} color="var(--color-accent)" />
-        Banyak Dikomentari
+        {widgetTitle}
       </h3>
       <div className="trending-list">
         {popularArticles.map((item, index) => (
           <Link key={item.slug} href={`/article/${item.slug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
             <div className="trending-item" style={{ cursor: 'pointer', padding: '12px 0', borderBottom: index < popularArticles.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
               <div className="trending-content" style={{ width: '100%', paddingLeft: 0 }}>
-                <h4 style={{ fontSize: '0.95rem', marginBottom: '6px', lineHeight: '1.4' }}>{item.title}</h4>
+                <h4 style={{ fontSize: '0.95rem', marginBottom: '6px', lineHeight: '1.4' }}>
+                  {translateArticleTitle({ title: item.title })}
+                </h4>
                 <span className="trending-views" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                   <MessageSquare size={12} />
-                  <span>{item.count} Komentar Diskusi</span>
+                  <span>
+                    {lang === 'zh' ? `${item.count} 条讨论` : lang === 'en' ? `${item.count} Comments` : `${item.count} Komentar Diskusi`}
+                  </span>
                 </span>
               </div>
             </div>

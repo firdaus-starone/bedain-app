@@ -21,6 +21,7 @@ import BottomNav from './BottomNav';
 import { getArticleCardImage } from '../lib/videoHelpers';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useI18n } from '../hooks/useI18n';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 
 const getCategoryIcon = (cat) => {
   const text = (cat.name + ' ' + (cat.slug || '')).toLowerCase();
@@ -47,7 +48,8 @@ const getCategoryIcon = (cat) => {
 
 const Navbar = () => {
   const router = useRouter();
-  const { t, lang } = useI18n();
+  const { t, lang, changeLanguage } = useI18n();
+  const { translateArticleTitle } = useAutoTranslate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState(typeof window !== 'undefined' ? localStorage.getItem('theme') || 'dark' : 'dark');
   const { settings, loading } = useSiteSettings();
@@ -383,7 +385,7 @@ const Navbar = () => {
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {item.title}
+                            {translateArticleTitle(item)}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                             {item.category || 'Berita'}
@@ -439,6 +441,11 @@ const Navbar = () => {
               <MonitorPlay size={20} color="#ff0000" />
             </button>
 
+            {/* Language Switcher Desktop */}
+            <div className="desktop-only-lang">
+              <LanguageSwitcher variant="dropdown" />
+            </div>
+
             {/* User Dropdown Menu */}
             <div style={{ position: 'relative' }}>
               <button 
@@ -486,19 +493,19 @@ const Navbar = () => {
                       onClick={() => { setShowUserMenu(false); router.push('/admin/login'); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
                     >
-                      <User size={18} /> Profil Saya
+                      <User size={18} /> {t('user_menu.profile') || 'Profil Saya'}
                     </button>
                     <button 
                       onClick={() => { setShowUserMenu(false); setShowSubscribeModal(true); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
                     >
-                      <Bell size={18} /> Notifikasi
+                      <Bell size={18} /> {t('user_menu.notifications') || 'Notifikasi'}
                     </button>
                     <button 
                       onClick={() => { setShowUserMenu(false); setShowBookmarksModal(true); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
                     >
-                      <Bookmark size={18} /> Baca Nanti ({bookmarks.length})
+                      <Bookmark size={18} /> {t('user_menu.bookmarks') || 'Baca Nanti'} ({bookmarks.length})
                     </button>
                     <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }}></div>
                     <button 
@@ -506,11 +513,73 @@ const Navbar = () => {
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'transparent', border: 'none', color: 'var(--color-text-primary)', width: '100%', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
                     >
                       {theme === 'light' ? (
-                        <><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> Mode Gelap</>
+                        <><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> {t('user_menu.dark_mode') || 'Mode Gelap'}</>
                       ) : (
-                        <><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> Mode Terang</>
+                        <><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> {t('user_menu.light_mode') || 'Mode Terang'}</>
                       )}
                     </button>
+
+                    <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }}></div>
+                    
+                    {/* Pilihan Bahasa di Menu Profil (Mobile & Quick Switch) */}
+                    <div style={{ padding: '8px 16px 10px 16px' }}>
+                      <div style={{ 
+                        fontSize: '11px', 
+                        fontWeight: 700, 
+                        color: 'var(--color-text-secondary)', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.6px', 
+                        marginBottom: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <Globe size={13} style={{ color: 'var(--color-accent)' }} /> 
+                        {lang === 'zh' ? '语言 / LANGUAGE' : lang === 'en' ? 'LANGUAGE' : 'PILIHAN BAHASA'}
+                      </div>
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(3, 1fr)', 
+                        gap: '6px' 
+                      }}>
+                        {[
+                          { code: 'id', flag: '🇮🇩', label: 'ID' },
+                          { code: 'en', flag: '🇺🇸', label: 'EN' },
+                          { code: 'zh', flag: '🇨🇳', label: 'ZH' }
+                        ].map((item) => {
+                          const isActive = lang === item.code;
+                          return (
+                            <button
+                              key={item.code}
+                              type="button"
+                              onClick={() => {
+                                changeLanguage(item.code);
+                                setShowUserMenu(false);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                padding: '8px 4px',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: isActive ? 800 : 500,
+                                background: isActive ? 'var(--color-accent)' : 'var(--color-bg-primary)',
+                                color: isActive ? '#fff' : 'var(--color-text-secondary)',
+                                border: isActive ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: isActive ? '0 2px 8px rgba(230, 57, 70, 0.35)' : 'none'
+                              }}
+                            >
+                              <span style={{ fontSize: '14px' }}>{item.flag}</span>
+                              <span>{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
@@ -705,29 +774,37 @@ const Navbar = () => {
               </button>
             </div>
             <div className="side-menu-body">
-              <div className="side-menu-section-title">NAVIGASI UTAMA</div>
+              {/* Language Switcher Mobile Drawer */}
+              <div className="side-menu-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span>{t('navigation.language_choice') || 'PILIHAN BAHASA / LANGUAGE'}</span>
+              </div>
+              <div style={{ padding: '0 0 16px 0', borderBottom: '1px solid var(--color-border, #333)', marginBottom: '16px' }}>
+                <LanguageSwitcher variant="inline" />
+              </div>
+
+              <div className="side-menu-section-title">{t('navigation.main_nav') || 'NAVIGASI UTAMA'}</div>
               <ul className="side-menu-list single-col">
                 <li>
                   <Link href="/" onClick={() => { setIsMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                     <span className="cat-icon-wrapper" style={{ color: 'var(--color-accent)' }}><Home size={18} /></span>
-                    <span className="cat-text">Beranda</span>
+                    <span className="cat-text">{t('navigation.home') || 'Beranda'}</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/cari?q=Terbaru" onClick={() => setIsMenuOpen(false)}>
                     <span className="cat-icon-wrapper" style={{ color: '#3b82f6' }}><Clock size={18} /></span>
-                    <span className="cat-text">Berita Terbaru</span>
+                    <span className="cat-text">{t('navigation.latest') || 'Berita Terbaru'}</span>
                   </Link>
                 </li>
                 <li>
                   <Link href="/cari?q=Trending" onClick={() => setIsMenuOpen(false)}>
                     <span className="cat-icon-wrapper" style={{ color: '#f59e0b' }}><TrendingUp size={18} /></span>
-                    <span className="cat-text">Berita Populer / Trending</span>
+                    <span className="cat-text">{t('navigation.trending') || 'Berita Populer / Trending'}</span>
                   </Link>
                 </li>
               </ul>
 
-              <div className="side-menu-section-title">KATEGORI PILIHAN</div>
+              <div className="side-menu-section-title">{t('navigation.featured_categories') || 'KATEGORI PILIHAN'}</div>
               <ul className="side-menu-list">
                 {headerMenus.length > 0 ? (
                   headerMenus.map(menu => (
@@ -756,7 +833,7 @@ const Navbar = () => {
                             if (el) {
                               e.preventDefault();
                               el.scrollIntoView({ behavior: 'smooth' });
-                            } else if (elFallback) {
+                              } else if (elFallback) {
                               e.preventDefault();
                               elFallback.scrollIntoView({ behavior: 'smooth' });
                             } else {
@@ -770,7 +847,7 @@ const Navbar = () => {
                         }}
                       >
                         <span className="cat-icon-wrapper" style={{ color: 'var(--color-text-secondary)' }}>{getCategoryIcon({ name: menu.label, slug: '' })}</span>
-                        <span className="cat-text">{menu.label}</span>
+                        <span className="cat-text">{t(`categories.${menu.url.replace('/#kategori-', '').replace('/#', '').replace('/', '')}`) || t(`categories.${menu.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? menu.label_en || menu.label : lang === 'zh' ? menu.label_zh || menu.label : menu.label)}</span>
                       </a>
                     </li>
                   ))
@@ -806,7 +883,7 @@ const Navbar = () => {
                         }}
                       >
                         <span className="cat-icon-wrapper" style={{ color: 'var(--color-text-secondary)' }}>{getCategoryIcon(cat)}</span>
-                        <span className="cat-text">{cat.name}</span>
+                        <span className="cat-text">{t(`categories.${cat.slug || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) || (lang === 'en' ? cat.name_en || cat.name : lang === 'zh' ? cat.name_zh || cat.name : cat.name)}</span>
                       </a>
                     </li>
                   ))
@@ -821,19 +898,19 @@ const Navbar = () => {
                 )}
               </ul>
 
-              <div className="side-menu-section-title">PARTISIPASI PUBLIK</div>
+              <div className="side-menu-section-title">{t('navigation.public_participation') || 'PARTISIPASI PUBLIK'}</div>
               <ul className="side-menu-list single-col">
                 <li>
                   <Link href="/kirim-tulisan" onClick={() => setIsMenuOpen(false)} style={{ color: 'var(--color-accent)', fontWeight: 700 }}>
                     <span className="cat-icon-wrapper" style={{ color: 'var(--color-accent)' }}><PenTool size={18} /></span>
-                    <span className="cat-text">Kirim Opini / Berita Warga</span>
+                    <span className="cat-text">{t('navigation.submit_opinion') || 'Kirim Opini / Berita Warga'}</span>
                   </Link>
                 </li>
               </ul>
 
               <div className="side-menu-pages-section">
                 <div className="side-menu-section-title">
-                  Informasi & Layanan
+                  {t('navigation.info_services') || 'Informasi & Layanan'}
                 </div>
                 <div className="side-menu-pages-grid">
                   {sidePages.map(page => (
@@ -858,7 +935,7 @@ const Navbar = () => {
                     style={{ border: '1px solid var(--color-accent)', backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
                   >
                     <span className="cat-icon-wrapper" style={{ color: 'var(--color-accent)' }}><PenTool size={18} /></span>
-                    <span className="cat-text" style={{ color: 'var(--color-accent)', fontWeight: 700 }}>Kirim Tulisan</span>
+                    <span className="cat-text" style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{t('navigation.submit_article') || 'Kirim Tulisan'}</span>
                   </Link>
                   <Link href="/kontak"
                     onClick={() => {
@@ -869,7 +946,7 @@ const Navbar = () => {
                     style={{ border: '1px solid #3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
                   >
                     <span className="cat-icon-wrapper" style={{ color: '#3b82f6' }}><Info size={18} /></span>
-                    <span className="cat-text" style={{ color: '#3b82f6', fontWeight: 700 }}>Hubungi & Kerja Sama</span>
+                    <span className="cat-text" style={{ color: '#3b82f6', fontWeight: 700 }}>{t('navigation.contact_coop') || 'Hubungi & Kerja Sama'}</span>
                   </Link>
                 </div>
               </div>
@@ -1082,7 +1159,7 @@ const Navbar = () => {
                           WebkitBoxOrient: 'vertical',
                           overflow: 'hidden'
                         }}>
-                          {item.title}
+                          {translateArticleTitle(item)}
                         </h5>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>

@@ -7,6 +7,7 @@ import { getArticleCardImage } from '../lib/videoHelpers';
 import VideoBadge from '../components/VideoBadge';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 
 // Mode hemat kuota: cache hasil di sessionStorage selama 10 menit
@@ -33,6 +34,7 @@ const SearchPage = () => {
   const [searchInput, setSearchInput] = useState(queryParam);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { translateArticleTitle } = useAutoTranslate();
   
   // Smart Search Tabs & Sorting
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('Semua');
@@ -443,7 +445,7 @@ const SearchPage = () => {
                     </div>
                     <div className="detik-list-content" style={{ flex: 1, paddingLeft: '2px' }}>
                       <h3 className="detik-list-title" style={{ fontSize: '0.98rem', marginBottom: '8px', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {article.title}
+                        {translateArticleTitle(article)}
                       </h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

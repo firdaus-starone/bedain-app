@@ -152,7 +152,18 @@ service cloud.firestore {
       // idealnya di production hanya admin yg boleh write
       allow read, write: if true;
     }
+
+    // Koleksi Log Aktivitas Tim Redaksi (Audit Trail Khusus Superadmin)
+    match /activity_logs/{logId} {
+      // Hanya Superadmin yang berhak membaca & membersihkan log audit
+      allow read, delete: if hasRole(['superadmin']);
+      // Tim redaksi yang terotentikasi berhak mencatat riwayat aktivitas mereka
+      allow create: if isAuthenticated();
+      // Log audit tidak boleh diedit demi menjaga integritas data
+      allow update: if false;
+    }
   }
 }
+
 
 
