@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { collection, query, orderBy, getDocs, where, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Kamus ikon filosofis dan modern untuk kategori berita
 const ICON_MAP: Record<string, string> = {
@@ -77,6 +78,7 @@ const getIconForSlug = (slug: string) => {
 export default function CategoriesModal() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const { t, getCategoryName } = useLanguage();
   const [categories, setCategories] = useState<{ id: string, name: string, slug: string, color: string, icon: string }[]>([]);
   const [regions, setRegions] = useState<{ id: string, name: string, color: string, icon: string }[]>([]);
   const [popularTags, setPopularTags] = useState<{ name: string, count: number }[]>([]);
@@ -190,8 +192,8 @@ export default function CategoriesModal() {
   return (
     <View style={[styles.container, dyn.bg]}>
       {/* Header Tab */}
-      <View style={[styles.header, dyn.header, { paddingTop: Platform.OS === 'android' ? 40 : 50 }]}>
-        <Text style={[styles.headerTitle, dyn.headerTitle]}>Kategori Berita</Text>
+      <View style={[styles.header, dyn.header, { paddingTop: Platform.OS === 'android' ? 40 : 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+        <Text style={[styles.headerTitle, dyn.headerTitle]}>{t('navigation.categories', 'Kategori Berita')}</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -254,7 +256,7 @@ export default function CategoriesModal() {
                   <View style={[styles.iconContainer, { backgroundColor: `${cat.color}15` }]}>
                     <Ionicons name={cat.icon as any} size={22} color={cat.color} />
                   </View>
-                  <Text style={[styles.categoryName, dyn.categoryName]}>{cat.name}</Text>
+                  <Text style={[styles.categoryName, dyn.categoryName]}>{getCategoryName(cat.slug || cat.name)}</Text>
                 </TouchableOpacity>
               ))}
             </View>

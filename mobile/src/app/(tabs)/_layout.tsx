@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, StyleSheet, Platform, Image, Animated } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -137,6 +138,7 @@ function SamuraiShineHomeIcon({ focused, logoUrl }: { focused: boolean; logoUrl:
 
 export default function Layout() {
   const { isDarkMode, colors } = useTheme();
+  const { t } = useLanguage();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -179,24 +181,24 @@ export default function Layout() {
       <Tabs.Screen
         name="categories"
         options={{
-          title: 'Kategori',
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>Kategori</Text>,
+          title: t('navigation.categories', 'Kategori'),
+          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.categories', 'Kategori')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "compass" : "compass-outline"} size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="submit"
         options={{
-          title: 'Kirim',
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>Kirim</Text>,
+          title: t('navigation.send', 'Kirim'),
+          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.send', 'Kirim')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "pencil" : "pencil-outline"} size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Beranda',
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>Beranda</Text>,
+          title: t('navigation.home', 'Beranda'),
+          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.home', 'Beranda')}</Text>,
           tabBarIcon: ({ focused }) => (
             <SamuraiShineHomeIcon focused={focused} logoUrl={logoUrl} />
           ),
@@ -205,16 +207,16 @@ export default function Layout() {
       <Tabs.Screen
         name="hot"
         options={{
-          title: 'Hangat',
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>Hangat</Text>,
+          title: t('navigation.hot', 'Hangat'),
+          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.hot', 'Hangat')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="video"
         options={{
-          title: 'Video',
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>Video</Text>,
+          title: t('navigation.video', 'Video'),
+          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.video', 'Video')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={28} color={color} />,
         }}
       />

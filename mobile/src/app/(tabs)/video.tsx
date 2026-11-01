@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useLanguage } from '../../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ const getArticleVideoId = (article: any) => {
 };
 
 const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, isScreenFocused }: any) => {
+  const { getArticleTitle, getCategoryName } = useLanguage();
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [showTitleBlocker, setShowTitleBlocker] = useState(true);
   
@@ -219,10 +221,10 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, i
             onPress={openWatchDetail}
           >
             <View style={styles.tagWrap}>
-              <Text style={styles.tagText}>{(item.category || 'Video').toUpperCase()}</Text>
+              <Text style={styles.tagText}>{getCategoryName(item.category || 'Video').toUpperCase()}</Text>
             </View>
             <Text style={styles.titleText} numberOfLines={2}>
-              {item.title}
+              {getArticleTitle(item)}
             </Text>
             <Text style={styles.authorText}>
               {item.contributorName || item.author?.name || 'Bedain News'}

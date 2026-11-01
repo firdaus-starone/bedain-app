@@ -5,10 +5,12 @@ import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function HotScreen() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const { lang, t, getArticleTitle, getCategoryName } = useLanguage();
   const [articles, setArticles] = useState<any[]>([]);
 
   useEffect(() => {
@@ -56,9 +58,9 @@ export default function HotScreen() {
         <View style={styles.headerIconContainer}>
           <Ionicons name="flame" size={24} color="#ffffff" />
         </View>
-        <View>
-          <Text style={[styles.headerTitle, dyn.headerTitle]}>Sedang Hangat</Text>
-          <Text style={styles.headerSubtitle}>Berita paling banyak dibaca saat ini</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.headerTitle, dyn.headerTitle]}>{t('home.hot_topics', 'Sedang Hangat')}</Text>
+          <Text style={styles.headerSubtitle}>{t('home.trending_desc', 'Berita paling banyak dibaca saat ini')}</Text>
         </View>
       </View>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}>
@@ -69,7 +71,7 @@ export default function HotScreen() {
           let dateStr = 'Baru saja';
           if (item.publishedAt) {
             const dateObj = typeof item.publishedAt.toDate === 'function' ? item.publishedAt.toDate() : new Date(item.publishedAt);
-            dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            dateStr = dateObj.toLocaleDateString(lang === 'en' ? 'en-US' : lang === 'zh' ? 'zh-CN' : 'id-ID', { day: 'numeric', month: 'short' });
           }
 
           return (
@@ -79,8 +81,8 @@ export default function HotScreen() {
               </View>
               
               <View style={styles.cardContent}>
-                <Text style={styles.category}>{item.category?.toUpperCase() || 'BERITA'}</Text>
-                <Text style={[styles.title, dyn.title]} numberOfLines={3}>{item.title}</Text>
+                <Text style={styles.category}>{getCategoryName(item.category).toUpperCase() || 'BERITA'}</Text>
+                <Text style={[styles.title, dyn.title]} numberOfLines={3}>{getArticleTitle(item)}</Text>
                 <Text style={[styles.dateText, dyn.date]}>{dateStr}</Text>
               </View>
 

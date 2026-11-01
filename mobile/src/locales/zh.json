@@ -1,6 +1,10 @@
 {
   "navigation": {
     "home": "首页",
+    "categories": "分类",
+    "submit": "投稿",
+    "hot": "热门",
+    "video": "视频",
     "trending": "热门",
     "search": "搜索新闻...",
     "search_btn": "搜索",
@@ -28,9 +32,21 @@
     "related": "相关",
     "popular": "热门",
     "comments": "评论",
-    "translate": "正在翻译成当地语言..."
+    "translate": "正在翻译成当地语言...",
+    "translating": "正在翻译文章至",
+    "translated": "已翻译成",
+    "show_original": "显示原文",
+    "show_translation": "显示译文",
+    "auto_translated_notice": "本文章由 Bedain News AI 智能系统自动翻译。"
   },
   "home": {
+    "tabs": {
+      "terkini": "最新",
+      "rekomendasi": "推荐",
+      "populer": "热门",
+      "redaksi": "编辑部",
+      "komentar": "评论"
+    },
     "latest": "最新",
     "popular": "当下热门",
     "seeMore": "查看更多",
@@ -38,10 +54,16 @@
     "local_news": "您身边的资讯",
     "nearby": "附近",
     "editorialDesk": "编辑部",
-    "editorialChoice": "编辑精选文章",
+    "editorialChoice": "编辑精选",
     "new_articles_available": "有新文章发布",
     "click_to_load": "点击刷新",
     "hot_topics": "热门话题",
+    "quick_news": "快讯",
+    "reader_comments": "读者评论",
+    "other_news": "更多新闻",
+    "load_more": "加载更多",
+    "all_loaded": "已加载全部新闻",
+    "trending_desc": "阅读量最高的十大热门新闻",
     "opinion": "精选观点",
     "latest_news": "最新新闻"
   },

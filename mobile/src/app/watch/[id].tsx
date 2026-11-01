@@ -9,6 +9,7 @@ import { db } from '../../lib/firebase';
 import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 import { DonationBox } from '../../components/DonationBox';
 const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
@@ -31,6 +32,7 @@ export default function VideoDetail() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
   const { user } = useAuth();
+  const { lang, t, getArticleTitle, getCategoryName } = useLanguage();
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { width: contentWidth } = useWindowDimensions();
@@ -344,7 +346,7 @@ export default function VideoDetail() {
       >
         {/* Judul dan Meta di atas Gambar */}
         <View style={{ paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 120 : 130, paddingBottom: 16 }}>
-          <Text style={[styles.title, dyn.textMain]}>{article.title}</Text>
+          <Text style={[styles.title, dyn.textMain]}>{getArticleTitle(article)}</Text>
           <View style={[styles.metaRow, { marginBottom: 0 }]}>
             <View style={[styles.authorContainer, { flex: 1 }]}>
               <View style={{ flex: 1 }}>
@@ -356,7 +358,7 @@ export default function VideoDetail() {
                     {article.contributorName || article.author?.name || 'Redaksi'}
                   </Text>
                   <View style={[styles.categoryBadge, { flexShrink: 0, marginTop: 1 }]}>
-                    <Text style={styles.categoryText}>{article.category?.toUpperCase() || 'BERITA'}</Text>
+                    <Text style={styles.categoryText}>{getCategoryName(article.category).toUpperCase() || 'BERITA'}</Text>
                   </View>
                 </View>
                 <Text style={[styles.date, dyn.textMuted]}>{dateStr}</Text>
@@ -968,7 +970,7 @@ export default function VideoDetail() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 4 }}>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
           <TouchableOpacity style={styles.bookmarkButton} onPress={handleShare}>
             <Ionicons name="share-social-outline" size={24} color={dyn.textMain.color} />
           </TouchableOpacity>

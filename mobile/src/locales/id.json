@@ -1,6 +1,10 @@
 {
   "navigation": {
     "home": "Beranda",
+    "categories": "Kategori",
+    "submit": "Kirim",
+    "hot": "Hangat",
+    "video": "Video",
     "trending": "Topik Hangat",
     "search": "Cari berita...",
     "search_btn": "Cari",
@@ -28,9 +32,21 @@
     "related": "Terkait",
     "popular": "Terpopuler",
     "comments": "Komentar",
-    "translate": "Menerjemahkan ke bahasa lokal..."
+    "translate": "Menerjemahkan ke bahasa lokal...",
+    "translating": "Menerjemahkan artikel ke",
+    "translated": "Diterjemahkan ke",
+    "show_original": "Tampilkan Asli",
+    "show_translation": "Tampilkan Terjemahan",
+    "auto_translated_notice": "Artikel ini diterjemahkan secara otomatis oleh sistem AI Bedain News."
   },
   "home": {
+    "tabs": {
+      "terkini": "Terkini",
+      "rekomendasi": "Rekomendasi",
+      "populer": "Populer",
+      "redaksi": "Meja Redaksi",
+      "komentar": "Komentar"
+    },
     "latest": "Terbaru",
     "popular": "Sedang Hangat",
     "seeMore": "Lihat Selengkapnya",
@@ -38,10 +54,16 @@
     "local_news": "Berita Sekitar Anda",
     "nearby": "Terdekat",
     "editorialDesk": "Meja Redaksi",
-    "editorialChoice": "Pilihan Artikel Terbaik dari Redaksi Kami",
+    "editorialChoice": "Pilihan Redaksi",
     "new_articles_available": "Berita Baru Tersedia",
     "click_to_load": "Klik untuk Memuat",
     "hot_topics": "Topik Hangat",
+    "quick_news": "Sekilas Berita",
+    "reader_comments": "Komentar Pembaca",
+    "other_news": "Berita Lainnya",
+    "load_more": "Muat Lebih Banyak",
+    "all_loaded": "Semua Berita Sudah Ditampilkan",
+    "trending_desc": "10 Berita terpopuler dengan pembaca terbanyak",
     "opinion": "Opini Pilihan",
     "latest_news": "Berita Terkini"
   },

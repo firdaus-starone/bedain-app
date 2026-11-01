@@ -1,6 +1,10 @@
 {
   "navigation": {
     "home": "Home",
+    "categories": "Categories",
+    "submit": "Submit",
+    "hot": "Trending",
+    "video": "Videos",
     "trending": "Trending",
     "search": "Search news...",
     "search_btn": "Search",
@@ -28,9 +32,21 @@
     "related": "Related",
     "popular": "Popular",
     "comments": "Comments",
-    "translate": "Translating to local language..."
+    "translate": "Translating to local language...",
+    "translating": "Translating article to",
+    "translated": "Translated to",
+    "show_original": "Show Original",
+    "show_translation": "Show Translation",
+    "auto_translated_notice": "This article was automatically translated by Bedain News AI system."
   },
   "home": {
+    "tabs": {
+      "terkini": "Latest",
+      "rekomendasi": "Recommended",
+      "populer": "Popular",
+      "redaksi": "Editorial",
+      "komentar": "Comments"
+    },
     "latest": "Latest",
     "popular": "Trending Now",
     "seeMore": "See More",
@@ -38,10 +54,16 @@
     "local_news": "News Around You",
     "nearby": "Nearby",
     "editorialDesk": "Editorial Desk",
-    "editorialChoice": "Best Articles Chosen by Our Editors",
+    "editorialChoice": "Editorial Choice",
     "new_articles_available": "New Articles Available",
     "click_to_load": "Click to Load",
     "hot_topics": "Hot Topics",
+    "quick_news": "Quick News",
+    "reader_comments": "Reader Comments",
+    "other_news": "More News",
+    "load_more": "Load More",
+    "all_loaded": "All Articles Loaded",
+    "trending_desc": "Top 10 most popular articles with highest readership",
     "opinion": "Opinion",
     "latest_news": "Latest News"
   },

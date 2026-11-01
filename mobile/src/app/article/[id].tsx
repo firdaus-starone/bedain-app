@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, Dimensions, useWindowDimensions, Platform, Animated, TextInput, Share, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, Dimensions, useWindowDimensions, Platform, Animated, TextInput, Share, Alert, Linking, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,7 +9,6 @@ import RenderHtml, { defaultSystemFonts } from 'react-native-render-html';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { LanguageSelector } from '../../components/LanguageSelector';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 import { DonationBox } from '../../components/DonationBox';
 import { ArticleKeyPoints } from '../../components/ArticleKeyPoints';
@@ -25,8 +24,11 @@ export default function ArticleDetail() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
   const { user } = useAuth();
-  const { lang, getArticleTitle, getArticleContent, getArticleExcerpt, t } = useLanguage();
+  const { lang, getArticleTitle, getArticleContent, getArticleExcerpt, loadFullArticleTranslation, t } = useLanguage();
   const [article, setArticle] = useState<any>(null);
+  const [translatedArticle, setTranslatedArticle] = useState<any>(null);
+  const [isTranslatingArticle, setIsTranslatingArticle] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
   const [loading, setLoading] = useState(true);
   const { width: contentWidth } = useWindowDimensions();
   const [commentText, setCommentText] = useState('');
@@ -285,9 +287,63 @@ export default function ArticleDetail() {
     }
   };
 
-  const displayTitle = getArticleTitle(article);
-  const displayContent = getArticleContent(article);
-  const displayExcerpt = getArticleExcerpt(article);
+  // Auto-translate full article effect
+  useEffect(() => {
+    if (!article || !article.id) return;
+    if (lang === 'id' || showOriginal) {
+      setTranslatedArticle(null);
+      setIsTranslatingArticle(false);
+      return;
+    }
+
+    const hasStatic = lang === 'en'
+      ? (article.title_en && article.content_en)
+      : (article.title_zh && article.content_zh);
+
+    if (hasStatic) {
+      setTranslatedArticle(null);
+      setIsTranslatingArticle(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const runTranslation = async () => {
+      setIsTranslatingArticle(true);
+      try {
+        const result = await loadFullArticleTranslation(article);
+        if (!isCancelled && result) {
+          setTranslatedArticle(result);
+        }
+      } catch (e) {
+        console.warn('Failed to load full article translation:', e);
+      } finally {
+        if (!isCancelled) {
+          setIsTranslatingArticle(false);
+        }
+      }
+    };
+
+    runTranslation();
+    return () => {
+      isCancelled = true;
+    };
+  }, [article?.id, lang, showOriginal]);
+
+  const displayTitle = (translatedArticle && !showOriginal)
+    ? translatedArticle.title
+    : getArticleTitle(article);
+
+  const displayContent = (translatedArticle && !showOriginal)
+    ? translatedArticle.content
+    : getArticleContent(article);
+
+  const displayExcerpt = (translatedArticle && !showOriginal)
+    ? translatedArticle.excerpt
+    : getArticleExcerpt(article);
+
+  const displayKeyPoints = (translatedArticle && !showOriginal && translatedArticle.keyPoints?.length > 0)
+    ? translatedArticle.keyPoints
+    : (article?.keyPoints || []);
 
   let dateStr = 'Baru saja';
   if (article.publishedAt) {
@@ -327,6 +383,48 @@ export default function ArticleDetail() {
         {/* Judul dan Meta di atas Gambar */}
         <View style={{ paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 120 : 130, paddingBottom: 16 }}>
           <Text style={[styles.title, dyn.textMain]}>{displayTitle}</Text>
+
+          {/* Banner Status Terjemahan */}
+          {isTranslatingArticle && (
+            <View style={[styles.translationBanner, { backgroundColor: isDarkMode ? '#1e293b' : '#eff6ff', borderColor: isDarkMode ? '#3b82f6' : '#93c5fd' }]}>
+              <ActivityIndicator size="small" color="#3b82f6" style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 12, color: isDarkMode ? '#93c5fd' : '#1e40af', fontWeight: '600' }}>
+                {t('article.translating', 'Menerjemahkan artikel ke')} {lang === 'en' ? 'English' : '中文'}...
+              </Text>
+            </View>
+          )}
+
+          {translatedArticle && !showOriginal && (
+            <View style={[styles.translationBanner, { backgroundColor: isDarkMode ? '#1e293b' : '#f0fdf4', borderColor: isDarkMode ? '#22c55e' : '#86efac' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 6 }}>
+                <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
+                <Text style={{ fontSize: 12, color: isDarkMode ? '#86efac' : '#166534', fontWeight: '600', flexShrink: 1 }}>
+                  {t('article.translated', 'Diterjemahkan ke')} {lang === 'en' ? 'English' : '中文'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowOriginal(true)} style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 11, color: '#3b82f6', fontWeight: '700' }}>
+                  {t('article.show_original', 'Lihat Asli')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {showOriginal && lang !== 'id' && (
+            <View style={[styles.translationBanner, { backgroundColor: isDarkMode ? '#1e293b' : '#fefce8', borderColor: isDarkMode ? '#eab308' : '#fde047' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 6 }}>
+                <Ionicons name="information-circle" size={16} color="#ca8a04" />
+                <Text style={{ fontSize: 12, color: isDarkMode ? '#fde047' : '#854d0e', fontWeight: '600', flexShrink: 1 }}>
+                  Bahasa Asli (ID)
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowOriginal(false)} style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 11, color: '#3b82f6', fontWeight: '700' }}>
+                  {t('article.show_translation', 'Tampilkan Terjemahan')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={[styles.metaRow, { marginBottom: 0 }]}>
             <View style={[styles.authorContainer, { flex: 1 }]}>
               <View style={{ flex: 1 }}>
@@ -400,10 +498,10 @@ export default function ArticleDetail() {
           )}
 
           {/* 🎧 Dengarkan Berita AI (Podcast Narator) */}
-          <ArticleAudioPlayer article={article} />
+          <ArticleAudioPlayer article={{ ...article, title: displayTitle, content: displayContent }} />
 
           {/* ⚡ 3 Detik Paham (Poin Utama / TL;DR) */}
-          <ArticleKeyPoints article={article} />
+          <ArticleKeyPoints article={{ ...article, keyPoints: displayKeyPoints }} />
 
           {/* Isi Artikel */}
           <View style={styles.articleBody}>
@@ -903,7 +1001,6 @@ export default function ArticleDetail() {
         </View>
 
         <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-          <LanguageSelector variant="button" />
           <TouchableOpacity style={styles.bookmarkButton} onPress={handleShare}>
             <Ionicons name="share-social-outline" size={24} color={dyn.textMain.color} />
           </TouchableOpacity>
@@ -1252,5 +1349,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#334155',
     lineHeight: 18,
+  },
+  translationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 10,
+    marginBottom: 8,
   },
 });

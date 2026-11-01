@@ -8,7 +8,6 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs, onSnapshot, wh
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { LanguageSelector } from '../../components/LanguageSelector';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 
 const HOT_TOPICS = [
@@ -39,7 +38,12 @@ const getYouTubeId = (input: string) => {
   return match ? match[1] : null;
 };
 
-const mapArticle = (a: any, lang: string | number = 'id') => {
+const mapArticle = (
+  a: any,
+  lang: string | number = 'id',
+  getTitleFn?: (article: any) => string,
+  getExcerptFn?: (article: any) => string
+) => {
   const activeLang = typeof lang === 'string' ? lang : 'id';
   let dateStr = 'Baru saja';
   if (a.publishedAt) {
@@ -68,11 +72,18 @@ const mapArticle = (a: any, lang: string | number = 'id') => {
   }
 
   let finalTitle = a.title || 'Tanpa Judul';
-  if (activeLang === 'en' && a.title_en) finalTitle = a.title_en;
-  else if (activeLang === 'zh' && a.title_zh) finalTitle = a.title_zh;
+  if (getTitleFn) {
+    finalTitle = getTitleFn(a);
+  } else if (activeLang === 'en' && a.title_en) {
+    finalTitle = a.title_en;
+  } else if (activeLang === 'zh' && a.title_zh) {
+    finalTitle = a.title_zh;
+  }
 
   let finalExcerpt = a.excerpt || a.seoDescription || '';
-  if (activeLang === 'en' && (a.excerpt_en || a.seoDescription_en)) {
+  if (getExcerptFn) {
+    finalExcerpt = getExcerptFn(a);
+  } else if (activeLang === 'en' && (a.excerpt_en || a.seoDescription_en)) {
     finalExcerpt = a.excerpt_en || a.seoDescription_en;
   } else if (activeLang === 'zh' && (a.excerpt_zh || a.seoDescription_zh)) {
     finalExcerpt = a.excerpt_zh || a.seoDescription_zh;
@@ -143,7 +154,7 @@ const PulsingDot = () => {
 export default function Home() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
-  const { lang, t, getCategoryName } = useLanguage();
+  const { lang, t, getCategoryName, getArticleTitle, getArticleExcerpt, version } = useLanguage();
   const { width: screenWidth } = useWindowDimensions();
   const [categories, setCategories] = useState<{ name: string, slug: string }[]>([]);
   const [activeTab, setActiveTab] = useState<'terkini' | 'rekomendasi' | 'populer' | 'redaksi' | 'komentar'>('terkini');
@@ -152,6 +163,14 @@ export default function Home() {
   const scrollViewRef = useRef<any>(null);
   const horizontalScrollRef = useRef<ScrollView>(null);
   const tabBarScrollRef = useRef<ScrollView>(null);
+
+  const homeTabs = useMemo(() => [
+    { id: 'terkini', label: t('home.tabs.terkini', 'Terkini') },
+    { id: 'rekomendasi', label: t('home.tabs.rekomendasi', 'Rekomendasi') },
+    { id: 'populer', label: t('home.tabs.populer', 'Populer') },
+    { id: 'redaksi', label: t('home.tabs.redaksi', 'Meja Redaksi') },
+    { id: 'komentar', label: t('home.tabs.komentar', 'Komentar') },
+  ], [t, lang]);
 
   const markTabVisited = (tabId: string) => {
     setVisitedTabs(prev => {
@@ -165,7 +184,7 @@ export default function Home() {
   const handleTabChange = (tabId: any) => {
     markTabVisited(tabId);
     setActiveTab(tabId);
-    const index = HOME_TABS.findIndex(t => t.id === tabId);
+    const index = homeTabs.findIndex(t => t.id === tabId);
     if (index !== -1 && horizontalScrollRef.current) {
       horizontalScrollRef.current.scrollTo({
         x: index * screenWidth,
@@ -177,8 +196,8 @@ export default function Home() {
   const handleHorizontalScrollEnd = (e: any) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / screenWidth);
-    if (index >= 0 && index < HOME_TABS.length) {
-      const nextTab = HOME_TABS[index].id as any;
+    if (index >= 0 && index < homeTabs.length) {
+      const nextTab = homeTabs[index].id as any;
       markTabVisited(nextTab);
       if (nextTab !== activeTab) {
         setActiveTab(nextTab);
@@ -187,13 +206,13 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const index = HOME_TABS.findIndex(t => t.id === activeTab);
+    const index = homeTabs.findIndex(t => t.id === activeTab);
     if (index !== -1 && tabBarScrollRef.current) {
       const approxTabWidth = 100;
       const targetX = Math.max(0, index * approxTabWidth - screenWidth / 2 + approxTabWidth / 2);
       tabBarScrollRef.current.scrollTo({ x: targetX, animated: true });
     }
-  }, [activeTab, screenWidth]);
+  }, [activeTab, screenWidth, homeTabs]);
 
   const [siteSettings, setSiteSettings] = useState({
     siteName: 'Bedain News',
@@ -255,7 +274,7 @@ export default function Home() {
         }
       }
 
-      const validDocs = docs.filter(filterPublished).map(d => mapArticle(d, lang));
+      const validDocs = docs.filter(filterPublished).map(d => mapArticle(d, lang, getArticleTitle, getArticleExcerpt));
       setDbRedaksiArticles(validDocs);
     } catch (err) {
       console.error('Error fetching redaksi articles:', err);
@@ -272,7 +291,7 @@ export default function Home() {
       );
       const snapC = await getDocs(qC);
       const docs = snapC.docs.map(d => ({ id: d.id, ...d.data() }));
-      const valid = docs.filter(filterPublished).map(d => mapArticle(d, lang));
+      const valid = docs.filter(filterPublished).map(d => mapArticle(d, lang, getArticleTitle, getArticleExcerpt));
       setDbCommentedArticles(valid);
     } catch (err) {
       console.error('Error fetching commented articles:', err);
@@ -450,8 +469,8 @@ export default function Home() {
     MOST_COMMENTED_ARTICLES,
     EXTRA_ARTICLES
   } = useMemo(() => {
-    const allMapped = rawArticles.map(a => mapArticle(a, lang));
-    const breaking = rawArticles.filter(a => a.isBreakingNews).map(a => mapArticle(a, lang));
+    const allMapped = rawArticles.map(a => mapArticle(a, lang, getArticleTitle, getArticleExcerpt));
+    const breaking = rawArticles.filter(a => a.isBreakingNews).map(a => mapArticle(a, lang, getArticleTitle, getArticleExcerpt));
     
     // Urutan Berita Terbaru Secara Natural (Sesuai Waktu Publish)
     const mainFeed = allMapped;
@@ -539,7 +558,7 @@ export default function Home() {
       MOST_COMMENTED_ARTICLES: mostCommentedArticles || [],
       EXTRA_ARTICLES: extra || []
     };
-  }, [rawArticles, dbRedaksiArticles, dbCommentedArticles, allApprovedComments, lang]);
+  }, [rawArticles, dbRedaksiArticles, dbCommentedArticles, allApprovedComments, lang, version]);
 
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -697,7 +716,6 @@ export default function Home() {
           </Text>
         </View>
         <View style={styles.headerIcons}>
-          <LanguageSelector variant="button" />
           <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/search')}>
             <Ionicons name="search-outline" size={22} color={dyn.iconColor} />
           </TouchableOpacity>
@@ -716,7 +734,7 @@ export default function Home() {
           showsHorizontalScrollIndicator={false} 
           contentContainerStyle={styles.tabBarScroll}
         >
-          {HOME_TABS.map((tab) => {
+          {homeTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <TouchableOpacity
@@ -777,7 +795,7 @@ export default function Home() {
             {/* TOPIK HANGAT & BREAKING NEWS */}
             <View style={[styles.hotTopicContainer, dyn.card, dyn.borderBottom]}>
           <View style={[styles.hotTopicLabel, currentTicker.type === 'breaking' ? { backgroundColor: '#ef4444' } : {}]}>
-            <Text style={styles.hotTopicLabelText}>{currentTicker.type === 'breaking' ? 'BREAKING NEWS' : 'TOPIK HANGAT'}</Text>
+            <Text style={styles.hotTopicLabelText}>{currentTicker.type === 'breaking' ? t('breaking_news.breaking', 'BREAKING NEWS') : t('breaking_news.topic', 'TOPIK HANGAT')}</Text>
           </View>
           <Animated.View style={{ flex: 1, paddingRight: 16, opacity: tickerOpacity, transform: [{ translateY: tickerTranslateY }] }}>
             {currentTicker.type === 'breaking' ? (
@@ -833,7 +851,7 @@ export default function Home() {
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
                 <View style={styles.terkiniOverlay}>
                   <View style={[styles.terkiniBadge, { backgroundColor: item.videoUrl ? 'red' : '#3b82f6' }]}>
-                    <Text style={styles.terkiniBadgeText}>{item.videoUrl ? 'VIDEO' : 'TERKINI'}</Text>
+                    <Text style={styles.terkiniBadgeText}>{item.videoUrl ? 'VIDEO' : t('home.tabs.terkini', 'TERKINI')}</Text>
                   </View>
                   <View style={styles.terkiniTextContainer}>
                     <Text style={styles.terkiniTitle} numberOfLines={2}>{item.title}</Text>
@@ -865,7 +883,7 @@ export default function Home() {
               </TouchableOpacity>
               {RELATED_ARTICLES.length > 0 && (
                 <View style={styles.relatedBox}>
-                  <Text style={styles.relatedTitle}>TERKAIT</Text>
+                  <Text style={styles.relatedTitle}>{t('article.related', 'TERKAIT')}</Text>
                   <View style={styles.relatedList}>
                     {RELATED_ARTICLES.map(related => (
                       <TouchableOpacity key={`related-${related.id}`} style={{ flex: 1, marginRight: 8 }} onPress={() => related.videoUrl ? router.push(`/watch/${related.id}` as any) : router.push(`/article/${related.id}`)}>
@@ -883,7 +901,7 @@ export default function Home() {
 
         {/* --- DAFTAR BERITA STANDAR (List) --- */}
         <View style={styles.bottomSectionHeader}>
-          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Terbaru</Text>
+          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>{t('home.latest_news', 'Berita Terbaru')}</Text>
         </View>
         <View style={styles.listContainer}>
           {BERITA_LIST.map((item, index) => (
@@ -921,7 +939,7 @@ export default function Home() {
         
         {/* SECTION BERITA TERBARU (MIXED LAYOUT) */}
         <View style={styles.bottomSectionHeader}>
-          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Lebih Banyak Berita</Text>
+          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>{t('home.other_news', 'Lebih Banyak Berita')}</Text>
         </View>
         <View style={styles.mixedListContainer}>
           {LATEST_NEWS.map((item, index) => {
@@ -1152,14 +1170,14 @@ export default function Home() {
                 onPress={() => setExtraVisibleCount(prev => prev + 15)}
               >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: isDarkMode ? '#60a5fa' : '#1b61d1' }}>
-                  Muat Lebih Banyak Berita (+15)
+                  {t('home.load_more', 'Muat Lebih Banyak Berita')} (+15)
                 </Text>
                 <Ionicons name="chevron-down" size={16} color={isDarkMode ? '#60a5fa' : '#1b61d1'} />
               </TouchableOpacity>
             ) : (
               <View style={{ marginTop: 16, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 12, color: isDarkMode ? '#64748b' : '#94a3b8' }}>
-                  Semua berita terbaru sudah ditampilkan
+                  {t('home.all_loaded', 'Semua berita terbaru sudah ditampilkan')}
                 </Text>
               </View>
             )}
