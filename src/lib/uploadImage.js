@@ -56,8 +56,8 @@ const applyWatermark = (file) => {
         ctx.shadowColor = "transparent";
         
         canvas.toBlob((blob) => {
-          resolve(new File([blob], file.name, { type: file.type }));
-        }, file.type);
+          resolve(new File([blob], file.name, { type: file.type || 'image/jpeg' }));
+        }, file.type || 'image/jpeg', 0.92);
       };
       logo.onerror = () => {
         resolve(file); // Jika gagal memuat logo, kembalikan file asli
@@ -69,9 +69,10 @@ const applyWatermark = (file) => {
 };
 
 /**
- * Kompres gambar, beri watermark, ubah format ke webp (jika didukung browser), lalu unggah ke Firebase.
+ * Kompres gambar, beri watermark, lalu unggah ke Firebase.
+ * Kualitas dioptimalkan agar tetap tajam dan jernih di semua ukuran layar (Desktop & Mobile).
  * @param {File} imageFile - File gambar dari input
- * @param {string} path - Path/folder di storage, misal 'articles/cover'
+ * @param {string} path - Path/folder di storage, misal 'articles/images'
  * @returns {Promise<string>} - URL gambar setelah diunggah
  */
 export const uploadAndCompressImage = async (imageFile, path = 'articles/images', uid = null) => {
@@ -79,12 +80,13 @@ export const uploadAndCompressImage = async (imageFile, path = 'articles/images'
 
   const isPNG = imageFile.type === 'image/png';
 
-  // 1. Opsi Kompresi & Konversi (Sangat Penting untuk WhatsApp/FB OG Meta)
+  // Opsi Kompresi Optimal: Resolusi tinggi (1600px) & batas ukuran 800KB agar gambar tajam & tidak blur/pecah
   const options = {
-    maxSizeMB: 0.25, // Maksimal 250KB (Batas aman WhatsApp < 300KB)
-    maxWidthOrHeight: 1200, // Dimensi maksimal 1200px
-    useWebWorker: false, // MATIKAN web worker karena sering hang di production (Vite)
-    fileType: isPNG ? 'image/png' : 'image/jpeg' // Pertahankan PNG agar transparan, selain itu JPG
+    maxSizeMB: 0.8, // Maksimal 800KB (sangat cukup untuk kejernihan tinggi tanpa memberatkan loading)
+    maxWidthOrHeight: 1600, // Maksimal 1600px (tajam di layar Retina / monitor laptop)
+    initialQuality: 0.88, // Kualitas awal tinggi agar detail tidak luntur
+    useWebWorker: false,
+    fileType: isPNG ? 'image/png' : 'image/jpeg'
   };
 
   try {

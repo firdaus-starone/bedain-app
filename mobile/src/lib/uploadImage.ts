@@ -16,11 +16,11 @@ export async function uploadArticleCover(originalUri: string): Promise<string> {
     throw new Error('URI gambar tidak valid.');
   }
 
-  // 1. Kompresi awal di perangkat: resize maks 1200px lebar
+  // 1. Kompresi awal di perangkat: resize maks 1400px lebar dengan kualitas 90%
   const manipResult = await ImageManipulator.manipulateAsync(
     originalUri,
-    [{ resize: { width: 1200 } }],
-    { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+    [{ resize: { width: 1400 } }],
+    { compress: 0.90, format: ImageManipulator.SaveFormat.JPEG }
   );
 
   let finalBlob: Blob | null = null;
