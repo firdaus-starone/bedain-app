@@ -77,8 +77,8 @@ const AdBanner = ({ slot = 'article' }) => {
       const hasLink = Boolean(banner.targetUrl && banner.targetUrl.trim() !== '' && banner.targetUrl !== '#');
 
       return (
-        <div className="sponsor-slot-header-wrapper">
-          <div className="sponsor-banner sponsor-slot-header" style={{ marginBottom: 0 }}>
+        <div className="sponsor-slot-header-wrapper" style={{ width: '100%', margin: 0, padding: 0 }}>
+          <div className="sponsor-banner sponsor-slot-header" style={{ width: '100%', margin: 0, padding: 0, borderRadius: 0 }}>
             <a
               href={hasLink ? banner.targetUrl : undefined}
               target={hasLink ? '_blank' : undefined}
@@ -86,9 +86,11 @@ const AdBanner = ({ slot = 'article' }) => {
               className="sponsor-banner-link"
               style={{
                 display: 'block',
+                width: '100%',
                 textDecoration: 'none',
                 position: 'relative',
                 overflow: 'hidden',
+                borderRadius: 0,
                 color: '#ffffff',
                 background: '#070a12',
                 cursor: hasLink ? 'pointer' : 'default'
@@ -105,6 +107,7 @@ const AdBanner = ({ slot = 'article' }) => {
                     justifyContent: 'center',
                     position: 'relative',
                     overflow: 'hidden',
+                    borderRadius: 0,
                     background: '#070a12'
                   }}
                 >
@@ -117,7 +120,8 @@ const AdBanner = ({ slot = 'article' }) => {
                       height: 'auto',
                       maxHeight: '260px',
                       display: 'block',
-                      objectFit: 'contain'
+                      objectFit: 'contain',
+                      borderRadius: 0
                     }}
                   />
                 </div>
