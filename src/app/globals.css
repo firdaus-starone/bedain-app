@@ -4511,10 +4511,6 @@ body {
   .desktop-only-lang {
     display: none !important;
   }
-  .mobile-only-lang {
-    display: flex !important;
-    align-items: center;
-  }
 }
 @media (max-width: 768px) {
   .article-ai-translate-banner {

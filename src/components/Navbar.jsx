@@ -437,11 +437,6 @@ const Navbar = () => {
               <LanguageSwitcher variant="dropdown" />
             </div>
 
-            {/* Language Switcher Mobile */}
-            <div className="mobile-only-lang">
-              <LanguageSwitcher variant="dropdown" />
-            </div>
-
             {/* User Dropdown Menu */}
             <div style={{ position: 'relative' }}>
               <button 
