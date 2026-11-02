@@ -163,11 +163,22 @@ export async function POST(request) {
       }
     }
 
+    const isZh = targetLang === 'zh';
+    const hasFailures = allTranslations.some((trans, idx) => {
+      const orig = cleanedTexts[idx];
+      if (!orig) return false;
+      if (!trans || trans === orig) return true;
+      if (isZh && !/[\u4e00-\u9fa5]/.test(trans)) return true;
+      return false;
+    });
+
     return NextResponse.json(
       { translations: allTranslations },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200',
+          'Cache-Control': hasFailures 
+            ? 'no-store, no-cache, must-revalidate' 
+            : 'public, s-maxage=86400, stale-while-revalidate=43200',
         },
       }
     );

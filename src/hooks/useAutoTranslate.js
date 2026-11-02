@@ -9,16 +9,22 @@ const memoryCache = {
   en: {},
 };
 
-// Queue for debounced batch translation
+// Queue and lock controls
 let pendingBatch = new Set();
 let batchTimeout = null;
+const inFlight = new Set();
+const recentFailures = new Map();
 const listeners = new Set();
 
 const notifyListeners = () => {
-  listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (e) {}
+  });
 };
 
-const isValidTranslation = (original, translated, targetLang) => {
+export const isValidTranslation = (original, translated, targetLang) => {
   if (!translated || typeof translated !== 'string') return false;
   const origTrim = (original || '').trim();
   const transTrim = translated.trim();
@@ -43,6 +49,7 @@ const isValidTranslation = (original, translated, targetLang) => {
   return true;
 };
 
+// Fast single client fallback using Google Translate (CORS friendly)
 const translateSingleClientFallback = async (text, targetLang) => {
   try {
     const tl = targetLang === 'zh' ? 'zh-CN' : targetLang;
@@ -74,16 +81,55 @@ const translateSingleClientFallback = async (text, targetLang) => {
   return null;
 };
 
+// Check memory cache or sync with localStorage
+const getFromCache = (text, targetLang) => {
+  if (!text || targetLang === 'id') return null;
+  const clean = typeof text === 'string' ? text.trim() : '';
+  if (!clean) return null;
+
+  // 1. Direct in-memory check
+  const mem = memoryCache[targetLang]?.[text] || memoryCache[targetLang]?.[clean];
+  if (mem && isValidTranslation(clean, mem, targetLang)) {
+    return mem;
+  }
+
+  // 2. Synchronize from localStorage if missing in memory
+  if (typeof window !== 'undefined') {
+    try {
+      if (!memoryCache[targetLang]) {
+        memoryCache[targetLang] = {};
+      }
+      const stored = localStorage.getItem(`bedain_titles_${targetLang}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        Object.assign(memoryCache[targetLang], parsed);
+        const hit = memoryCache[targetLang][text] || memoryCache[targetLang][clean];
+        if (hit && isValidTranslation(clean, hit, targetLang)) {
+          return hit;
+        }
+      }
+    } catch (e) {}
+  }
+
+  return null;
+};
+
 const processBatch = async (targetLang) => {
   if (pendingBatch.size === 0 || targetLang === 'id') return;
 
   const textsToTranslate = Array.from(pendingBatch);
   pendingBatch.clear();
 
+  // Mark all as in-flight to prevent re-entry loops
+  textsToTranslate.forEach((t) => inFlight.add(`${targetLang}:${t}`));
+
   if (!memoryCache[targetLang]) {
     memoryCache[targetLang] = {};
   }
 
+  let hasNewTranslations = false;
+
+  // 1. Try batch translation via server API
   try {
     const res = await fetch('/api/translate-text', {
       method: 'POST',
@@ -94,7 +140,6 @@ const processBatch = async (targetLang) => {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data.translations)) {
-        let hasNew = false;
         textsToTranslate.forEach((original, idx) => {
           const translated = data.translations[idx];
           if (translated && isValidTranslation(original, translated, targetLang)) {
@@ -103,19 +148,16 @@ const processBatch = async (targetLang) => {
             if (cleanOrig) {
               memoryCache[targetLang][cleanOrig] = translated;
             }
-            hasNew = true;
+            hasNewTranslations = true;
           }
         });
-        if (hasNew) {
-          notifyListeners();
-        }
       }
     }
   } catch (err) {
     console.warn('Batch translate via server failed, using client fallback:', err);
   }
 
-  // Client-side fallback for any items that failed or were missed
+  // 2. Immediately fall back on client for any untranslated or missing items
   const missingTexts = textsToTranslate.filter((t) => {
     const clean = (t || '').trim();
     const cached = memoryCache[targetLang]?.[t] || memoryCache[targetLang]?.[clean];
@@ -125,38 +167,40 @@ const processBatch = async (targetLang) => {
   if (missingTexts.length > 0) {
     await Promise.all(
       missingTexts.map(async (text) => {
-        const fallbackTrans = await translateSingleClientFallback(text, targetLang);
-        if (fallbackTrans) {
-          const clean = (text || '').trim();
+        const clean = (text || '').trim();
+        const fallbackTrans = await translateSingleClientFallback(clean, targetLang);
+        if (fallbackTrans && isValidTranslation(clean, fallbackTrans, targetLang)) {
           memoryCache[targetLang][text] = fallbackTrans;
           if (clean) {
             memoryCache[targetLang][clean] = fallbackTrans;
           }
-          notifyListeners();
+          hasNewTranslations = true;
+        } else {
+          recentFailures.set(`${targetLang}:${clean}`, Date.now());
         }
       })
     );
   }
 
-  // Persist to localStorage
-  try {
-    if (typeof window !== 'undefined') {
+  // Release in-flight markers
+  textsToTranslate.forEach((t) => inFlight.delete(`${targetLang}:${t}`));
+
+  // 3. Persist to localStorage & notify UI listeners
+  if (hasNewTranslations && typeof window !== 'undefined') {
+    try {
       const existing = JSON.parse(localStorage.getItem(`bedain_titles_${targetLang}`) || '{}');
       const merged = { ...existing, ...memoryCache[targetLang] };
       localStorage.setItem(`bedain_titles_${targetLang}`, JSON.stringify(merged));
-    }
-  } catch (e) {}
-
-  notifyListeners();
+    } catch (e) {}
+    notifyListeners();
+  }
 };
 
 export const useAutoTranslate = () => {
   const { lang } = useI18n();
   const [, setVersion] = useState(0);
-  const langRef = useRef(lang);
-  langRef.current = lang;
 
-  // Initialize memory cache from localStorage once and sanitize invalid entries
+  // Initialize memory cache from localStorage on language change
   useEffect(() => {
     if (typeof window !== 'undefined' && lang !== 'id') {
       try {
@@ -198,27 +242,24 @@ export const useAutoTranslate = () => {
     const cleanText = typeof text === 'string' ? text.trim() : '';
     if (!cleanText) return;
 
-    const cached = memoryCache[targetLang]?.[text] || memoryCache[targetLang]?.[cleanText];
-    if (cached && isValidTranslation(cleanText, cached, targetLang)) return;
+    // Check if already in cache
+    const cached = getFromCache(cleanText, targetLang);
+    if (cached) return;
+
+    // Check if already in flight or failed recently (within 30s)
+    const reqKey = `${targetLang}:${cleanText}`;
+    if (inFlight.has(reqKey)) return;
+    const lastFail = recentFailures.get(reqKey);
+    if (lastFail && Date.now() - lastFail < 30000) return;
 
     pendingBatch.add(cleanText);
-
-    // Jika batch sudah mencapai 6 item (misalnya 5 headline pertama), langsung proses tanpa tunggu
-    if (pendingBatch.size >= 6) {
-      if (batchTimeout) {
-        clearTimeout(batchTimeout);
-        batchTimeout = null;
-      }
-      processBatch(targetLang);
-      return;
-    }
 
     if (batchTimeout) {
       clearTimeout(batchTimeout);
     }
     batchTimeout = setTimeout(() => {
       processBatch(targetLang);
-    }, 40);
+    }, 50);
   }, []);
 
   const translateText = useCallback(
@@ -226,44 +267,24 @@ export const useAutoTranslate = () => {
       if (!text || typeof text !== 'string') return '';
       if (lang === 'id') return text;
 
-      // 1. If explicit manual translation provided, use it
-      if (defaultOverride && typeof defaultOverride === 'string' && defaultOverride.trim()) {
-        return defaultOverride.trim();
-      }
-
       const cleanText = text.trim();
       if (!cleanText) return text;
 
-      // 2. Check memory cache or sync localStorage with validation
-      const cached = memoryCache[lang]?.[text] || memoryCache[lang]?.[cleanText];
-      if (cached && isValidTranslation(cleanText, cached, lang)) {
+      // 1. If explicit manual translation provided and VALID, use it
+      if (defaultOverride && typeof defaultOverride === 'string') {
+        const cleanOverride = defaultOverride.trim();
+        if (cleanOverride && isValidTranslation(cleanText, cleanOverride, lang)) {
+          return cleanOverride;
+        }
+      }
+
+      // 2. Check cache (in-memory or localStorage)
+      const cached = getFromCache(cleanText, lang);
+      if (cached) {
         return cached;
       }
-      if (cached && !isValidTranslation(cleanText, cached, lang)) {
-        delete memoryCache[lang][text];
-        delete memoryCache[lang][cleanText];
-      }
 
-      if (typeof window !== 'undefined') {
-        try {
-          if (!memoryCache[lang] || Object.keys(memoryCache[lang]).length === 0) {
-            const stored = localStorage.getItem(`bedain_titles_${lang}`);
-            if (stored) {
-              memoryCache[lang] = JSON.parse(stored);
-            }
-          }
-          const storedVal = memoryCache[lang]?.[text] || memoryCache[lang]?.[cleanText];
-          if (storedVal && isValidTranslation(cleanText, storedVal, lang)) {
-            return storedVal;
-          }
-          if (storedVal && !isValidTranslation(cleanText, storedVal, lang)) {
-            delete memoryCache[lang][text];
-            delete memoryCache[lang][cleanText];
-          }
-        } catch (e) {}
-      }
-
-      // 3. Queue for translation and return original text as fallback
+      // 3. Queue for background translation and return original text as temporary fallback
       queueTranslation(cleanText, lang);
       return text;
     },
@@ -277,7 +298,10 @@ export const useAutoTranslate = () => {
       if (lang === 'id') return originalTitle;
 
       const staticOverride = lang === 'zh' ? article.title_zh : (lang === 'en' ? article.title_en : null);
-      return translateText(originalTitle, staticOverride);
+      const validOverride = (staticOverride && isValidTranslation(originalTitle, staticOverride, lang)) 
+        ? staticOverride 
+        : null;
+      return translateText(originalTitle, validOverride);
     },
     [lang, translateText]
   );
@@ -291,7 +315,10 @@ export const useAutoTranslate = () => {
       const staticOverride = lang === 'zh' 
         ? (article.excerpt_zh || article.seoDescription_zh) 
         : (lang === 'en' ? (article.excerpt_en || article.seoDescription_en) : null);
-      return translateText(originalExcerpt, staticOverride);
+      const validOverride = (staticOverride && isValidTranslation(originalExcerpt, staticOverride, lang)) 
+        ? staticOverride 
+        : null;
+      return translateText(originalExcerpt, validOverride);
     },
     [lang, translateText]
   );
