@@ -5272,3 +5272,68 @@ body {
     border-radius: 4px !important;
   }
 }
+
+/* ========================================================
+   SPONSOR BANNER STYLES (DESKTOP vs PWA / MOBILE)
+   ======================================================== */
+.sponsor-slot-header-wrapper {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+@media (min-width: 769px) {
+  .sponsor-slot-header-wrapper {
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 8px;
+  }
+  .sponsor-slot-header-wrapper .sponsor-banner-link,
+  .sponsor-slot-header-wrapper .sponsor-banner-img-container,
+  .sponsor-slot-header-wrapper .sponsor-banner-img {
+    border-radius: 12px;
+  }
+}
+
+/* Khusus Tampilan PWA & Mobile: Full Kiri-Kanan Edge-to-Edge Tanpa Sudut Bundar */
+@media (max-width: 768px), all and (display-mode: standalone) {
+  .sponsor-slot-header-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .sponsor-slot-header-wrapper .sponsor-slot-header,
+  .sponsor-slot-header {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+  .sponsor-slot-header-wrapper .sponsor-banner-link,
+  .sponsor-slot-header .sponsor-banner-link {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+  .sponsor-slot-header-wrapper .sponsor-banner-img-container,
+  .sponsor-slot-header .sponsor-banner-img-container {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+  .sponsor-slot-header-wrapper .sponsor-banner-img,
+  .sponsor-slot-header .sponsor-banner-img,
+  .sponsor-slot-header img {
+    width: 100% !important;
+    border-radius: 0 !important;
+    max-height: none !important;
+  }
+
+  /* Semua sudut banner sponsor di PWA/Mobile tanpa sudut bundar */
+  .sponsor-banner,
+  .sponsor-banner-link,
+  .sponsor-banner-placeholder {
+    border-radius: 0 !important;
+  }
+}
+

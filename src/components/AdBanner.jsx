@@ -77,63 +77,66 @@ const AdBanner = ({ slot = 'article' }) => {
       const hasLink = Boolean(banner.targetUrl && banner.targetUrl.trim() !== '' && banner.targetUrl !== '#');
 
       return (
-        <div className="container sponsor-banner sponsor-slot-header" style={{ marginBottom: 0, padding: '0 4px' }}>
-          <a
-            href={hasLink ? banner.targetUrl : undefined}
-            target={hasLink ? '_blank' : undefined}
-            rel={hasLink ? 'noopener noreferrer' : undefined}
-            className="sponsor-banner-link"
-            style={{
-              display: 'block',
-              textDecoration: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              borderRadius: '12px',
-              color: '#ffffff',
-              background: '#070a12',
-              cursor: hasLink ? 'pointer' : 'default'
-            }}
-          >
-            {/* Gambar banner header responsif (tidak terpotong di HP maupun desktop) */}
-            {banner.imageUrl && (
-              <div
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  background: '#070a12'
-                }}
-              >
-                <img
-                  src={banner.imageUrl}
-                  alt={banner.title || 'Header Banner'}
+        <div className="sponsor-slot-header-wrapper">
+          <div className="sponsor-banner sponsor-slot-header" style={{ marginBottom: 0 }}>
+            <a
+              href={hasLink ? banner.targetUrl : undefined}
+              target={hasLink ? '_blank' : undefined}
+              rel={hasLink ? 'noopener noreferrer' : undefined}
+              className="sponsor-banner-link"
+              style={{
+                display: 'block',
+                textDecoration: 'none',
+                position: 'relative',
+                overflow: 'hidden',
+                color: '#ffffff',
+                background: '#070a12',
+                cursor: hasLink ? 'pointer' : 'default'
+              }}
+            >
+              {/* Gambar banner header responsif (tidak terpotong di HP maupun desktop) */}
+              {banner.imageUrl && (
+                <div
+                  className="sponsor-banner-img-container"
                   style={{
                     width: '100%',
-                    height: 'auto',
-                    maxHeight: '260px',
-                    display: 'block',
-                    objectFit: 'contain'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    background: '#070a12'
                   }}
-                />
-              </div>
-            )}
+                >
+                  <img
+                    src={banner.imageUrl}
+                    alt={banner.title || 'Header Banner'}
+                    className="sponsor-banner-img"
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      maxHeight: '260px',
+                      display: 'block',
+                      objectFit: 'contain'
+                    }}
+                  />
+                </div>
+              )}
 
-            {/* Badge IKLAN di sudut kanan atas (tidak menutupi teks banner) */}
-            <div style={{
-              position: 'absolute', top: '8px', right: '10px',
-              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff', fontSize: '9px', fontWeight: 700,
-              padding: '3px 7px', borderRadius: '12px', letterSpacing: '0.5px',
-              display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap',
-              zIndex: 2
-            }}>
-              {(t('ads.ad') || 'IKLAN')} <ExternalLink size={8} />
-            </div>
-          </a>
+              {/* Badge IKLAN di sudut kanan atas (tidak menutupi teks banner) */}
+              <div style={{
+                position: 'absolute', top: '8px', right: '10px',
+                background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', fontSize: '9px', fontWeight: 700,
+                padding: '3px 7px', borderRadius: '12px', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap',
+                zIndex: 2
+              }}>
+                {(t('ads.ad') || 'IKLAN')} <ExternalLink size={8} />
+              </div>
+            </a>
+          </div>
         </div>
       );
     }

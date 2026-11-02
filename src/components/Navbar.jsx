@@ -431,15 +431,6 @@ const Navbar = () => {
               </svg>
             </button>
 
-            {/* YouTube Video Link */}
-            <button
-              className="theme-toggle"
-              aria-label="Video YouTube"
-              onClick={() => router.push('/video')}
-              title="Tonton Video"
-            >
-              <MonitorPlay size={20} color="#ff0000" />
-            </button>
 
             {/* Language Switcher Desktop */}
             <div className="desktop-only-lang">
