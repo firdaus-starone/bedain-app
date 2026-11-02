@@ -829,7 +829,7 @@ export default function Home() {
 
         {/* HEADER BANNER */}
         {headerBanners.length > 0 && (
-          <View style={{ width: '100%', marginTop: 8, marginBottom: 16 }}>
+          <View style={{ width: '100%', marginTop: 0, marginBottom: 0 }}>
             {headerBanners.map((b, index) => (
               <DynamicSponsorBanner
                 key={b.id || `header-banner-${index}`}
@@ -1639,7 +1639,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   terkiniScroll: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   terkiniCard: {
     width: CARD_WIDTH,
