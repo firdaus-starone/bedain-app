@@ -1175,12 +1175,21 @@ export default function Home() {
                     activeOpacity={0.7}
                     onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
                   >
-                    {/* Kiri: Jumlah Komentar */}
-                    <View style={[styles.mostCommentedPill, dyn.commentPill]}>
-                      <Ionicons name="chatbubble-ellipses" size={14} color={dyn.commentIconColor} />
-                      <Text style={[styles.mostCommentedPillText, dyn.commentPillText]}>
-                        {item.commentCount || 0}
-                      </Text>
+                    {/* Kiri: Icon Komentar Lebih Besar dengan Angka di Dalamnya */}
+                    <View style={styles.commentBubbleWrap}>
+                      <Ionicons name="chatbubble" size={32} color={isDarkMode ? '#3b82f6' : '#1b61d1'} />
+                      <View style={styles.commentBubbleNumberWrap}>
+                        <Text 
+                          style={[
+                            styles.commentBubbleNumber,
+                            (item.commentCount || 0) > 99 && { fontSize: 9 },
+                            (item.commentCount || 0) > 9 && (item.commentCount || 0) <= 99 && { fontSize: 10.5 }
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.commentCount || 0}
+                        </Text>
+                      </View>
                     </View>
 
                     {/* Kanan: Judul Artikel */}
@@ -2543,22 +2552,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 12,
   },
-  mostCommentedPill: {
-    flexDirection: 'row',
+  commentBubbleWrap: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 5,
-    minWidth: 46,
     flexShrink: 0,
+    position: 'relative',
   },
-  mostCommentedPillText: {
-    fontSize: 13.5,
+  commentBubbleNumberWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 4, // Penyesuaian optik agar angka tepat di tengah balon chat
+  },
+  commentBubbleNumber: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.2,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   mostCommentedCardTitle: {
     flex: 1,
