@@ -94,6 +94,7 @@ const processBatch = async (targetLang) => {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data.translations)) {
+        let hasNew = false;
         textsToTranslate.forEach((original, idx) => {
           const translated = data.translations[idx];
           if (translated && isValidTranslation(original, translated, targetLang)) {
@@ -102,8 +103,12 @@ const processBatch = async (targetLang) => {
             if (cleanOrig) {
               memoryCache[targetLang][cleanOrig] = translated;
             }
+            hasNew = true;
           }
         });
+        if (hasNew) {
+          notifyListeners();
+        }
       }
     }
   } catch (err) {
@@ -127,6 +132,7 @@ const processBatch = async (targetLang) => {
           if (clean) {
             memoryCache[targetLang][clean] = fallbackTrans;
           }
+          notifyListeners();
         }
       })
     );
@@ -196,12 +202,23 @@ export const useAutoTranslate = () => {
     if (cached && isValidTranslation(cleanText, cached, targetLang)) return;
 
     pendingBatch.add(cleanText);
+
+    // Jika batch sudah mencapai 6 item (misalnya 5 headline pertama), langsung proses tanpa tunggu
+    if (pendingBatch.size >= 6) {
+      if (batchTimeout) {
+        clearTimeout(batchTimeout);
+        batchTimeout = null;
+      }
+      processBatch(targetLang);
+      return;
+    }
+
     if (batchTimeout) {
       clearTimeout(batchTimeout);
     }
     batchTimeout = setTimeout(() => {
       processBatch(targetLang);
-    }, 60);
+    }, 40);
   }, []);
 
   const translateText = useCallback(

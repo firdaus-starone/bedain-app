@@ -63,7 +63,7 @@ export async function POST(request) {
     const cleanedTexts = texts.map((t) => (typeof t === 'string' ? t.trim() : ''));
 
     const DELIMITER = '<hr id="b-delim" />';
-    const chunkSize = 15;
+    const chunkSize = 5;
     const allTranslations = [];
 
     for (let i = 0; i < cleanedTexts.length; i += chunkSize) {
