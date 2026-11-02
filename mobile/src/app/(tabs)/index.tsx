@@ -9,6 +9,7 @@ import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
+import { fetchBedainVideos } from '../../services/videoService';
 
 const HOT_TOPICS = [
   '#Teknologi AI', 
@@ -226,6 +227,7 @@ export default function Home() {
   const [banners, setBanners] = useState<any[]>([]);
   const [dbRedaksiArticles, setDbRedaksiArticles] = useState<any[]>([]);
   const [dbCommentedArticles, setDbCommentedArticles] = useState<any[]>([]);
+  const [youtubeVideos, setYoutubeVideos] = useState<any[]>([]);
 
   const headerBanners = banners.filter(b => b.slot === 'header');
   const feedBanners = banners.filter(b => b.slot === 'sidebar');
@@ -327,6 +329,14 @@ export default function Home() {
 
       await fetchRedaksi();
       await fetchCommentedArticles();
+      try {
+        const vids = await fetchBedainVideos(true);
+        if (vids && vids.length > 0) {
+          setYoutubeVideos(vids);
+        }
+      } catch (err) {
+        console.warn('Gagal refresh YouTube videos:', err);
+      }
 
       await new Promise(resolve => setTimeout(resolve, 1500));
       if (Platform.OS === 'android') {
@@ -443,12 +453,24 @@ export default function Home() {
       }
     };
 
+    const loadVideos = async () => {
+      try {
+        const vids = await fetchBedainVideos();
+        if (vids && vids.length > 0) {
+          setYoutubeVideos(vids);
+        }
+      } catch (e) {
+        console.warn('Gagal load YouTube videos di Beranda:', e);
+      }
+    };
+
     fetchSettings();
     fetchCategories();
     fetchBanners();
     fetchComments();
     fetchRedaksi();
     fetchCommentedArticles();
+    loadVideos();
     fetchArticlesRealtime();
 
     return () => {
@@ -483,12 +505,13 @@ export default function Home() {
     const latest = mainFeed.slice(13, 28);
     const extra = mainFeed.slice(28);
     
-    // Video Articles: Diambil dari artikel yang memiliki video
+    // Video Articles: Diambil dari channel YouTube resmi Bedain News (identik dengan tab Video di bottom menu)
     const filteredVideos = allMapped.filter(a => a.videoUrl);
-    // Fallback jika belum banyak artikel bervideo di database
-    const videoArticles = filteredVideos.length > 0
-      ? filteredVideos.slice(0, 10)
-      : allMapped.slice(0, 6).map(a => ({ ...a, videoUrl: true }));
+    const videoArticles = (youtubeVideos && youtubeVideos.length > 0)
+      ? youtubeVideos.slice(0, 10)
+      : (filteredVideos.length > 0
+          ? filteredVideos.slice(0, 10)
+          : allMapped.slice(0, 6).map(a => ({ ...a, videoUrl: true })));
 
     // Tab Rekomendasi
     const rekomendasiArticles = allMapped.slice(0, 15);
@@ -561,7 +584,7 @@ export default function Home() {
       MOST_COMMENTED_ARTICLES: mostCommentedArticles || [],
       EXTRA_ARTICLES: extra || []
     };
-  }, [rawArticles, dbRedaksiArticles, dbCommentedArticles, allApprovedComments, lang, version]);
+  }, [rawArticles, dbRedaksiArticles, dbCommentedArticles, allApprovedComments, lang, version, youtubeVideos]);
 
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -1013,11 +1036,19 @@ export default function Home() {
                           key={`video-card-${vid.id}`}
                           style={[styles.videoCard, dyn.videoCardBg]}
                           activeOpacity={0.85}
-                          onPress={() => router.push(`/watch/${vid.id}` as any)}
+                          onPress={() => router.push({
+                            pathname: `/watch/${vid.id}` as any,
+                            params: {
+                              title: vid.title,
+                              videoUrl: vid.videoUrl,
+                              coverImage: vid.image || vid.coverImage,
+                              author: vid.contributorName || vid.author?.name || 'Bedain News'
+                            }
+                          })}
                         >
                           <View style={styles.videoThumbContainer}>
                             <Image 
-                              source={{ uri: vid.image }} 
+                              source={{ uri: vid.image || vid.coverImage }} 
                               style={styles.videoThumbImage}
                               resizeMode="cover"
                             />
