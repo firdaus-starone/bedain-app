@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Crop, ZoomIn, ZoomOut, RotateCw, RefreshCw, Check, X, Sliders } from 'lucide-react';
+import { Crop, ZoomIn, ZoomOut, RotateCw, RefreshCw, Check, X, Maximize2, Minimize2 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
-  { label: '16:9 (Berita Web)', value: 16 / 9, desc: 'Rekomendasi Utama' },
-  { label: '4:3 (Standar Foto)', value: 4 / 3, desc: 'Standar' },
+  { label: '16:9 (Berita Web)', value: 16 / 9, desc: 'Standar Portal Berita' },
+  { label: '4:3 (Standar Foto)', value: 4 / 3, desc: 'Standar Foto' },
   { label: '1:1 (Bujur Sangkar)', value: 1 / 1, desc: 'Kotak' },
 ];
 
@@ -18,28 +18,123 @@ export default function ImageCropModal({
   onUseOriginal,
 }) {
   const [aspectRatio, setAspectRatio] = useState(16 / 9);
+  const [fitMode, setFitMode] = useState('cover'); // 'cover' (isi penuh) | 'contain' (muat semua)
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [imageObj, setImageObj] = useState(null);
 
-  const imgRef = useRef(null);
+  const canvasRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Reset state on open
+  // Load and prepare image object with CORS safety
   useEffect(() => {
-    if (isOpen) {
-      setZoom(1);
-      setRotation(0);
-      setOffset({ x: 0, y: 0 });
-      setAspectRatio(16 / 9);
-      setImageLoaded(false);
-      setIsProcessing(false);
+    if (!isOpen || !imageSrc) {
+      setImageObj(null);
+      return;
     }
+
+    setZoom(1);
+    setRotation(0);
+    setOffset({ x: 0, y: 0 });
+    setFitMode('cover');
+    setIsProcessing(false);
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    // If remote URL, use proxy to bypass canvas taint
+    let srcToLoad = imageSrc;
+    if (
+      typeof imageSrc === 'string' &&
+      imageSrc.startsWith('http') &&
+      !imageSrc.includes(window.location.host)
+    ) {
+      srcToLoad = `/api/proxy-image?url=${encodeURIComponent(imageSrc)}`;
+    }
+
+    img.onload = () => {
+      setImageObj(img);
+    };
+
+    img.onerror = () => {
+      // Fallback: try loading directly without proxy
+      if (srcToLoad !== imageSrc) {
+        const directImg = new Image();
+        directImg.crossOrigin = 'anonymous';
+        directImg.onload = () => setImageObj(directImg);
+        directImg.src = imageSrc;
+      }
+    };
+
+    img.src = srcToLoad;
   }, [isOpen, imageSrc]);
+
+  // Redraw preview canvas whenever state changes
+  const renderPreview = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imageObj) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. Prepare rotated dimensions
+    const is90or270 = rotation % 180 !== 0;
+    const imgW = is90or270 ? imageObj.naturalHeight : imageObj.naturalWidth;
+    const imgH = is90or270 ? imageObj.naturalWidth : imageObj.naturalHeight;
+
+    if (!imgW || !imgH) return;
+
+    // 2. Base scale calculation based on fitMode
+    // In 'cover' mode, scale so that the image fills the 16:9 canvas
+    // In 'contain' mode, scale so the entire image fits inside with blurred background
+    const scaleCover = Math.max(width / imgW, height / imgH);
+    const scaleContain = Math.min(width / imgW, height / imgH);
+    const baseScale = fitMode === 'contain' ? scaleContain : scaleCover;
+
+    const currentScale = baseScale * zoom;
+    const drawW = imgW * currentScale;
+    const drawH = imgH * currentScale;
+
+    // Center coordinates + user pan offset
+    const drawX = (width - drawW) / 2 + offset.x;
+    const drawY = (height - drawH) / 2 + offset.y;
+
+    // 3. Draw blurred background if in 'contain' mode or zoomed out
+    if (fitMode === 'contain' || zoom < 0.95) {
+      ctx.save();
+      ctx.filter = 'blur(18px) brightness(0.4)';
+      ctx.drawImage(imageObj, -20, -20, width + 40, height + 40);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#0f1015';
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // 4. Draw rotated and scaled image
+    ctx.save();
+    // Translate to center of image drawing area
+    ctx.translate(drawX + drawW / 2, drawY + drawH / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+
+    const unrotatedW = is90or270 ? drawH : drawW;
+    const unrotatedH = is90or270 ? drawW : drawH;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(imageObj, -unrotatedW / 2, -unrotatedH / 2, unrotatedW, unrotatedH);
+    ctx.restore();
+  }, [imageObj, fitMode, zoom, rotation, offset]);
+
+  useEffect(() => {
+    renderPreview();
+  }, [renderPreview]);
 
   // Handle Drag / Pan with Mouse
   const handleMouseDown = (e) => {
@@ -60,7 +155,7 @@ export default function ImageCropModal({
     setIsDragging(false);
   };
 
-  // Handle Touch for Mobile / Tablets
+  // Handle Touch for Mobile
   const handleTouchStart = (e) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
@@ -85,8 +180,8 @@ export default function ImageCropModal({
   // Handle Wheel Zoom
   const handleWheel = (e) => {
     e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.1 : -0.1;
-    setZoom((prev) => Math.min(3, Math.max(1, +(prev + delta).toFixed(2))));
+    const delta = e.deltaY < 0 ? 0.05 : -0.05;
+    setZoom((prev) => Math.min(3, Math.max(0.5, +(prev + delta).toFixed(2))));
   };
 
   const handleRotate = () => {
@@ -98,49 +193,20 @@ export default function ImageCropModal({
     setZoom(1);
     setRotation(0);
     setOffset({ x: 0, y: 0 });
+    setFitMode('cover');
   };
 
-  // Execute Crop and Export Canvas
+  // Execute High-Resolution Output Crop
   const handleExecuteCrop = async () => {
-    if (!imgRef.current) return;
+    if (!imageObj) return;
     setIsProcessing(true);
 
     try {
-      const img = imgRef.current;
-      const is90or270 = rotation % 180 !== 0;
-      const naturalWidth = is90or270 ? img.naturalHeight : img.naturalWidth;
-      const naturalHeight = is90or270 ? img.naturalWidth : img.naturalHeight;
+      const previewCanvas = canvasRef.current;
+      if (!previewCanvas) return;
 
-      // 1. Create offscreen rotated canvas
-      const rotCanvas = document.createElement('canvas');
-      rotCanvas.width = naturalWidth;
-      rotCanvas.height = naturalHeight;
-      const rotCtx = rotCanvas.getContext('2d');
-      rotCtx.translate(naturalWidth / 2, naturalHeight / 2);
-      rotCtx.rotate((rotation * Math.PI) / 180);
-      rotCtx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
-
-      // 2. Calculate crop box dimension in UI
-      const container = containerRef.current;
-      const boxWidth = container ? container.clientWidth : 560;
-      const boxHeight = boxWidth / aspectRatio;
-
-      // 3. Compute scale & source crop coordinates
-      const baseScale = Math.max(boxWidth / naturalWidth, boxHeight / naturalHeight);
-      const currentScale = baseScale * zoom;
-      const dispW = naturalWidth * currentScale;
-      const dispH = naturalHeight * currentScale;
-
-      const cropLeftInDisp = dispW / 2 - boxWidth / 2 - offset.x;
-      const cropTopInDisp = dispH / 2 - boxHeight / 2 - offset.y;
-
-      const sourceCropX = cropLeftInDisp / currentScale;
-      const sourceCropY = cropTopInDisp / currentScale;
-      const sourceCropW = boxWidth / currentScale;
-      const sourceCropH = boxHeight / currentScale;
-
-      // 4. Output canvas with high-res target (1280px standard for 16:9)
-      const targetWidth = Math.min(1920, Math.max(1280, Math.round(sourceCropW)));
+      // High quality export target: 1280px width (standard HD 16:9 = 1280 x 720)
+      const targetWidth = 1280;
       const targetHeight = Math.round(targetWidth / aspectRatio);
 
       const outCanvas = document.createElement('canvas');
@@ -148,21 +214,48 @@ export default function ImageCropModal({
       outCanvas.height = targetHeight;
       const outCtx = outCanvas.getContext('2d');
 
-      // High quality smoothing
+      // Scaling factor from preview canvas to export canvas
+      const scaleToExport = targetWidth / previewCanvas.width;
+
+      // 1. Prepare rotated dimensions
+      const is90or270 = rotation % 180 !== 0;
+      const imgW = is90or270 ? imageObj.naturalHeight : imageObj.naturalWidth;
+      const imgH = is90or270 ? imageObj.naturalWidth : imageObj.naturalHeight;
+
+      const scaleCover = Math.max(previewCanvas.width / imgW, previewCanvas.height / imgH);
+      const scaleContain = Math.min(previewCanvas.width / imgW, previewCanvas.height / imgH);
+      const baseScale = fitMode === 'contain' ? scaleContain : scaleCover;
+
+      const currentScale = baseScale * zoom;
+      const drawW = imgW * currentScale * scaleToExport;
+      const drawH = imgH * currentScale * scaleToExport;
+
+      const drawX = ((previewCanvas.width - imgW * currentScale) / 2 + offset.x) * scaleToExport;
+      const drawY = ((previewCanvas.height - imgH * currentScale) / 2 + offset.y) * scaleToExport;
+
+      // Draw background if contain or zoomed out
+      if (fitMode === 'contain' || zoom < 0.95) {
+        outCtx.save();
+        outCtx.filter = 'blur(28px) brightness(0.4)';
+        outCtx.drawImage(imageObj, -30, -30, targetWidth + 60, targetHeight + 60);
+        outCtx.restore();
+      } else {
+        outCtx.fillStyle = '#0f1015';
+        outCtx.fillRect(0, 0, targetWidth, targetHeight);
+      }
+
+      // Draw image
+      outCtx.save();
+      outCtx.translate(drawX + drawW / 2, drawY + drawH / 2);
+      outCtx.rotate((rotation * Math.PI) / 180);
+
+      const unrotatedW = is90or270 ? drawH : drawW;
+      const unrotatedH = is90or270 ? drawW : drawH;
+
       outCtx.imageSmoothingEnabled = true;
       outCtx.imageSmoothingQuality = 'high';
-
-      outCtx.drawImage(
-        rotCanvas,
-        sourceCropX,
-        sourceCropY,
-        sourceCropW,
-        sourceCropH,
-        0,
-        0,
-        targetWidth,
-        targetHeight
-      );
+      outCtx.drawImage(imageObj, -unrotatedW / 2, -unrotatedH / 2, unrotatedW, unrotatedH);
+      outCtx.restore();
 
       outCanvas.toBlob(
         (blob) => {
@@ -183,6 +276,9 @@ export default function ImageCropModal({
   };
 
   if (!isOpen || !imageSrc) return null;
+
+  const canvasWidth = 560;
+  const canvasHeight = Math.round(canvasWidth / aspectRatio);
 
   return (
     <div
@@ -275,7 +371,7 @@ export default function ImageCropModal({
           </button>
         </div>
 
-        {/* Aspect Ratio Selector */}
+        {/* Aspect Ratio & Fit Mode Selector */}
         <div
           style={{
             padding: '12px 20px',
@@ -283,43 +379,101 @@ export default function ImageCropModal({
             borderBottom: '1px solid var(--admin-border, #282a36)',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            justifyContent: 'space-between',
+            gap: '12px',
             flexWrap: 'wrap',
           }}
         >
-          <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--admin-text-secondary, #8b949e)', marginRight: '4px' }}>
-            Rasio Frame:
-          </span>
-          {ASPECT_RATIOS.map((ratio) => {
-            const isActive = Math.abs(aspectRatio - ratio.value) < 0.01;
-            return (
-              <button
-                key={ratio.label}
-                type="button"
-                onClick={() => {
-                  setAspectRatio(ratio.value);
-                  setOffset({ x: 0, y: 0 });
-                }}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: isActive ? 600 : 400,
-                  border: isActive ? '1px solid #3b82f6' : '1px solid var(--admin-border, #333)',
-                  background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                  color: isActive ? '#60a5fa' : 'var(--admin-text-secondary, #aaa)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {ratio.label}
-              </button>
-            );
-          })}
+          {/* Ratio Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--admin-text-secondary, #8b949e)', marginRight: '2px' }}>
+              Rasio:
+            </span>
+            {ASPECT_RATIOS.map((ratio) => {
+              const isActive = Math.abs(aspectRatio - ratio.value) < 0.01;
+              return (
+                <button
+                  key={ratio.label}
+                  type="button"
+                  onClick={() => {
+                    setAspectRatio(ratio.value);
+                    setOffset({ x: 0, y: 0 });
+                  }}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '16px',
+                    fontSize: '11px',
+                    fontWeight: isActive ? 600 : 400,
+                    border: isActive ? '1px solid #3b82f6' : '1px solid var(--admin-border, #333)',
+                    background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                    color: isActive ? '#60a5fa' : 'var(--admin-text-secondary, #aaa)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {ratio.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Fit Mode Toggle (Cover vs Contain) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setFitMode('cover');
+                setOffset({ x: 0, y: 0 });
+              }}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: fitMode === 'cover' ? 600 : 400,
+                border: fitMode === 'cover' ? '1px solid #22c55e' : '1px solid var(--admin-border, #333)',
+                background: fitMode === 'cover' ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
+                color: fitMode === 'cover' ? '#4ade80' : 'var(--admin-text-secondary, #aaa)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              title="Isi penuh bingkai 16:9 tanpa latar belakang"
+            >
+              <Maximize2 size={12} />
+              <span>Isi Penuh (Fill)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setFitMode('contain');
+                setOffset({ x: 0, y: 0 });
+              }}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: fitMode === 'contain' ? 600 : 400,
+                border: fitMode === 'contain' ? '1px solid #a855f7' : '1px solid var(--admin-border, #333)',
+                background: fitMode === 'contain' ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                color: fitMode === 'contain' ? '#c084fc' : 'var(--admin-text-secondary, #aaa)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              title="Muat seluruh gambar tanpa terpotong (dengan blur artistik di samping)"
+            >
+              <Minimize2 size={12} />
+              <span>Muat Semua (Fit)</span>
+            </button>
+          </div>
         </div>
 
         {/* Interactive Viewport Area */}
         <div
+          ref={containerRef}
           style={{
             padding: '20px',
             display: 'flex',
@@ -332,42 +486,34 @@ export default function ImageCropModal({
         >
           {/* Viewport Frame with Aspect Ratio */}
           <div
-            ref={containerRef}
             onMouseDown={handleMouseDown}
             onTouchStart={handleTouchStart}
             onWheel={handleWheel}
             style={{
               width: '100%',
-              maxWidth: '560px',
+              maxWidth: `${canvasWidth}px`,
               aspectRatio: `${aspectRatio}`,
               position: 'relative',
               overflow: 'hidden',
               borderRadius: '10px',
-              border: '2px solid rgba(59, 130, 246, 0.8)',
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 130, 246, 0.3)',
+              border: '2px solid rgba(59, 130, 246, 0.85)',
+              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 25px rgba(59, 130, 246, 0.35)',
               cursor: isDragging ? 'grabbing' : 'grab',
               background: '#15161c',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {/* The Image being transformed */}
-            <img
-              ref={imgRef}
-              src={imageSrc}
-              alt="Crop Source"
-              onLoad={() => setImageLoaded(true)}
-              draggable={false}
+            {/* The Canvas for smooth preview */}
+            <canvas
+              ref={canvasRef}
+              width={canvasWidth}
+              height={canvasHeight}
               style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transformOrigin: 'center center',
-                transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg) scale(${zoom})`,
-                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                maxWidth: 'none',
-                maxHeight: 'none',
-                minWidth: '100%',
-                minHeight: '100%',
-                objectFit: 'contain',
+                width: '100%',
+                height: '100%',
+                display: 'block',
                 pointerEvents: 'none',
               }}
             />
@@ -411,7 +557,7 @@ export default function ImageCropModal({
                 border: '1px solid rgba(255,255,255,0.15)',
               }}
             >
-              🖐️ Tarik/geser foto untuk mengatur posisi
+              🖐️ Tarik foto untuk geser posisi • Scroll untuk zoom
             </div>
           </div>
         </div>
@@ -429,12 +575,12 @@ export default function ImageCropModal({
             flexWrap: 'wrap',
           }}
         >
-          {/* Zoom Slider */}
+          {/* Zoom Slider (0.5x to 3x) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '180px' }}>
             <ZoomOut size={16} color="var(--admin-text-secondary, #8b949e)" />
             <input
               type="range"
-              min="1"
+              min="0.5"
               max="3"
               step="0.05"
               value={zoom}
@@ -446,7 +592,7 @@ export default function ImageCropModal({
               }}
             />
             <ZoomIn size={16} color="var(--admin-text-secondary, #8b949e)" />
-            <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '35px', color: 'var(--admin-text-primary, #fff)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '40px', color: 'var(--admin-text-primary, #fff)' }}>
               {Math.round(zoom * 100)}%
             </span>
           </div>
