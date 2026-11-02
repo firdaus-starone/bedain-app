@@ -8,7 +8,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -62,9 +62,10 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
     {
       id: 'twitter',
       name: 'X (Twitter)',
-      icon: 'logo-twitter' as const,
-      color: isDarkMode ? '#38bdf8' : '#0284c7',
-      bgColor: isDarkMode ? 'rgba(56, 189, 248, 0.15)' : '#f0f9ff',
+      icon: 'x-twitter',
+      iconType: 'fa6' as const,
+      color: isDarkMode ? '#f8fafc' : '#0f172a',
+      bgColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : '#f1f5f9',
       url: settings?.twitterUrl?.trim() || 'https://twitter.com/bedainnews',
     },
     {
@@ -127,7 +128,11 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
                 },
               ]}
             >
-              <Ionicons name={item.icon} size={18} color={item.color} />
+              {item.iconType === 'fa6' ? (
+                <FontAwesome6 name={item.icon as any} size={15} color={item.color} />
+              ) : (
+                <Ionicons name={item.icon as any} size={18} color={item.color} />
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -178,7 +183,11 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
             ]}
           >
             <View style={[styles.fullIconBox, { backgroundColor: item.bgColor }]}>
-              <Ionicons name={item.icon} size={20} color={item.color} />
+              {item.iconType === 'fa6' ? (
+                <FontAwesome6 name={item.icon as any} size={17} color={item.color} />
+              ) : (
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              )}
             </View>
             <Text style={[styles.fullItemText, { color: isDarkMode ? '#e2e8f0' : '#1e293b' }]}>
               {item.name}
