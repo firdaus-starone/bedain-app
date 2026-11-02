@@ -27,7 +27,9 @@ interface DynamicSponsorBannerProps {
   badgeText?: string;
   showBadge?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
+  imageContainerStyle?: StyleProp<ViewStyle>;
   defaultAspectRatio?: number;
+  fullWidth?: boolean;
 }
 
 export const DynamicSponsorBanner: React.FC<DynamicSponsorBannerProps> = ({
@@ -35,7 +37,9 @@ export const DynamicSponsorBanner: React.FC<DynamicSponsorBannerProps> = ({
   badgeText = 'SPONSOR',
   showBadge = false,
   containerStyle,
+  imageContainerStyle,
   defaultAspectRatio = 16 / 9,
+  fullWidth = false,
 }) => {
   const { colors, isDarkMode } = useTheme();
   const [aspectRatio, setAspectRatio] = useState<number>(defaultAspectRatio);
@@ -86,6 +90,13 @@ export const DynamicSponsorBanner: React.FC<DynamicSponsorBannerProps> = ({
           borderColor: colors.border,
           shadowOpacity: isDarkMode ? 0.35 : 0.08,
         },
+        fullWidth && {
+          borderRadius: 0,
+          borderWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+          backgroundColor: '#070a12',
+        },
         containerStyle,
       ]}
     >
@@ -100,6 +111,11 @@ export const DynamicSponsorBanner: React.FC<DynamicSponsorBannerProps> = ({
           style={[
             styles.imageContainer,
             { backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9' },
+            fullWidth && {
+              borderRadius: 0,
+              backgroundColor: '#070a12',
+            },
+            imageContainerStyle,
           ]}
         >
           <Image

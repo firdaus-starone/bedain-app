@@ -829,13 +829,21 @@ export default function Home() {
 
         {/* HEADER BANNER */}
         {headerBanners.length > 0 && (
-          <View style={{ paddingHorizontal: 16, marginTop: 10, marginBottom: 16 }}>
+          <View style={{ width: '100%', marginTop: 8, marginBottom: 16 }}>
             {headerBanners.map((b, index) => (
               <DynamicSponsorBanner
                 key={b.id || `header-banner-${index}`}
                 banner={b}
                 badgeText="SPONSOR"
-                containerStyle={{ marginBottom: index === headerBanners.length - 1 ? 0 : 12 }}
+                fullWidth
+                containerStyle={{
+                  width: '100%',
+                  borderRadius: 0,
+                  borderWidth: 0,
+                  elevation: 0,
+                  shadowOpacity: 0,
+                  marginBottom: index === headerBanners.length - 1 ? 0 : 12,
+                }}
               />
             ))}
           </View>
