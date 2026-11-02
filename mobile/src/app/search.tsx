@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Image, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Image, Keyboard, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
@@ -14,8 +14,15 @@ export default function SearchScreen() {
   const [popularArticles, setPopularArticles] = useState<any[]>([]);
   const [redaksiArticles, setRedaksiArticles] = useState<any[]>([]);
   const [allArticles, setAllArticles] = useState<any[]>([]);
+  const [loadingSearch, setLoadingSearch] = useState(true);
   
   const popularSearches = ['Politik 2024', 'Timnas Indonesia', 'Harga Emas', 'Cuaca Jakarta', 'Gempa Hari Ini', 'Teknologi'];
+
+  useEffect(() => {
+    if (params.q) {
+      setQueryText(String(params.q));
+    }
+  }, [params.q]);
 
   useEffect(() => {
     // 1. Fetch Popular
@@ -72,12 +79,17 @@ export default function SearchScreen() {
     // 3. Fetch All for Local Search (Instant Search)
     const fetchAllForSearch = async () => {
       try {
-        const qAll = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(100));
+        setLoadingSearch(true);
+        const qAll = query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(300));
         const snapAll = await getDocs(qAll);
         const fAll: any[] = [];
         snapAll.forEach(doc => fAll.push({ id: doc.id, ...doc.data() }));
         setAllArticles(fAll);
-      } catch(e) {}
+      } catch(e) {
+        console.warn("Gagal menarik data artikel pencarian:", e);
+      } finally {
+        setLoadingSearch(false);
+      }
     };
 
     fetchPopular();
@@ -85,12 +97,42 @@ export default function SearchScreen() {
     fetchAllForSearch();
   }, []);
 
-  // Filter local array (Sangat cepat dan instan)
-  const searchResults = queryText.trim().length > 0
-    ? allArticles.filter(a => 
-        a.title?.toLowerCase().includes(queryText.toLowerCase()) || 
-        a.category?.toLowerCase().includes(queryText.toLowerCase())
-      )
+  // Filter pencarian cerdas mencakup: Judul, Kategori, Tags, Lokasi/Wilayah, Excerpt, dan Penulis
+  const cleanQuery = queryText.trim().replace(/^#\s*/, '').toLowerCase();
+
+  const searchResults = cleanQuery.length > 0
+    ? allArticles.filter(a => {
+        // 1. Cek Judul
+        if (a.title?.toLowerCase().includes(cleanQuery)) return true;
+
+        // 2. Cek Kategori
+        if (a.category?.toLowerCase().includes(cleanQuery)) return true;
+
+        // 3. Cek Tags (Array / String / Comma-separated)
+        const rawTags = a.tags || [];
+        const tagsList = typeof rawTags === 'string' ? rawTags.split(',') : (Array.isArray(rawTags) ? rawTags : []);
+        if (tagsList.some((t: any) => String(t).trim().toLowerCase().replace(/^#/, '').includes(cleanQuery))) {
+          return true;
+        }
+
+        // 4. Cek Lokasi / Wilayah / Region
+        const loc = (a.location || a.lokasi || a.region || '');
+        if (typeof loc === 'string' && loc.toLowerCase().includes(cleanQuery)) {
+          return true;
+        }
+
+        // 5. Cek Excerpt / Ringkasan
+        if ((a.excerpt || a.summary || '')?.toLowerCase().includes(cleanQuery)) {
+          return true;
+        }
+
+        // 6. Cek Penulis / Kontributor
+        if ((a.contributorName || a.author?.name || '')?.toLowerCase().includes(cleanQuery)) {
+          return true;
+        }
+
+        return false;
+      })
     : [];
 
   const dyn = {
@@ -148,11 +190,18 @@ export default function SearchScreen() {
             <View style={styles.searchResultsContainer}>
               <Text style={[styles.sectionTitle, dyn.sectionTitle]}>HASIL PENCARIAN ({searchResults.length})</Text>
               
-              {searchResults.length > 0 ? (
+              {loadingSearch && allArticles.length === 0 ? (
+                <View style={styles.emptySearch}>
+                  <ActivityIndicator size="large" color="#3b82f6" />
+                  <Text style={[styles.emptySearchText, dyn.emptySearchText, { marginTop: 14 }]}>
+                    Mencari berita terkait "{queryText}"...
+                  </Text>
+                </View>
+              ) : searchResults.length > 0 ? (
                 <View style={styles.popularNewsList}>
                   {searchResults.map((item) => (
                     <TouchableOpacity key={item.id} style={styles.newsCard} onPress={() => router.push(`/article/${item.id}`)}>
-                      <Image source={{ uri: item.coverImage || item.imageUrl || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80' }} style={styles.newsImage} />
+                      <Image source={{ uri: item.coverImage || item.imageUrl || item.image || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80' }} style={styles.newsImage} />
                       <View style={styles.newsContent}>
                         <Text style={styles.newsCategory}>{item.category?.toUpperCase() || 'BERITA'}</Text>
                         <Text style={[styles.newsTitle, dyn.newsTitle]} numberOfLines={2}>{item.title}</Text>
@@ -236,7 +285,12 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#ffffff', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
   container: { flex: 1, backgroundColor: '#ffffff' },
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: '#0f172a' },
+  headerTitle: { 
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 22, 
+    fontWeight: '800', 
+    color: '#0f172a' 
+  },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -249,9 +303,22 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     marginBottom: 24,
   },
-  searchInput: { flex: 1, marginLeft: 12, fontSize: 16, color: '#0f172a' },
+  searchInput: { 
+    fontFamily: 'PlusJakartaSans-Medium',
+    flex: 1, 
+    marginLeft: 12, 
+    fontSize: 16, 
+    color: '#0f172a' 
+  },
   content: { flex: 1, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 12, fontWeight: '800', color: '#94a3b8', letterSpacing: 1, marginBottom: 16 },
+  sectionTitle: { 
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 12, 
+    fontWeight: '800', 
+    color: '#94a3b8', 
+    letterSpacing: 1, 
+    marginBottom: 16 
+  },
   tagsScrollContainer: { marginHorizontal: -20 },
   tagsWrapper: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20 },
   tagBadge: {
@@ -264,10 +331,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#bfdbfe',
   },
-  tagText: { color: '#1d4ed8', fontSize: 14, fontWeight: '600' },
+  tagText: { 
+    fontFamily: 'Montserrat-SemiBold',
+    color: '#1d4ed8', 
+    fontSize: 14, 
+    fontWeight: '600' 
+  },
   searchResultsContainer: { paddingBottom: 40 },
   emptySearch: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  emptySearchText: { marginTop: 16, fontSize: 15, color: '#64748b', textAlign: 'center' },
+  emptySearchText: { 
+    fontFamily: 'PlusJakartaSans-Medium',
+    marginTop: 16, 
+    fontSize: 15, 
+    color: '#64748b', 
+    textAlign: 'center' 
+  },
   popularNewsContainer: {
     marginTop: 32,
   },
@@ -289,17 +367,19 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   newsCategory: {
-    fontSize: 11,
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#3b82f6',
-    letterSpacing: 1,
-    marginBottom: 6,
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   newsTitle: {
-    fontSize: 15,
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 14,
     fontWeight: '700',
     color: '#0f172a',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   seeMoreBtn: {
     flexDirection: 'row',
