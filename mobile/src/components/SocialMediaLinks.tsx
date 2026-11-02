@@ -28,6 +28,14 @@ export const SocialMediaLinks: React.FC<SocialMediaLinksProps> = ({
 
   const socialItems = [
     {
+      id: 'facebook',
+      name: 'Facebook',
+      icon: 'logo-facebook' as const,
+      color: '#1877F2',
+      bgColor: isDarkMode ? 'rgba(24, 119, 242, 0.15)' : '#eff6ff',
+      url: settings?.facebookUrl?.trim() || 'https://facebook.com/bedainnews',
+    },
+    {
       id: 'instagram',
       name: 'Instagram',
       icon: 'logo-instagram' as const,
