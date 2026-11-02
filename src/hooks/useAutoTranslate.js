@@ -43,11 +43,46 @@ const isValidTranslation = (original, translated, targetLang) => {
   return true;
 };
 
+const translateSingleClientFallback = async (text, targetLang) => {
+  try {
+    const tl = targetLang === 'zh' ? 'zh-CN' : targetLang;
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const trans = data[0]?.map((p) => p[0] || '').join('');
+      if (isValidTranslation(text, trans, targetLang)) {
+        return trans;
+      }
+    }
+  } catch (e) {}
+
+  // Secondary client fallback: MyMemory
+  try {
+    const tl = targetLang === 'zh' ? 'zh-CN' : targetLang;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=id|${tl}&de=redaksi@bedainnews.com`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const trans = data.responseData?.translatedText;
+      if (isValidTranslation(text, trans, targetLang)) {
+        return trans;
+      }
+    }
+  } catch (e) {}
+
+  return null;
+};
+
 const processBatch = async (targetLang) => {
   if (pendingBatch.size === 0 || targetLang === 'id') return;
 
   const textsToTranslate = Array.from(pendingBatch);
   pendingBatch.clear();
+
+  if (!memoryCache[targetLang]) {
+    memoryCache[targetLang] = {};
+  }
 
   try {
     const res = await fetch('/api/translate-text', {
@@ -59,10 +94,6 @@ const processBatch = async (targetLang) => {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data.translations)) {
-        if (!memoryCache[targetLang]) {
-          memoryCache[targetLang] = {};
-        }
-
         textsToTranslate.forEach((original, idx) => {
           const translated = data.translations[idx];
           if (translated && isValidTranslation(original, translated, targetLang)) {
@@ -73,22 +104,44 @@ const processBatch = async (targetLang) => {
             }
           }
         });
-
-        // Persist to localStorage
-        try {
-          if (typeof window !== 'undefined') {
-            const existing = JSON.parse(localStorage.getItem(`bedain_titles_${targetLang}`) || '{}');
-            const merged = { ...existing, ...memoryCache[targetLang] };
-            localStorage.setItem(`bedain_titles_${targetLang}`, JSON.stringify(merged));
-          }
-        } catch (e) {}
-
-        notifyListeners();
       }
     }
   } catch (err) {
-    console.warn('Batch translate failed:', err);
+    console.warn('Batch translate via server failed, using client fallback:', err);
   }
+
+  // Client-side fallback for any items that failed or were missed
+  const missingTexts = textsToTranslate.filter((t) => {
+    const clean = (t || '').trim();
+    const cached = memoryCache[targetLang]?.[t] || memoryCache[targetLang]?.[clean];
+    return !cached || !isValidTranslation(clean, cached, targetLang);
+  });
+
+  if (missingTexts.length > 0) {
+    await Promise.all(
+      missingTexts.map(async (text) => {
+        const fallbackTrans = await translateSingleClientFallback(text, targetLang);
+        if (fallbackTrans) {
+          const clean = (text || '').trim();
+          memoryCache[targetLang][text] = fallbackTrans;
+          if (clean) {
+            memoryCache[targetLang][clean] = fallbackTrans;
+          }
+        }
+      })
+    );
+  }
+
+  // Persist to localStorage
+  try {
+    if (typeof window !== 'undefined') {
+      const existing = JSON.parse(localStorage.getItem(`bedain_titles_${targetLang}`) || '{}');
+      const merged = { ...existing, ...memoryCache[targetLang] };
+      localStorage.setItem(`bedain_titles_${targetLang}`, JSON.stringify(merged));
+    }
+  } catch (e) {}
+
+  notifyListeners();
 };
 
 export const useAutoTranslate = () => {

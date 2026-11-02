@@ -97,7 +97,7 @@ export async function POST(request) {
           q: payload,
         });
 
-        const res = await fetch('https://translate.googleapis.com/translate_a/single', {
+        let res = await fetch('https://translate.googleapis.com/translate_a/single', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -105,6 +105,18 @@ export async function POST(request) {
           },
           body: postData.toString(),
         });
+
+        if (!res.ok) {
+          postData.set('client', 'dict-chrome-ex');
+          res = await fetch('https://translate.googleapis.com/translate_a/single', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            },
+            body: postData.toString(),
+          });
+        }
 
         if (res.ok) {
           const json = await res.json();
