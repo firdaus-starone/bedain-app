@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { doc, getDoc, collection, query, orderBy, limit, getDocs, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { DynamicSponsorBanner } from '../../components/DynamicSponsorBanner';
 import { fetchBedainVideos } from '../../services/videoService';
@@ -156,6 +157,7 @@ const PulsingDot = () => {
 export default function Home() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
+  const { user } = useAuth();
   const { lang, t, getCategoryName, getArticleTitle, getArticleExcerpt, translateText, version } = useLanguage();
   const { width: screenWidth } = useWindowDimensions();
   const [categories, setCategories] = useState<{ name: string, slug: string }[]>([]);
@@ -732,6 +734,10 @@ export default function Home() {
       color: isDarkMode ? '#60a5fa' : '#1b61d1',
     },
     commentIconColor: isDarkMode ? '#60a5fa' : '#1b61d1',
+    profileBtn: {
+      backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.12)' : 'rgba(27, 97, 209, 0.08)',
+      borderColor: isDarkMode ? 'rgba(59, 130, 246, 0.35)' : 'rgba(27, 97, 209, 0.22)',
+    },
   };
 
   return (
@@ -759,11 +765,36 @@ export default function Home() {
           </Text>
         </View>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/search')}>
-            <Ionicons name="search-outline" size={22} color={dyn.iconColor} />
+          <TouchableOpacity 
+            style={[styles.iconButton, dyn.headerIcon]} 
+            onPress={() => router.push('/search')}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="search-outline" size={20} color={dyn.iconColor} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconButton, dyn.headerIcon]} onPress={() => router.push('/profile')}>
-            <Ionicons name="person-circle-outline" size={38} color={dyn.iconColor} />
+          <TouchableOpacity 
+            style={[styles.profileHeaderBtn, dyn.profileBtn]} 
+            onPress={() => router.push('/profile')}
+            activeOpacity={0.8}
+          >
+            {user?.photoURL ? (
+              <Image 
+                source={{ uri: user.photoURL }} 
+                style={styles.profileAvatarImg}
+                resizeMode="cover"
+              />
+            ) : user?.displayName ? (
+              <View style={[styles.profileInitialWrap, { backgroundColor: colors.primary }]}>
+                <Text style={styles.profileInitialText}>
+                  {user.displayName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.profileIconWrap}>
+                <Ionicons name="person" size={17} color={isDarkMode ? '#60a5fa' : '#1b61d1'} />
+              </View>
+            )}
+            <View style={[styles.profileActiveDot, { borderColor: isDarkMode ? colors.card : '#ffffff' }]} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1627,13 +1658,56 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  profileHeaderBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  profileAvatarImg: {
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
+  },
+  profileInitialWrap: {
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileInitialText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  profileIconWrap: {
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileActiveDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#10b981',
+    borderWidth: 2,
   },
   categoryBar: {
     backgroundColor: '#1b61d1',
