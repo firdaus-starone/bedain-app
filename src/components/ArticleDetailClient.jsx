@@ -95,6 +95,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
     let excerpt = article.excerpt || article.seoDescription || '';
     let seoDescription = article.seoDescription || article.excerpt || '';
     let keyPoints = article.keyPoints || [];
+    let imageCaption = article.imageCaption || '';
+    let tags = Array.isArray(article.tags) ? article.tags : [];
     
     if (activeTrans && activeTrans.title && (currentTargetLang !== 'id' || lang !== 'id')) {
       title = activeTrans.title || title;
@@ -104,6 +106,12 @@ const ArticleDetail = ({ initialArticle = null }) => {
       if (activeTrans.keyPoints && activeTrans.keyPoints.length > 0) {
         keyPoints = activeTrans.keyPoints;
       }
+      if (activeTrans.imageCaption) {
+        imageCaption = activeTrans.imageCaption;
+      }
+      if (Array.isArray(activeTrans.tags) && activeTrans.tags.length > 0) {
+        tags = activeTrans.tags;
+      }
     } else if (lang === 'en') {
       if (article.title_en) title = article.title_en;
       if (article.content_en) content = article.content_en;
@@ -111,6 +119,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
         excerpt = article.excerpt_en || article.seoDescription_en;
         seoDescription = article.seoDescription_en || article.excerpt_en;
       }
+      if (article.imageCaption_en) imageCaption = article.imageCaption_en;
+      if (Array.isArray(article.tags_en) && article.tags_en.length > 0) tags = article.tags_en;
     } else if (lang === 'zh') {
       if (article.title_zh) title = article.title_zh;
       if (article.content_zh) content = article.content_zh;
@@ -118,6 +128,8 @@ const ArticleDetail = ({ initialArticle = null }) => {
         excerpt = article.excerpt_zh || article.seoDescription_zh;
         seoDescription = article.seoDescription_zh || article.excerpt_zh;
       }
+      if (article.imageCaption_zh) imageCaption = article.imageCaption_zh;
+      if (Array.isArray(article.tags_zh) && article.tags_zh.length > 0) tags = article.tags_zh;
     }
 
     return {
@@ -126,7 +138,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
       content,
       excerpt,
       seoDescription,
-      keyPoints
+      keyPoints,
+      imageCaption,
+      tags
     };
   }, [article, lang, currentTargetLang, translatedArticle]);
 
@@ -1760,9 +1774,9 @@ const ArticleDetail = ({ initialArticle = null }) => {
               </>
             )}
             
-            {article.imageCaption && !videoData && (
+            {(displayArticle?.imageCaption || article.imageCaption) && !videoData && (
               <div style={{ padding: '0 10px 24px 10px', fontSize: '13px', color: 'var(--color-text-secondary)', fontStyle: 'italic', textAlign: 'center', marginTop: '-20px' }}>
-                {article.imageCaption}
+                {displayArticle?.imageCaption || article.imageCaption}
               </div>
             )}
 
@@ -2141,17 +2155,22 @@ const ArticleDetail = ({ initialArticle = null }) => {
                   <Tag size={14} /> {lang === 'zh' ? '话题' : lang === 'en' ? 'TOPICS' : 'TOPIK'}:
                 </span>
                 {displayArticle.tags.map((tag, idx) => (
-                  <span key={idx} style={{
-                    background: 'var(--color-bg-secondary)',
-                    color: 'var(--color-text-primary)',
-                    border: '1px solid var(--color-border)',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    transition: 'all 0.2s',
-                    cursor: 'pointer'
-                  }} className="tag-hover">
+                  <span 
+                    key={idx} 
+                    onClick={() => router.push(`/cari?q=${encodeURIComponent(tag)}`)}
+                    style={{
+                      background: 'var(--color-bg-secondary)',
+                      color: 'var(--color-text-primary)',
+                      border: '1px solid var(--color-border)',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      cursor: 'pointer'
+                    }} 
+                    className="tag-hover"
+                  >
                     {tag}
                   </span>
                 ))}

@@ -251,9 +251,64 @@ export const useTranslation = (article, activeLanguage) => {
     const cacheKey = `${article.id}_${targetLang}`;
     setCurrentTargetLang(targetLang);
 
+    // Helper to backfill missing imageCaption or tags on legacy cached translations
+    const backfillIfNeeded = async (cachedObj) => {
+      if (!cachedObj) return cachedObj;
+      const needsCaption = article.imageCaption && !cachedObj.imageCaption;
+      const needsTags = Array.isArray(article.tags) && article.tags.length > 0 && (!Array.isArray(cachedObj.tags) || cachedObj.tags.length === 0);
+
+      if (!needsCaption && !needsTags) return cachedObj;
+
+      let newCaption = cachedObj.imageCaption;
+      let newTags = cachedObj.tags;
+
+      if (needsCaption) {
+        try {
+          newCaption = await clientTranslateChunk(article.imageCaption, targetLang);
+        } catch (e) {}
+      }
+      if (needsTags) {
+        try {
+          newTags = await Promise.all(article.tags.map(t => clientTranslateChunk(t, targetLang)));
+        } catch (e) {}
+      }
+
+      const updated = {
+        ...cachedObj,
+        imageCaption: newCaption || article.imageCaption || '',
+        tags: (Array.isArray(newTags) && newTags.length > 0) ? newTags : (article.tags || []),
+      };
+
+      memoryArticleCache.set(cacheKey, updated);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`bedain_art_trans_${cacheKey}`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      try {
+        const translationRef = doc(db, `articles/${article.id}/translations`, targetLang);
+        setDoc(translationRef, {
+          imageCaption: updated.imageCaption,
+          tags: updated.tags
+        }, { merge: true }).catch(() => {});
+      } catch (e) {}
+
+      return updated;
+    };
+
     // 1. Check Memory Cache
     if (memoryArticleCache.has(cacheKey)) {
-      setTranslatedArticle(memoryArticleCache.get(cacheKey));
+      const cached = memoryArticleCache.get(cacheKey);
+      const isMissingField = (article.imageCaption && !cached.imageCaption) || 
+                             (Array.isArray(article.tags) && article.tags.length > 0 && (!cached.tags || cached.tags.length === 0));
+      if (!isMissingField) {
+        setTranslatedArticle(cached);
+        setShowBanner(false);
+        return;
+      }
+      // If missing field, backfill asynchronously and set immediately
+      setTranslatedArticle(cached);
+      backfillIfNeeded(cached).then(updated => setTranslatedArticle(updated));
       setShowBanner(false);
       return;
     }
@@ -265,8 +320,17 @@ export const useTranslation = (article, activeLanguage) => {
         if (localCached) {
           const parsed = JSON.parse(localCached);
           if (parsed && parsed.title && parsed.content) {
+            const isMissingField = (article.imageCaption && !parsed.imageCaption) || 
+                                   (Array.isArray(article.tags) && article.tags.length > 0 && (!parsed.tags || parsed.tags.length === 0));
+            if (!isMissingField) {
+              memoryArticleCache.set(cacheKey, parsed);
+              setTranslatedArticle(parsed);
+              setShowBanner(false);
+              return;
+            }
             memoryArticleCache.set(cacheKey, parsed);
             setTranslatedArticle(parsed);
+            backfillIfNeeded(parsed).then(updated => setTranslatedArticle(updated));
             setShowBanner(false);
             return;
           }
@@ -296,13 +360,21 @@ export const useTranslation = (article, activeLanguage) => {
       }
 
       if (cachedInFirestore) {
-        memoryArticleCache.set(cacheKey, cachedInFirestore);
+        const isMissingField = (article.imageCaption && !cachedInFirestore.imageCaption) || 
+                               (Array.isArray(article.tags) && article.tags.length > 0 && (!cachedInFirestore.tags || cachedInFirestore.tags.length === 0));
+        
+        let finalData = cachedInFirestore;
+        if (isMissingField) {
+          finalData = await backfillIfNeeded(cachedInFirestore);
+        }
+
+        memoryArticleCache.set(cacheKey, finalData);
         if (typeof window !== 'undefined') {
           try {
-            localStorage.setItem(`bedain_art_trans_${cacheKey}`, JSON.stringify(cachedInFirestore));
+            localStorage.setItem(`bedain_art_trans_${cacheKey}`, JSON.stringify(finalData));
           } catch (e) {}
         }
-        setTranslatedArticle(cachedInFirestore);
+        setTranslatedArticle(finalData);
         setShowBanner(false);
         setTranslating(false);
         inFlightRef.current = false;
@@ -321,6 +393,8 @@ export const useTranslation = (article, activeLanguage) => {
             seoDescription: article.seoDescription || article.excerpt || '',
             keyPoints: article.keyPoints || [],
             content: article.content,
+            imageCaption: article.imageCaption || '',
+            tags: article.tags || [],
             targetLang
           })
         });
@@ -337,15 +411,21 @@ export const useTranslation = (article, activeLanguage) => {
 
       // 5. Fallback directly to client-side chunked translation if API failed
       if (!translatedData || !translatedData.content) {
-        const [title, desc, content] = await Promise.all([
+        const [title, desc, content, caption] = await Promise.all([
           clientTranslateChunk(article.title, targetLang),
           clientTranslateChunk(article.seoDescription || article.excerpt || '', targetLang),
-          clientTranslateHtml(article.content, targetLang)
+          clientTranslateHtml(article.content, targetLang),
+          article.imageCaption ? clientTranslateChunk(article.imageCaption, targetLang) : Promise.resolve('')
         ]);
 
         let keyPoints = [];
         if (Array.isArray(article.keyPoints) && article.keyPoints.length > 0) {
           keyPoints = await Promise.all(article.keyPoints.map(kp => clientTranslateChunk(kp, targetLang)));
+        }
+
+        let tags = [];
+        if (Array.isArray(article.tags) && article.tags.length > 0) {
+          tags = await Promise.all(article.tags.map(tag => clientTranslateChunk(tag, targetLang)));
         }
 
         translatedData = {
@@ -355,6 +435,8 @@ export const useTranslation = (article, activeLanguage) => {
           excerpt: desc || article.excerpt || '',
           keyPoints,
           content: content || article.content,
+          imageCaption: caption || article.imageCaption || '',
+          tags: tags.length > 0 ? tags : (article.tags || []),
           targetLang,
           translatedAt: new Date().toISOString()
         };

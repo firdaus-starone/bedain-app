@@ -99,14 +99,18 @@ async function translateHtml(html, targetLang) {
   return translatedChunks.join('');
 }
 
-async function translateArticlePayload({ title, seoDescription, keyPoints, content, targetLang }) {
-  const [transTitle, transDesc, transKeyPoints, transContent] = await Promise.all([
+async function translateArticlePayload({ title, seoDescription, keyPoints, content, imageCaption, tags, targetLang }) {
+  const [transTitle, transDesc, transKeyPoints, transContent, transCaption, transTags] = await Promise.all([
     translateChunk(title, targetLang),
     translateChunk(seoDescription, targetLang),
     Array.isArray(keyPoints) && keyPoints.length > 0
       ? Promise.all(keyPoints.map((kp) => translateChunk(kp, targetLang)))
       : Promise.resolve([]),
     translateHtml(content, targetLang),
+    imageCaption ? translateChunk(imageCaption, targetLang) : Promise.resolve(''),
+    Array.isArray(tags) && tags.length > 0
+      ? Promise.all(tags.map((tag) => translateChunk(tag, targetLang)))
+      : Promise.resolve([]),
   ]);
 
   return {
@@ -115,6 +119,8 @@ async function translateArticlePayload({ title, seoDescription, keyPoints, conte
     excerpt: transDesc || seoDescription,
     keyPoints: transKeyPoints.length > 0 ? transKeyPoints : keyPoints,
     content: transContent || content,
+    imageCaption: transCaption || imageCaption || '',
+    tags: transTags.length > 0 ? transTags : (tags || []),
     targetLang,
   };
 }
@@ -122,7 +128,7 @@ async function translateArticlePayload({ title, seoDescription, keyPoints, conte
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { articleId, title, seoDescription, keyPoints, content, targetLang } = body;
+    const { articleId, title, seoDescription, keyPoints, content, imageCaption, tags, targetLang } = body;
 
     if (!targetLang || targetLang === 'id') {
       return NextResponse.json({
@@ -133,6 +139,8 @@ export async function POST(request) {
           seoDescription,
           keyPoints,
           content,
+          imageCaption: imageCaption || '',
+          tags: tags || [],
           targetLang: 'id',
         },
       });
@@ -143,6 +151,8 @@ export async function POST(request) {
       seoDescription,
       keyPoints,
       content,
+      imageCaption,
+      tags,
       targetLang,
     });
 
