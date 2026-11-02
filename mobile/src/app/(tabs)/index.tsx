@@ -931,20 +931,20 @@ export default function Home() {
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)} style={styles.terkiniCard} activeOpacity={0.9}>
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
-                <View style={styles.terkiniOverlay}>
-                  <View style={[styles.terkiniBadge, { backgroundColor: item.videoUrl ? 'red' : '#3b82f6' }]}>
+                <View style={styles.terkiniBadgeWrap}>
+                  <View style={[styles.terkiniBadge, { backgroundColor: item.videoUrl ? '#ef4444' : '#2563eb' }]}>
                     <Text style={styles.terkiniBadgeText}>{item.videoUrl ? 'VIDEO' : (t('home.tabs.terkini', 'TERKINI') || 'TERKINI').toUpperCase()}</Text>
-                  </View>
-                  <View style={styles.terkiniTextContainer}>
-                    <Text style={styles.terkiniTitle} numberOfLines={2}>{item.title}</Text>
-                    <Text style={styles.terkiniDate}>{item.date}</Text>
                   </View>
                 </View>
                 {item.videoUrl && (
-                  <View style={{ position: 'absolute', top: '35%', left: '35%', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 20, padding: 8, alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="play" size={20} color="white" style={{ marginLeft: 2 }} />
+                  <View style={styles.terkiniPlayBtn}>
+                    <Ionicons name="play" size={16} color="white" style={{ marginLeft: 2 }} />
                   </View>
                 )}
+                <View style={styles.terkiniTextContainer}>
+                  <Text style={styles.terkiniTitle} numberOfLines={2}>{item.title}</Text>
+                  <Text style={styles.terkiniDate}>{item.date}</Text>
+                </View>
               </ImageBackground>
             </TouchableOpacity>
           )}
@@ -1783,32 +1783,51 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  terkiniOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'space-between',
-    padding: 8, // Padding diperkecil
+  terkiniBadgeWrap: {
+    padding: 6,
   },
   terkiniBadge: {
     backgroundColor: '#3b82f6',
     alignSelf: 'flex-start',
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
   },
   terkiniBadgeText: {
     color: '#fff',
-    fontSize: 8, // Font diperkecil
+    fontSize: 8,
     fontWeight: 'bold',
   },
+  terkiniPlayBtn: {
+    position: 'absolute',
+    top: '28%',
+    left: '34%',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   terkiniTextContainer: {
-    marginTop: 'auto',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 7,
+    paddingTop: 6,
+    paddingBottom: 6,
   },
   terkiniTitle: {
     color: '#fff',
-    fontSize: 10, // Font judul diperkecil
+    fontSize: 10,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
+    lineHeight: 13,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   terkiniDate: {
     color: '#e2e8f0',
