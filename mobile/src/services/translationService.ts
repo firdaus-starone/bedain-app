@@ -186,23 +186,61 @@ const processBatchQueue = async (targetLang: SupportedLanguage) => {
   const textsToTranslate = Array.from(pendingBatch);
   pendingBatch.clear();
 
-  const chunkSize = 6;
+  const chunkSize = 15;
   for (let i = 0; i < textsToTranslate.length; i += chunkSize) {
     const chunk = textsToTranslate.slice(i, i + chunkSize);
-    await Promise.all(
-      chunk.map(async (item) => {
-        const trans = await translateSingleOnline(item, targetLang);
-        if (trans && isValidTranslation(item, trans, targetLang)) {
+    let batchSuccess = false;
+
+    // 1. Primary: Fast batch translation via Bedain Web API endpoint
+    try {
+      const res = await fetch('https://bedainnews.com/api/translate-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: chunk, targetLang }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.translations) && data.translations.length === chunk.length) {
           if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
-          textMemoryCache[targetLang][item] = trans;
-          textMemoryCache[targetLang][item.trim()] = trans;
+          let anyValid = false;
+
+          data.translations.forEach((trans: string, idx: number) => {
+            const original = chunk[idx];
+            if (original && trans && isValidTranslation(original, trans, targetLang)) {
+              textMemoryCache[targetLang][original] = trans;
+              textMemoryCache[targetLang][original.trim()] = trans;
+              anyValid = true;
+            }
+          });
+
+          if (anyValid) {
+            batchSuccess = true;
+            notifyBatchListeners();
+          }
         }
-      })
-    );
+      }
+    } catch (e) {
+      // Fallback to individual requests below
+    }
+
+    // 2. Fallback: Translate individually if batch endpoint failed
+    if (!batchSuccess) {
+      await Promise.all(
+        chunk.map(async (item) => {
+          const trans = await translateSingleOnline(item, targetLang);
+          if (trans && isValidTranslation(item, trans, targetLang)) {
+            if (!textMemoryCache[targetLang]) textMemoryCache[targetLang] = {};
+            textMemoryCache[targetLang][item] = trans;
+            textMemoryCache[targetLang][item.trim()] = trans;
+          }
+        })
+      );
+      notifyBatchListeners();
+    }
   }
 
   await persistTextCache(targetLang);
-  notifyBatchListeners();
 };
 
 // Queue a text for translation in the background
@@ -219,7 +257,7 @@ export const queueTextTranslation = (text: string, targetLang: SupportedLanguage
   if (batchTimeout) clearTimeout(batchTimeout);
   batchTimeout = setTimeout(() => {
     processBatchQueue(targetLang);
-  }, 60);
+  }, 40);
 };
 
 // Synchronous cached lookup

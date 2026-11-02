@@ -78,7 +78,7 @@ const getIconForSlug = (slug: string) => {
 export default function CategoriesModal() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
-  const { t, getCategoryName } = useLanguage();
+  const { t, getCategoryName, translateText } = useLanguage();
   const [categories, setCategories] = useState<{ id: string, name: string, slug: string, color: string, icon: string }[]>([]);
   const [regions, setRegions] = useState<{ id: string, name: string, color: string, icon: string }[]>([]);
   const [popularTags, setPopularTags] = useState<{ name: string, count: number }[]>([]);
@@ -207,9 +207,13 @@ export default function CategoriesModal() {
                 <View style={styles.sectionHeaderRow}>
                   <View style={styles.sectionHeaderTitleWrap}>
                     <Ionicons name="flame" size={18} color="#ef4444" style={{ marginRight: 6 }} />
-                    <Text style={[styles.sectionHeading, { color: colors.text }]}>Topik / Tag Populer</Text>
+                    <Text style={[styles.sectionHeading, { color: colors.text }]}>
+                      {t('categories.popular_tags', 'Topik / Tag Populer')}
+                    </Text>
                   </View>
-                  <Text style={styles.tagCountHint}>{popularTags.length} Topik Hangat</Text>
+                  <Text style={styles.tagCountHint}>
+                    {popularTags.length} {t('categories.hot_topics', 'Topik Hangat')}
+                  </Text>
                 </View>
 
                 <View style={styles.tagsContainer}>
@@ -228,7 +232,7 @@ export default function CategoriesModal() {
                     >
                       <Text style={[styles.tagHash, { color: '#ef4444' }]}>#</Text>
                       <Text style={[styles.tagText, { color: isDarkMode ? '#f8fafc' : '#1e293b' }]}>
-                        {tag.name}
+                        {translateText(tag.name)}
                       </Text>
                       {tag.count > 1 && (
                         <View style={[styles.tagCountBadge, { backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#ffe4e6' }]}>
@@ -243,7 +247,9 @@ export default function CategoriesModal() {
 
             {/* Section: Topik Utama */}
             <View style={styles.sectionHeaderWrap}>
-              <Text style={[styles.sectionHeading, { color: colors.text }]}>Topik Utama</Text>
+              <Text style={[styles.sectionHeading, { color: colors.text }]}>
+                {t('categories.main_topics', 'Topik Utama')}
+              </Text>
             </View>
             <View style={styles.gridContainer}>
               {categories.map((cat, index) => (
@@ -264,7 +270,9 @@ export default function CategoriesModal() {
             {regions.length > 0 && (
               <>
                 <View style={styles.sectionHeaderWrap}>
-                  <Text style={[styles.sectionHeading, { color: colors.text }]}>Region</Text>
+                  <Text style={[styles.sectionHeading, { color: colors.text }]}>
+                    {t('categories.region', 'Daerah')}
+                  </Text>
                 </View>
                 <View style={styles.gridContainer}>
                   {regions.map((reg, index) => (
@@ -277,7 +285,7 @@ export default function CategoriesModal() {
                       <View style={[styles.iconContainer, { backgroundColor: `${reg.color}15` }]}>
                         <Ionicons name={reg.icon as any} size={22} color={reg.color} />
                       </View>
-                      <Text style={[styles.categoryName, dyn.categoryName]}>{reg.name}</Text>
+                      <Text style={[styles.categoryName, dyn.categoryName]}>{translateText(reg.name)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>

@@ -144,7 +144,14 @@
     "all_loaded": "已加载全部新闻",
     "trending_desc": "阅读量最高的十大热门新闻",
     "opinion": "精选观点",
-    "latest_news": "最新新闻"
+    "latest_news": "最新新闻",
+    "editorial_quote": "秉持独立、深刻、客观的原则，直接从我们的编辑部为有见地的读者呈现事实。",
+    "editorial_board": "— Bedain News 编辑委员会",
+    "special_coverage": "编辑部独家深度调查",
+    "no_editorial_title": "暂无编辑部文章",
+    "no_editorial_sub": "编辑部专栏目前尚未发布文章。",
+    "first_to_comment": "抢先发表您的精彩观点！",
+    "no_comments_yet": "暂无读者评论"
   },
   "categories": {
     "berita": "新闻",
@@ -169,7 +176,17 @@
     "sosial": "社会",
     "pemerintahan": "政务",
     "kuliner": "美食",
-    "daerah": "地方",
+    "daerah": "地方要闻",
+    "nasional": "国内要闻",
+    "puisi-sastra": "诗歌与文学",
+    "inspirasi-iman": "信仰与启示",
+    "breaking-news": "突发快讯",
+    "pilkada": "地方选举",
+    "pertanian": "农业",
+    "popular_tags": "热门话题 / 标签",
+    "hot_topics": "个热门话题",
+    "main_topics": "主要分类",
+    "region": "地区",
     "hiburan": "娱乐",
     "teknologi": "科技",
     "ekonomi": "经济",
@@ -180,6 +197,14 @@
     "kriminal": "犯罪",
     "video": "视频",
     "properti": "房产"
+  },
+  "common": {
+    "reader": "读者",
+    "readers": "位读者",
+    "views": "次浏览",
+    "anonymous": "匿名读者",
+    "just_now": "刚刚",
+    "view_related_article": "查看相关文章"
   },
   "user_menu": {
     "profile": "个人资料",

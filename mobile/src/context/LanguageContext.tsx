@@ -232,10 +232,21 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Helper terjemahan nama kategori
   const getCategoryName = (slugOrName: string): string => {
     if (!slugOrName) return '';
-    const cleanSlug = slugOrName.toLowerCase().trim().replace(/\s+/g, '-');
+    const cleanSlug = slugOrName
+      .toLowerCase()
+      .trim()
+      .replace(/&/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
     const translated = t(`categories.${cleanSlug}`);
     if (translated && translated !== `categories.${cleanSlug}`) {
       return translated;
+    }
+    // Also try direct lookup or translation if not in dictionary
+    if (lang !== 'id') {
+      const cached = getCachedTranslation(slugOrName, lang);
+      if (cached) return cached;
+      queueTextTranslation(slugOrName, lang);
     }
     return slugOrName;
   };

@@ -155,7 +155,7 @@ const PulsingDot = () => {
 export default function Home() {
   const router = useRouter();
   const { isDarkMode, colors } = useTheme();
-  const { lang, t, getCategoryName, getArticleTitle, getArticleExcerpt, version } = useLanguage();
+  const { lang, t, getCategoryName, getArticleTitle, getArticleExcerpt, translateText, version } = useLanguage();
   const { width: screenWidth } = useWindowDimensions();
   const [categories, setCategories] = useState<{ name: string, slug: string }[]>([]);
   const [activeTab, setActiveTab] = useState<'terkini' | 'rekomendasi' | 'populer' | 'redaksi' | 'komentar'>('terkini');
@@ -1292,7 +1292,7 @@ export default function Home() {
                 >
                   <Image source={{ uri: POPULER_ARTICLES[0].image }} style={styles.popularTopImage} />
                   <View style={styles.rankBadgeFirst}>
-                    <Text style={styles.rankBadgeFirstText}>#1 TERPOPULER</Text>
+                    <Text style={styles.rankBadgeFirstText}>#1 {t('article.popular', 'TERPOPULER').toUpperCase()}</Text>
                   </View>
                   <View style={styles.popularTopBody}>
                     <Text style={[styles.popularTopTitle, dyn.textMain]} numberOfLines={2}>{POPULER_ARTICLES[0].title}</Text>
@@ -1300,7 +1300,7 @@ export default function Home() {
                       <Text style={[styles.recomListDate, dyn.textMuted]}>{POPULER_ARTICLES[0].date}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Ionicons name="eye" size={13} color="#f97316" />
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#f97316' }}>{POPULER_ARTICLES[0].views || 0} pembaca</Text>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#f97316' }}>{POPULER_ARTICLES[0].views || 0} {t('common.readers', 'pembaca')}</Text>
                       </View>
                     </View>
                   </View>
@@ -1324,11 +1324,11 @@ export default function Home() {
                           </Text>
                         </View>
                         <View style={styles.popularRankContent}>
-                          <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                          <Text style={styles.recomCategorySmall}>{(getCategoryName(item.category) || 'BERITA').toUpperCase()}</Text>
                           <Text style={[styles.popularRankTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                             <Ionicons name="eye-outline" size={12} color={dyn.textMuted.color} />
-                            <Text style={[styles.recomListDate, dyn.textMuted]}>{item.views || 0} views</Text>
+                            <Text style={[styles.recomListDate, dyn.textMuted]}>{item.views || 0} {t('common.views', 'views')}</Text>
                             <Text style={dyn.textMuted}>•</Text>
                             <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
                           </View>
@@ -1373,18 +1373,22 @@ export default function Home() {
               {/* Editorial Manifesto Box */}
               <View style={[styles.editorialBox, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc', borderColor: '#1b61d1' }]}>
                 <Text style={[styles.editorialBoxText, dyn.textMain]}>
-                  "Menyajikan fakta dengan independen, tajam, dan berimbang langsung dari ruang redaksi kami untuk pembaca cerdas."
+                  "{t('home.editorial_quote', 'Menyajikan fakta dengan independen, tajam, dan berimbang langsung dari ruang redaksi kami untuk pembaca cerdas.')}"
                 </Text>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#1b61d1', marginTop: 8, textAlign: 'right' }}>— Dewan Redaksi Bedain News</Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#1b61d1', marginTop: 8, textAlign: 'right' }}>
+                  {t('home.editorial_board', '— Dewan Redaksi Bedain News')}
+                </Text>
               </View>
 
               {/* Daftar Artikel Redaksi */}
               {REDAKSI_ARTICLES.length === 0 ? (
                 <View style={[styles.emptyCommentFeed, dyn.card, { marginTop: 12 }]}>
                   <Ionicons name="newspaper-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
-                  <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Artikel Redaksi</Text>
+                  <Text style={[styles.emptyCommentTitle, dyn.textMain]}>
+                    {t('home.no_editorial_title', 'Belum Ada Artikel Redaksi')}
+                  </Text>
                   <Text style={[styles.emptyCommentSub, dyn.textMuted]}>
-                    Belum ada artikel yang diterbitkan pada kategori Meja Redaksi.
+                    {t('home.no_editorial_sub', 'Belum ada artikel yang diterbitkan pada kategori Meja Redaksi.')}
                   </Text>
                 </View>
               ) : (
@@ -1400,14 +1404,16 @@ export default function Home() {
                       <View style={styles.editorialCardBody}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                           <View style={styles.editorialBadge}>
-                            <Text style={styles.editorialBadgeText}>MEJA REDAKSI</Text>
+                            <Text style={styles.editorialBadgeText}>{t('home.tabs.redaksi', 'Meja Redaksi').toUpperCase()}</Text>
                           </View>
                           <Text style={[styles.recomListDate, dyn.textMuted]}>{item.date}</Text>
                         </View>
                         <Text style={[styles.editorialCardTitle, dyn.textMain]} numberOfLines={3}>{item.title}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 6 }}>
                           <Ionicons name="pencil" size={12} color="#16a34a" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>Liputan Khusus Redaksi</Text>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>
+                            {t('home.special_coverage', 'Liputan Khusus Redaksi')}
+                          </Text>
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -1446,17 +1452,22 @@ export default function Home() {
               {allApprovedComments.length === 0 ? (
                 <View style={[styles.emptyCommentFeed, dyn.card]}>
                   <Ionicons name="chatbubble-ellipses-outline" size={48} color={isDarkMode ? '#475569' : '#cbd5e1'} />
-                  <Text style={[styles.emptyCommentTitle, dyn.textMain]}>Belum Ada Komentar</Text>
-                  <Text style={[styles.emptyCommentSub, dyn.textMuted]}>Jadilah pembaca pertama yang memberikan tanggapan di artikel kami!</Text>
+                  <Text style={[styles.emptyCommentTitle, dyn.textMain]}>{t('home.no_comments_yet', 'Belum Ada Komentar')}</Text>
+                  <Text style={[styles.emptyCommentSub, dyn.textMuted]}>{t('home.first_to_comment', 'Jadilah pembaca pertama yang memberikan tanggapan di artikel kami!')}</Text>
                 </View>
               ) : (
                 <View style={{ gap: 14, marginTop: 8 }}>
                   {allApprovedComments.map((comment: any, idx: number) => {
-                    let commentDate = 'Baru saja';
+                    let commentDate = t('common.just_now', 'Baru saja');
                     if (comment.createdAt) {
                       const d = typeof comment.createdAt.toDate === 'function' ? comment.createdAt.toDate() : new Date(comment.createdAt);
-                      commentDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                      const dateLocale = lang === 'zh' ? 'zh-CN' : lang === 'en' ? 'en-US' : 'id-ID';
+                      commentDate = d.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' });
                     }
+
+                    const displayAuthor = comment.authorName 
+                      ? (lang !== 'id' && comment.authorName.toLowerCase().includes('pembaca') ? t('common.reader', 'Pembaca') : comment.authorName)
+                      : t('common.anonymous', 'Anonim');
 
                     return (
                       <View key={comment.id || idx} style={[styles.commentFeedCard, dyn.card]}>
@@ -1465,16 +1476,16 @@ export default function Home() {
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                             <View style={styles.commentFeedAvatar}>
                               <Text style={styles.commentFeedAvatarText}>
-                                {(comment.authorName || 'A').charAt(0).toUpperCase()}
+                                {(displayAuthor || 'A').charAt(0).toUpperCase()}
                               </Text>
                             </View>
                             <View>
-                              <Text style={[styles.commentFeedAuthor, dyn.textMain]}>{comment.authorName || 'Anonim'}</Text>
+                              <Text style={[styles.commentFeedAuthor, dyn.textMain]}>{displayAuthor}</Text>
                               <Text style={[styles.recomListDate, dyn.textMuted]}>{commentDate}</Text>
                             </View>
                           </View>
                           <View style={styles.readerBadge}>
-                            <Text style={styles.readerBadgeText}>Pembaca</Text>
+                            <Text style={styles.readerBadgeText}>{t('common.reader', 'Pembaca')}</Text>
                           </View>
                         </View>
 
@@ -1482,7 +1493,7 @@ export default function Home() {
                         <View style={[styles.commentFeedBubble, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}>
                           <Ionicons name="chatbox-outline" size={14} color="#7c3aed" style={{ marginBottom: 4 }} />
                           <Text style={[styles.commentFeedText, dyn.textMain]}>
-                            "{comment.content}"
+                            "{translateText(comment.content)}"
                           </Text>
                         </View>
 
@@ -1494,7 +1505,7 @@ export default function Home() {
                         >
                           <Ionicons name="newspaper-outline" size={15} color="#1b61d1" />
                           <Text style={[styles.commentArticleTitle, dyn.textMain]} numberOfLines={1}>
-                            {comment.articleTitle || 'Lihat Artikel Terkait'}
+                            {translateText(comment.articleTitle) || t('common.view_related_article', 'Lihat Artikel Terkait')}
                           </Text>
                           <Ionicons name="arrow-forward" size={14} color="#1b61d1" style={{ marginLeft: 'auto' }} />
                         </TouchableOpacity>

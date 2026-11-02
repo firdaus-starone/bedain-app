@@ -144,7 +144,14 @@
     "all_loaded": "Semua Berita Sudah Ditampilkan",
     "trending_desc": "10 Berita terpopuler dengan pembaca terbanyak",
     "opinion": "Opini Pilihan",
-    "latest_news": "Berita Terkini"
+    "latest_news": "Berita Terkini",
+    "editorial_quote": "Menyajikan fakta dengan independen, tajam, dan berimbang langsung dari ruang redaksi kami untuk pembaca cerdas.",
+    "editorial_board": "— Dewan Redaksi Bedain News",
+    "special_coverage": "Liputan Khusus Redaksi",
+    "no_editorial_title": "Belum Ada Artikel Redaksi",
+    "no_editorial_sub": "Belum ada artikel yang diterbitkan pada kategori Meja Redaksi.",
+    "first_to_comment": "Jadilah pembaca pertama yang memberikan tanggapan di artikel kami!",
+    "no_comments_yet": "Belum ada komentar pembaca"
   },
   "categories": {
     "berita": "Berita",
@@ -170,6 +177,16 @@
     "pemerintahan": "Pemerintahan",
     "kuliner": "Kuliner",
     "daerah": "Daerah",
+    "nasional": "Nasional",
+    "puisi-sastra": "Puisi & Sastra",
+    "inspirasi-iman": "Inspirasi Iman",
+    "breaking-news": "Breaking News",
+    "pilkada": "Pilkada",
+    "pertanian": "Pertanian",
+    "popular_tags": "Topik / Tag Populer",
+    "hot_topics": "Topik Hangat",
+    "main_topics": "Topik Utama",
+    "region": "Daerah",
     "hiburan": "Hiburan",
     "teknologi": "Teknologi",
     "ekonomi": "Ekonomi",
@@ -180,6 +197,14 @@
     "kriminal": "Kriminal",
     "video": "Video",
     "properti": "Properti"
+  },
+  "common": {
+    "reader": "Pembaca",
+    "readers": "pembaca",
+    "views": "views",
+    "anonymous": "Anonim",
+    "just_now": "Baru saja",
+    "view_related_article": "Lihat Artikel Terkait"
   },
   "user_menu": {
     "profile": "Profil Saya",

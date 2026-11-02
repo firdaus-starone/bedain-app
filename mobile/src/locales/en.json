@@ -144,7 +144,14 @@
     "all_loaded": "All Articles Loaded",
     "trending_desc": "Top 10 most popular articles with highest readership",
     "opinion": "Opinion",
-    "latest_news": "Latest News"
+    "latest_news": "Latest News",
+    "editorial_quote": "Presenting facts independently, incisively, and balanced directly from our newsroom for discerning readers.",
+    "editorial_board": "— Bedain News Editorial Board",
+    "special_coverage": "Special Editorial Coverage",
+    "no_editorial_title": "No Editorial Articles Yet",
+    "no_editorial_sub": "No articles have been published in the Editorial Desk category yet.",
+    "first_to_comment": "Be the first reader to share your thoughts on our articles!",
+    "no_comments_yet": "No reader comments yet"
   },
   "categories": {
     "berita": "News",
@@ -170,6 +177,16 @@
     "pemerintahan": "Government",
     "kuliner": "Culinary",
     "daerah": "Regional",
+    "nasional": "National News",
+    "puisi-sastra": "Poetry & Literature",
+    "inspirasi-iman": "Faith & Inspiration",
+    "breaking-news": "Breaking News",
+    "pilkada": "Regional Elections",
+    "pertanian": "Agriculture",
+    "popular_tags": "Popular Topics / Tags",
+    "hot_topics": "Hot Topics",
+    "main_topics": "Main Categories",
+    "region": "Regions",
     "hiburan": "Entertainment",
     "teknologi": "Technology",
     "ekonomi": "Economy",
@@ -180,6 +197,14 @@
     "kriminal": "Crime",
     "video": "Video",
     "properti": "Property"
+  },
+  "common": {
+    "reader": "Reader",
+    "readers": "readers",
+    "views": "views",
+    "anonymous": "Anonymous",
+    "just_now": "Just now",
+    "view_related_article": "View Related Article"
   },
   "user_menu": {
     "profile": "My Profile",
