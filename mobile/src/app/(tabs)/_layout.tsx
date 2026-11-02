@@ -182,7 +182,7 @@ export default function Layout() {
         name="categories"
         options={{
           title: t('navigation.categories', 'Kategori'),
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.categories', 'Kategori')}</Text>,
+          tabBarLabel: ({ color }) => <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.categories', 'Kategori')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "compass" : "compass-outline"} size={24} color={color} />,
         }}
       />
@@ -190,7 +190,7 @@ export default function Layout() {
         name="submit"
         options={{
           title: t('navigation.send', 'Kirim'),
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.send', 'Kirim')}</Text>,
+          tabBarLabel: ({ color }) => <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.send', 'Kirim')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "pencil" : "pencil-outline"} size={24} color={color} />,
         }}
       />
@@ -198,7 +198,7 @@ export default function Layout() {
         name="index"
         options={{
           title: t('navigation.home', 'Beranda'),
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.home', 'Beranda')}</Text>,
+          tabBarLabel: ({ color }) => <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.home', 'Beranda')}</Text>,
           tabBarIcon: ({ focused }) => (
             <SamuraiShineHomeIcon focused={focused} logoUrl={logoUrl} />
           ),
@@ -208,7 +208,7 @@ export default function Layout() {
         name="hot"
         options={{
           title: t('navigation.hot', 'Hangat'),
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.hot', 'Hangat')}</Text>,
+          tabBarLabel: ({ color }) => <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.hot', 'Hangat')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={24} color={color} />,
         }}
       />
@@ -216,7 +216,7 @@ export default function Layout() {
         name="video"
         options={{
           title: t('navigation.video', 'Video'),
-          tabBarLabel: ({ color }) => <Text style={{ fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.video', 'Video')}</Text>,
+          tabBarLabel: ({ color }) => <Text style={{ fontFamily: 'Montserrat-SemiBold', fontSize: 10, fontWeight: '600', color: color, marginBottom: Platform.OS === 'android' ? 6 : 0 }}>{t('navigation.video', 'Video')}</Text>,
           tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={28} color={color} />,
         }}
       />

@@ -717,10 +717,12 @@ export default function Home() {
     tabTextActive: {
       color: isDarkMode ? '#60a5fa' : '#1b61d1',
       fontWeight: '800' as const,
+      fontFamily: 'Montserrat-Bold',
     },
     tabTextInactive: {
       color: isDarkMode ? '#94a3b8' : '#64748b',
       fontWeight: '600' as const,
+      fontFamily: 'Montserrat-SemiBold',
     },
     commentBadgeBg: {
       backgroundColor: colors.primary,
@@ -1653,7 +1655,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   logoText: {
-    fontSize: 30,
+    fontFamily: 'Montserrat-Black',
+    fontSize: 29,
     fontWeight: '900',
     color: '#000',
     letterSpacing: -0.5,
@@ -1697,6 +1700,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileInitialText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '800',
@@ -1727,9 +1731,9 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   categoryText: {
+    fontFamily: 'Montserrat-SemiBold',
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '400',
   },
   categoryItem: {
   },
@@ -1750,6 +1754,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   hotTopicLabelText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#ffffff',
     fontSize: 9,
     fontWeight: 'bold',
@@ -1763,6 +1768,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hotTopicText: {
+    fontFamily: 'PlusJakartaSans-Medium',
     fontSize: 12,
     color: '#475569',
     fontWeight: '500',
@@ -1794,6 +1800,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   terkiniBadgeText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#fff',
     fontSize: 8,
     fontWeight: 'bold',
@@ -1820,6 +1827,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   terkiniTitle: {
+    fontFamily: 'Montserrat-Bold',
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
@@ -1830,6 +1838,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   terkiniDate: {
+    fontFamily: 'PlusJakartaSans-Medium',
     color: '#e2e8f0',
     fontSize: 8,
   },
@@ -1863,6 +1872,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   featuredTitle: {
+    fontFamily: 'Montserrat-Bold',
     color: '#fff',
     fontSize: 17,
     fontWeight: 'bold',
@@ -1873,6 +1883,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   featuredAuthor: {
+    fontFamily: 'PlusJakartaSans-SemiBold',
     color: '#f8fafc',
     fontSize: 12,
     textTransform: 'uppercase',
@@ -1885,6 +1896,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   relatedTitle: {
+    fontFamily: 'Montserrat-Bold',
     color: '#fcd34d',
     fontSize: 14,
     fontWeight: 'bold',
@@ -1895,6 +1907,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   relatedItem: {
+    fontFamily: 'PlusJakartaSans-Medium',
     color: '#fff',
     fontSize: 12,
     flex: 1,
@@ -1923,6 +1936,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listTitle: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 14,
     fontWeight: '700',
     color: '#1e293b',
@@ -1930,6 +1944,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   listDate: {
+    fontFamily: 'PlusJakartaSans-Medium',
     fontSize: 11,
     color: '#94a3b8',
   },
@@ -1944,6 +1959,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   bottomSectionTitle: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 16,
     fontWeight: 'bold',
     color: '#0f172a',
@@ -1963,8 +1979,9 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   bottomTitle: {
+    fontFamily: 'Montserrat-Bold',
     color: '#1e293b', 
-    fontSize: 12, // Font diperbesar sedikit
+    fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 4,
   },
@@ -2073,11 +2090,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   videoSectionTitle: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
   videoSectionSubtitle: {
+    fontFamily: 'PlusJakartaSans-Medium',
     fontSize: 11,
     marginTop: 1,
   },
@@ -2090,6 +2109,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   videoMoreText: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -2143,6 +2163,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   videoTagText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#ffffff',
     fontSize: 8,
     fontWeight: '900',
@@ -2161,6 +2182,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   videoViewsText: {
+    fontFamily: 'PlusJakartaSans-Medium',
     color: '#ffffff',
     fontSize: 8.5,
     fontWeight: '600',
@@ -2169,6 +2191,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   videoCardTitle: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 16,
@@ -2181,6 +2204,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   videoCardCategory: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 9,
     fontWeight: '700',
     color: '#ef4444',
@@ -2535,11 +2559,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   mostCommentedTitle: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.2,
   },
   mostCommentedSub: {
+    fontFamily: 'PlusJakartaSans-Medium',
     fontSize: 11,
     marginTop: 2,
   },
@@ -2552,6 +2578,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   mostCommentedTabLinkText: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -2590,6 +2617,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4, // Penyesuaian optik agar angka tepat di tengah balon chat
   },
   commentBubbleNumber: {
+    fontFamily: 'Montserrat-Bold',
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '800',
@@ -2597,6 +2625,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   mostCommentedCardTitle: {
+    fontFamily: 'Montserrat-Bold',
     flex: 1,
     fontSize: 13.5,
     fontWeight: '700',

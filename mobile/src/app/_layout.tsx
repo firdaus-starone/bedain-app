@@ -2,6 +2,23 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar, useColorScheme, Alert, Modal, View, Text, TouchableOpacity, ActivityIndicator, Animated, AppState, AppStateStatus, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  useFonts,
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+  Montserrat_800ExtraBold,
+  Montserrat_900Black,
+} from '@expo-google-fonts/montserrat';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { AuthProvider } from '../context/AuthContext';
 import { LanguageProvider } from '../context/LanguageContext';
@@ -9,6 +26,8 @@ import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -28,6 +47,29 @@ const isNewerVersion = (latest: string, current: string): boolean => {
 
 function RootLayoutContent() {
   const { isDarkMode, colors } = useTheme();
+
+  const [fontsLoaded] = useFonts({
+    'Montserrat-Regular': Montserrat_400Regular,
+    'Montserrat-Medium': Montserrat_500Medium,
+    'Montserrat-SemiBold': Montserrat_600SemiBold,
+    'Montserrat-Bold': Montserrat_700Bold,
+    'Montserrat-ExtraBold': Montserrat_800ExtraBold,
+    'Montserrat-Black': Montserrat_900Black,
+    'PlusJakartaSans-Regular': PlusJakartaSans_400Regular,
+    'PlusJakartaSans-Medium': PlusJakartaSans_500Medium,
+    'PlusJakartaSans-SemiBold': PlusJakartaSans_600SemiBold,
+    'PlusJakartaSans-Bold': PlusJakartaSans_700Bold,
+    'PlusJakartaSans-ExtraBold': PlusJakartaSans_800ExtraBold,
+    'Montserrat': Montserrat_400Regular,
+    'Plus Jakarta Sans': PlusJakartaSans_400Regular,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded]);
+
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateType, setUpdateType] = useState<'ota' | 'store'>('ota');
   const [storeUpdateInfo, setStoreUpdateInfo] = useState<{ version: string; url: string; notes?: string }>({
@@ -129,6 +171,10 @@ function RootLayoutContent() {
       setShowUpdateModal(false);
     }
   };
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <>

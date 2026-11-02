@@ -17,7 +17,19 @@ import { ArticleKeyPoints } from '../../components/ArticleKeyPoints';
 import { ArticlePoll } from '../../components/ArticlePoll';
 import { ArticleAudioPlayer } from '../../components/ArticleAudioPlayer';
 import { SocialMediaLinks } from '../../components/SocialMediaLinks';
-const systemFonts = [...defaultSystemFonts, 'System', 'sans-serif', 'Roboto'];
+const systemFonts = [
+  ...defaultSystemFonts,
+  'Montserrat-Bold',
+  'Montserrat-SemiBold',
+  'Montserrat-Regular',
+  'PlusJakartaSans-Regular',
+  'PlusJakartaSans-Medium',
+  'PlusJakartaSans-SemiBold',
+  'PlusJakartaSans-Bold',
+  'System',
+  'sans-serif',
+  'Roboto',
+];
 
 const { width } = Dimensions.get('window');
 
@@ -531,8 +543,10 @@ export default function ArticleDetail() {
                 systemFonts={systemFonts}
                 baseStyle={{ 
                   textAlign: 'left',
-                  fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
-                  fontWeight: '500'
+                  fontFamily: 'PlusJakartaSans-Regular',
+                  fontSize: 16.5,
+                  lineHeight: 27,
+                  color: isDarkMode ? '#cbd5e1' : '#334155',
                 }}
                 source={{ html: (() => {
                   const html = displayContent;
@@ -634,47 +648,49 @@ export default function ArticleDetail() {
                   }
                 }}
                 tagsStyles={{
-                  body: { textAlign: 'left' },
+                  body: { textAlign: 'left', fontFamily: 'PlusJakartaSans-Regular' },
                   div: { textAlign: 'left' },
                   span: { textAlign: 'left' },
-                  p: { fontSize: 15, lineHeight: 24, color: colors.text, marginBottom: 8, textAlign: 'left', fontWeight: '500' },
+                  p: { fontFamily: 'PlusJakartaSans-Regular', fontSize: 16, lineHeight: 26, color: colors.text, marginBottom: 10, textAlign: 'left' },
                   em: { 
+                    fontFamily: 'PlusJakartaSans-Medium',
                     fontStyle: 'italic', 
-                    fontWeight: 'normal', 
-                    fontSize: 13, 
+                    fontSize: 13.5, 
                     lineHeight: 20, 
                     color: isDarkMode ? '#94a3b8' : '#64748b' 
                   },
                   i: { 
+                    fontFamily: 'PlusJakartaSans-Medium',
                     fontStyle: 'italic', 
-                    fontWeight: 'normal', 
-                    fontSize: 13, 
+                    fontSize: 13.5, 
                     lineHeight: 20, 
                     color: isDarkMode ? '#94a3b8' : '#64748b' 
                   },
                   cite: { 
+                    fontFamily: 'PlusJakartaSans-Medium',
                     fontStyle: 'italic', 
-                    fontWeight: 'normal', 
-                    fontSize: 13, 
+                    fontSize: 13.5, 
                     lineHeight: 20, 
                     color: isDarkMode ? '#94a3b8' : '#64748b' 
                   },
                   figcaption: { 
+                    fontFamily: 'PlusJakartaSans-Medium',
                     fontStyle: 'italic', 
-                    fontWeight: 'normal', 
-                    fontSize: 13, 
+                    fontSize: 13.5, 
                     lineHeight: 20, 
                     color: isDarkMode ? '#94a3b8' : '#64748b',
                     textAlign: 'left',
                     marginTop: 4,
                     marginBottom: 12
                   },
-                  strong: { fontWeight: '800', color: colors.text },
-                  h2: { fontSize: 19, fontWeight: '800', marginTop: 14, marginBottom: 6, color: colors.text, textAlign: 'left' },
-                  h3: { fontSize: 17, fontWeight: '700', marginTop: 14, marginBottom: 6, color: colors.text, textAlign: 'left' },
+                  strong: { fontFamily: 'PlusJakartaSans-Bold', fontWeight: '800', color: colors.text },
+                  b: { fontFamily: 'PlusJakartaSans-Bold', fontWeight: '800', color: colors.text },
+                  h1: { fontFamily: 'Montserrat-Bold', fontSize: 21, fontWeight: '800', marginTop: 16, marginBottom: 8, color: colors.text, textAlign: 'left' },
+                  h2: { fontFamily: 'Montserrat-Bold', fontSize: 19, fontWeight: '800', marginTop: 14, marginBottom: 6, color: colors.text, textAlign: 'left' },
+                  h3: { fontFamily: 'Montserrat-SemiBold', fontSize: 17, fontWeight: '700', marginTop: 14, marginBottom: 6, color: colors.text, textAlign: 'left' },
                   a: { color: '#3b82f6', textDecorationLine: 'none' },
                   img: { borderRadius: 8, marginVertical: 8 },
-                  li: { fontSize: 15, lineHeight: 24, color: colors.text, marginBottom: 6, textAlign: 'left' },
+                  li: { fontFamily: 'PlusJakartaSans-Regular', fontSize: 15.5, lineHeight: 25, color: colors.text, marginBottom: 6, textAlign: 'left' },
                 }}
                 classesStyles={{
                   'in-article-image-caption': { 
@@ -1112,17 +1128,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   categoryText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#3b82f6',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '900',
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 23,
+    fontWeight: '800',
     color: '#0f172a',
-    lineHeight: 30,
-    letterSpacing: -0.5,
+    lineHeight: 31,
+    letterSpacing: -0.4,
     marginBottom: 16,
   },
   excerptContainer: {
@@ -1136,11 +1154,11 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
   },
   excerpt: {
+    fontFamily: 'PlusJakartaSans-Medium',
     fontSize: 15,
     lineHeight: 24,
     color: '#334155',
     fontStyle: 'italic',
-    fontWeight: '500',
   },
   metaRow: {
     flexDirection: 'row',
@@ -1162,18 +1180,21 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   authorInitial: {
+    fontFamily: 'Montserrat-Bold',
     fontSize: 18,
     fontWeight: '700',
     color: '#475569',
   },
   authorName: {
-    fontSize: 15,
+    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#334155',
-    lineHeight: 21,
+    lineHeight: 20,
   },
   date: {
-    fontSize: 13,
+    fontFamily: 'PlusJakartaSans-Regular',
+    fontSize: 12,
     color: '#64748b',
     marginTop: 2,
   },

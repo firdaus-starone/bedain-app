@@ -418,9 +418,10 @@ const styles = StyleSheet.create({
     marginLeft: -5,
   },
   topHeaderText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
@@ -442,6 +443,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   titleText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#ffffff',
     fontSize: 15,
     lineHeight: 21,
@@ -452,6 +454,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   authorText: {
+    fontFamily: 'PlusJakartaSans-SemiBold',
     color: '#f8fafc',
     fontSize: 12.5,
     fontWeight: '600',
@@ -477,9 +480,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   actionText: {
+    fontFamily: 'Montserrat-Bold',
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     marginTop: 6,
     textShadowColor: 'rgba(0,0,0,0.8)',
     textShadowOffset: { width: 0, height: 1 },

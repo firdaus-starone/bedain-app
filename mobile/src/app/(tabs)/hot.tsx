@@ -158,8 +158,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     marginRight: 10 
   },
-  headerTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a' },
-  headerSubtitle: { fontSize: 11, color: '#64748b', fontWeight: '500', marginTop: 2 },
+  headerTitle: { 
+    fontFamily: 'Montserrat-Black',
+    fontSize: 20, 
+    fontWeight: '900', 
+    color: '#0f172a' 
+  },
+  headerSubtitle: { 
+    fontFamily: 'PlusJakartaSans-Medium',
+    fontSize: 11, 
+    color: '#64748b', 
+    fontWeight: '500', 
+    marginTop: 2 
+  },
   itemRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -173,6 +184,7 @@ const styles = StyleSheet.create({
     marginRight: 8 
   },
   rankNumber: { 
+    fontFamily: 'Montserrat-Black',
     fontWeight: '900', 
     fontStyle: 'italic', 
     letterSpacing: -1 
@@ -182,6 +194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6 
   },
   category: { 
+    fontFamily: 'Montserrat-Bold',
     color: '#ef4444', 
     fontSize: 9.5, 
     fontWeight: '800', 
@@ -189,6 +202,7 @@ const styles = StyleSheet.create({
     marginBottom: 4 
   },
   title: { 
+    fontFamily: 'Montserrat-Bold',
     fontSize: 13.5, 
     fontWeight: '700', 
     color: '#1e293b', 
@@ -196,6 +210,7 @@ const styles = StyleSheet.create({
     marginBottom: 6 
   },
   dateText: { 
+    fontFamily: 'PlusJakartaSans-Medium',
     fontSize: 10.5, 
     fontWeight: '500' 
   },
