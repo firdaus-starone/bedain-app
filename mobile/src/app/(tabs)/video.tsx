@@ -200,28 +200,12 @@ const VideoItem = ({ item, index, activeIndex, width, containerHeight, router, i
         />
       )}
 
-      {/* Scrim gradient overlay on bottom for readability */}
-      <View 
-        pointerEvents="none" 
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 180,
-          backgroundColor: 'rgba(0,0,0,0.45)',
-        }}
-      />
-
       <View style={styles.overlay}>
         <View style={styles.infoContainer} pointerEvents="box-none">
           <TouchableOpacity 
             activeOpacity={0.8}
             onPress={openWatchDetail}
           >
-            <View style={styles.tagWrap}>
-              <Text style={styles.tagText}>{getCategoryName(item.category || 'Video').toUpperCase()}</Text>
-            </View>
             <Text style={styles.titleText} numberOfLines={2}>
               {getArticleTitle(item)}
             </Text>
@@ -457,36 +441,23 @@ const styles = StyleSheet.create({
     marginRight: 20,
     justifyContent: 'flex-end',
   },
-  tagWrap: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-    borderRadius: 4
-  },
-  tagText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '800'
-  },
   titleText: {
     color: '#ffffff',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '900',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.9)',
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '800',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.95)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   authorText: {
-    color: '#e2e8f0',
-    fontSize: 13,
-    fontWeight: '700',
+    color: '#f8fafc',
+    fontSize: 12.5,
+    fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.9)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowRadius: 3,
   },
   actionContainer: {
     alignItems: 'center',
