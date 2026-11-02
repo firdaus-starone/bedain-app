@@ -174,6 +174,11 @@ export default function Home() {
     { id: 'komentar', label: t('home.tabs.komentar', 'Komentar') },
   ], [t, lang]);
 
+  // Hitung lebar kartu agar pas tampil 2 kartu di layar (container = screenWidth - 32, padding = 24, gap = 10)
+  const videoCardWidth = useMemo(() => {
+    return Math.max(140, Math.floor((screenWidth - 66) / 2));
+  }, [screenWidth]);
+
   const markTabVisited = (tabId: string) => {
     setVisitedTabs(prev => {
       if (prev.has(tabId)) return prev;
@@ -1034,7 +1039,7 @@ export default function Home() {
                       {VIDEO_ARTICLES.map((vid: any) => (
                         <TouchableOpacity
                           key={`video-card-${vid.id}`}
-                          style={[styles.videoCard, dyn.videoCardBg]}
+                          style={[styles.videoCard, dyn.videoCardBg, { width: videoCardWidth }]}
                           activeOpacity={0.85}
                           onPress={() => router.push({
                             pathname: `/watch/${vid.id}` as any,
@@ -1055,7 +1060,7 @@ export default function Home() {
                             {/* Overlay Tombol Play Glassmorphism */}
                             <View style={styles.videoPlayOverlay}>
                               <View style={styles.videoPlayCircle}>
-                                <Ionicons name="play" size={18} color="#ffffff" style={{ marginLeft: 2 }} />
+                                <Ionicons name="play" size={14} color="#ffffff" style={{ marginLeft: 2 }} />
                               </View>
                             </View>
                             {/* Badge Merah VIDEO */}
@@ -1065,7 +1070,7 @@ export default function Home() {
                             {/* Badge Views */}
                             {vid.views > 0 && (
                               <View style={styles.videoViewsBadge}>
-                                <Ionicons name="eye-outline" size={10} color="#ffffff" />
+                                <Ionicons name="eye-outline" size={9} color="#ffffff" />
                                 <Text style={styles.videoViewsText}>{vid.views}</Text>
                               </View>
                             )}
@@ -1975,19 +1980,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   videoScrollContent: {
-    paddingLeft: 14,
-    paddingRight: 4,
+    paddingHorizontal: 12,
   },
   videoCard: {
-    width: 220,
-    marginRight: 12,
-    borderRadius: 14,
+    width: 160,
+    marginRight: 10,
+    borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
   },
   videoThumbContainer: {
     width: '100%',
-    height: 120,
+    aspectRatio: 16 / 9,
     position: 'relative',
     backgroundColor: '#000',
   },
@@ -2006,9 +2010,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   videoPlayCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.85)',
@@ -2017,25 +2021,25 @@ const styles = StyleSheet.create({
   },
   videoTagBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 6,
+    left: 6,
     backgroundColor: '#ef4444',
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
     borderRadius: 4,
   },
   videoTagText: {
     color: '#ffffff',
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   videoViewsBadge: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
+    bottom: 5,
+    right: 5,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
     flexDirection: 'row',
@@ -2044,34 +2048,35 @@ const styles = StyleSheet.create({
   },
   videoViewsText: {
     color: '#ffffff',
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '600',
   },
   videoCardBody: {
-    padding: 10,
+    padding: 8,
   },
   videoCardTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    lineHeight: 18,
-    marginBottom: 6,
+    lineHeight: 16,
+    marginBottom: 4,
+    minHeight: 32,
   },
   videoCardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   videoCardCategory: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#ef4444',
     textTransform: 'uppercase',
   },
   videoCardDot: {
-    fontSize: 10,
+    fontSize: 9,
   },
   videoCardDate: {
-    fontSize: 10,
+    fontSize: 9,
   },
   // TAB BAR NAVIGATION
   tabBarContainer: {
