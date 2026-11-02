@@ -720,6 +720,18 @@ export default function Home() {
       color: isDarkMode ? '#94a3b8' : '#64748b',
       fontWeight: '600' as const,
     },
+    commentBadgeBg: {
+      backgroundColor: colors.primary,
+      shadowColor: colors.primary,
+    },
+    commentPill: {
+      backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.12)' : 'rgba(27, 97, 209, 0.08)',
+      borderColor: isDarkMode ? 'rgba(59, 130, 246, 0.28)' : 'rgba(27, 97, 209, 0.18)',
+    },
+    commentPillText: {
+      color: isDarkMode ? '#60a5fa' : '#1b61d1',
+    },
+    commentIconColor: isDarkMode ? '#60a5fa' : '#1b61d1',
   };
 
   return (
@@ -1101,7 +1113,7 @@ export default function Home() {
           <View style={styles.mostCommentedSection}>
             <View style={styles.mostCommentedHeaderRow}>
               <View style={styles.mostCommentedTitleWrap}>
-                <View style={styles.mostCommentedIconBadge}>
+                <View style={[styles.mostCommentedIconBadge, dyn.commentBadgeBg]}>
                   <Ionicons name="chatbubbles" size={15} color="#ffffff" />
                 </View>
                 <View>
@@ -1133,9 +1145,9 @@ export default function Home() {
                     onPress={() => item.videoUrl ? router.push(`/watch/${item.id}` as any) : router.push(`/article/${item.id}`)}
                   >
                     {/* Kiri: Jumlah Komentar */}
-                    <View style={styles.mostCommentedPill}>
-                      <Ionicons name="chatbubble-ellipses" size={18} color="#7c3aed" />
-                      <Text style={styles.mostCommentedPillText}>
+                    <View style={[styles.mostCommentedPill, dyn.commentPill]}>
+                      <Ionicons name="chatbubble-ellipses" size={14} color={dyn.commentIconColor} />
+                      <Text style={[styles.mostCommentedPillText, dyn.commentPillText]}>
                         {item.commentCount || 0}
                       </Text>
                     </View>
@@ -1536,7 +1548,7 @@ export default function Home() {
 
                         {/* Isi Komentar */}
                         <View style={[styles.commentFeedBubble, { backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc' }]}>
-                          <Ionicons name="chatbox-outline" size={14} color="#7c3aed" style={{ marginBottom: 4 }} />
+                          <Ionicons name="chatbox-outline" size={14} color={dyn.commentIconColor} style={{ marginBottom: 4 }} />
                           <Text style={[styles.commentFeedText, dyn.textMain]}>
                             "{translateText(comment.content)}"
                           </Text>
@@ -2413,12 +2425,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#7c3aed',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7c3aed',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -2462,17 +2472,19 @@ const styles = StyleSheet.create({
   mostCommentedPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(124, 58, 237, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 5,
+    minWidth: 46,
     flexShrink: 0,
   },
   mostCommentedPillText: {
-    color: '#7c3aed',
-    fontSize: 16,
+    fontSize: 13.5,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   mostCommentedCardTitle: {
     flex: 1,
