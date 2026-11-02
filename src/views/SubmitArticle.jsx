@@ -8,8 +8,9 @@ import Footer from '../components/Footer';
 import { 
   PenTool, User, Mail, Phone, Briefcase, FileText, Image as ImageIcon, 
   CheckCircle2, AlertCircle, Send, Sparkles, Eye, Edit3, ArrowLeft,
-  ShieldCheck, HelpCircle, Tag
+  ShieldCheck, HelpCircle, Tag, Crop
 } from 'lucide-react';
+import ImageCropModal from '../components/ImageCropModal';
 
 const CATEGORIES = [
   'Opini',
@@ -42,6 +43,11 @@ export default function SubmitArticle() {
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState('');
   const [agreedToEthics, setAgreedToEthics] = useState(false);
+  const [cropModal, setCropModal] = useState({
+    isOpen: false,
+    imageSrc: '',
+    rawFile: null,
+  });
 
   // Auto-Save States
   const [draftRestored, setDraftRestored] = useState(false);
@@ -115,19 +121,41 @@ export default function SubmitArticle() {
     }
   };
 
-  // Handle Cover Selection
+  // Handle Cover Selection & Crop Modal Trigger
   const handleCoverChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Ukuran gambar maksimal 5MB. Silakan pilih gambar yang lebih kecil.');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Ukuran gambar maksimal 10MB. Silakan pilih gambar yang lebih kecil.');
       return;
     }
 
-    setCoverFile(file);
+    e.target.value = '';
     const objectUrl = URL.createObjectURL(file);
-    setCoverPreview(objectUrl);
+    setCropModal({
+      isOpen: true,
+      imageSrc: objectUrl,
+      rawFile: file,
+    });
+  };
+
+  const handleCropComplete = (croppedBlob, croppedUrl) => {
+    const originalFile = cropModal.rawFile;
+    const fileName = originalFile ? originalFile.name : `submission-${Date.now()}.jpg`;
+    const croppedFile = new File([croppedBlob], fileName, { type: 'image/jpeg' });
+    
+    setCoverFile(croppedFile);
+    setCoverPreview(croppedUrl);
+    setCropModal({ isOpen: false, imageSrc: '', rawFile: null });
+  };
+
+  const handleUseOriginalCover = () => {
+    const originalFile = cropModal.rawFile;
+    if (!originalFile) return;
+    setCoverFile(originalFile);
+    setCoverPreview(cropModal.imageSrc);
+    setCropModal({ isOpen: false, imageSrc: '', rawFile: null });
   };
 
   // Insert formatting tokens
@@ -638,6 +666,36 @@ export default function SubmitArticle() {
                     <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', maxHeight: '350px' }}>
                       <img src={coverPreview} alt="Preview Sampul" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} />
                       <div style={{ position: 'absolute', bottom: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (coverPreview) {
+                              setCropModal({
+                                isOpen: true,
+                                imageSrc: coverPreview,
+                                rawFile: coverFile,
+                              });
+                            }
+                          }}
+                          style={{
+                            backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                            color: '#60a5fa',
+                            border: '1px solid rgba(96, 165, 250, 0.4)',
+                            padding: '0.5rem 0.9rem',
+                            borderRadius: '8px',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                            backdropFilter: 'blur(4px)'
+                          }}
+                        >
+                          <Crop size={14} />
+                          <span>Crop 16:9</span>
+                        </button>
                         <label style={{
                           backgroundColor: '#E62020', color: '#fff', padding: '0.5rem 1rem',
                           borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
@@ -862,6 +920,21 @@ export default function SubmitArticle() {
         )}
 
       </main>
+
+      {/* Interactive 16:9 Crop Modal for Cover Photo */}
+      <ImageCropModal
+        isOpen={cropModal.isOpen}
+        imageSrc={cropModal.imageSrc}
+        fileName={cropModal.rawFile?.name || 'cover-photo.jpg'}
+        onClose={() => {
+          if (cropModal.imageSrc && cropModal.rawFile && cropModal.imageSrc !== coverPreview) {
+            try { URL.revokeObjectURL(cropModal.imageSrc); } catch (e) {}
+          }
+          setCropModal({ isOpen: false, imageSrc: '', rawFile: null });
+        }}
+        onCropComplete={handleCropComplete}
+        onUseOriginal={cropModal.rawFile ? handleUseOriginalCover : null}
+      />
 
       <Footer />
     </div>

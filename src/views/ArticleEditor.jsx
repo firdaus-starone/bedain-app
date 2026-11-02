@@ -5,12 +5,13 @@ import { collection, addDoc, doc, getDoc, updateDoc, Timestamp, getDocs, query, 
 import { db, auth } from '../lib/firebase';
 import { uploadAndCompressImage } from '../lib/uploadImage';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, PenTool, Globe, ArrowLeft, Image as ImageIcon, Users, Tag, FileText, Settings, LogOut, CheckCircle2, Clock, Sparkles, Plus, AlertTriangle, Link2 } from 'lucide-react';
+import { LayoutDashboard, PenTool, Globe, ArrowLeft, Image as ImageIcon, Users, Tag, FileText, Settings, LogOut, CheckCircle2, Clock, Sparkles, Plus, AlertTriangle, Link2, Crop } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import AIAssistantModal from '../components/AIAssistantModal';
 import AIGeneratorModal from '../components/AIGeneratorModal';
+import ImageCropModal from '../components/ImageCropModal';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { getGeminiApiKey } from '../lib/geminiSecrets';
 import { logActivity } from '../lib/activityLogger';
@@ -35,6 +36,11 @@ const ArticleEditor = () => {
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isAIGenOpen, setIsAIGenOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false });
+  const [cropModal, setCropModal] = useState({
+    isOpen: false,
+    imageSrc: '',
+    rawFile: null,
+  });
   const [notifModal, setNotifModal] = useState({
     isOpen: false,
     type: 'success',
@@ -990,13 +996,58 @@ ${textToAnalyze}`;
     }
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleImageFileSelect = (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
+
+    // Reset input value so re-selecting same file triggers onChange
+    e.target.value = '';
+
+    const objectUrl = URL.createObjectURL(file);
+    setCropModal({
+      isOpen: true,
+      imageSrc: objectUrl,
+      rawFile: file,
+    });
+  };
+
+  const handleCropComplete = async (croppedBlob) => {
+    const originalFile = cropModal.rawFile;
+    const previousSrc = cropModal.imageSrc;
+    setCropModal({ isOpen: false, imageSrc: '', rawFile: null });
+
+    if (previousSrc && originalFile) {
+      try { URL.revokeObjectURL(previousSrc); } catch(e) {}
+    }
 
     setUploadingImage(true);
     try {
-      const downloadUrl = await uploadAndCompressImage(file, 'articles/images', currentUser?.uid);
+      const fileName = originalFile ? originalFile.name : `article-${Date.now()}.jpg`;
+      const croppedFile = new File([croppedBlob], fileName, { type: 'image/jpeg' });
+      const downloadUrl = await uploadAndCompressImage(croppedFile, 'articles/images', currentUser?.uid);
+      setFormData(prev => ({ ...prev, imageUrl: downloadUrl }));
+    } catch (error) {
+      console.error("Error uploading cropped image:", error);
+      alert("Gagal mengunggah gambar. Silakan coba lagi.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleUseOriginalImage = async () => {
+    const originalFile = cropModal.rawFile;
+    const previousSrc = cropModal.imageSrc;
+    setCropModal({ isOpen: false, imageSrc: '', rawFile: null });
+
+    if (previousSrc && originalFile) {
+      try { URL.revokeObjectURL(previousSrc); } catch(e) {}
+    }
+
+    if (!originalFile) return;
+
+    setUploadingImage(true);
+    try {
+      const downloadUrl = await uploadAndCompressImage(originalFile, 'articles/images', currentUser?.uid);
       setFormData(prev => ({ ...prev, imageUrl: downloadUrl }));
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -1648,20 +1699,42 @@ Konten Asli: ${formData.content}`;
                 {formData.imageUrl ? (
                   <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--admin-border)' }}>
                     <img src={formData.imageUrl} alt="Thumbnail" style={{ width: '100%', display: 'block', aspectRatio: '16/9', objectFit: 'cover' }} />
-                    <button 
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
-                      style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.7)', color: '#fff', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                      &times;
-                    </button>
+                    <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '6px' }}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setCropModal({
+                            isOpen: true,
+                            imageSrc: formData.imageUrl,
+                            rawFile: null,
+                          });
+                        }}
+                        title="Sesuaikan / Crop Ulang Rasio 16:9"
+                        style={{ background: 'rgba(15, 23, 42, 0.85)', color: '#60a5fa', border: '1px solid rgba(96, 165, 250, 0.4)', borderRadius: '6px', padding: '5px 10px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                      >
+                        <Crop size={13} /> Crop 16:9
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                        title="Hapus Gambar"
+                        style={{ background: 'rgba(239, 68, 68, 0.85)', color: '#fff', border: 'none', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}>
+                        &times;
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div style={{ width: '100%', aspectRatio: '16/9', background: 'var(--admin-bg)', border: '1px dashed var(--admin-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                  <div style={{ width: '100%', aspectRatio: '16/9', background: 'var(--admin-bg)', border: '1px dashed var(--admin-border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '16px', boxSizing: 'border-box' }}>
                     <ImageIcon size={32} color="#444" />
-                    <label style={{ background: 'var(--admin-hover-bg)', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', color: 'var(--admin-text-secondary)', cursor: 'pointer', border: '1px solid var(--admin-border)' }}>
-                      {uploadingImage ? 'Mengunggah...' : 'Pilih Gambar'}
-                      <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} style={{ display: 'none' }} />
-                    </label>
+                    <div style={{ textAlign: 'center' }}>
+                      <label style={{ background: 'var(--admin-hover-bg)', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', color: 'var(--admin-text-secondary)', cursor: 'pointer', border: '1px solid var(--admin-border)', display: 'inline-block' }}>
+                        {uploadingImage ? 'Mengunggah...' : 'Pilih Gambar (Ada Opsi Crop 16:9)'}
+                        <input type="file" accept="image/*" onChange={handleImageFileSelect} disabled={uploadingImage} style={{ display: 'none' }} />
+                      </label>
+                      <p style={{ margin: '8px 0 0', fontSize: '11px', color: 'var(--admin-text-tertiary)', lineHeight: '1.4' }}>
+                        Foto vertikal/kotak otomatis bisa di-crop & digeser ke 16:9
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -2478,6 +2551,21 @@ Konten Asli: ${formData.content}`;
           imageUrl: url,
           imageCaption: prev.imageCaption ? prev.imageCaption : 'Ilustrasi dibuat oleh Bedain AI'
         }))}
+      />
+
+      {/* Interactive 16:9 Image Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModal.isOpen}
+        imageSrc={cropModal.imageSrc}
+        fileName={cropModal.rawFile?.name || 'article-thumbnail.jpg'}
+        onClose={() => {
+          if (cropModal.imageSrc && cropModal.rawFile) {
+            try { URL.revokeObjectURL(cropModal.imageSrc); } catch(e) {}
+          }
+          setCropModal({ isOpen: false, imageSrc: '', rawFile: null });
+        }}
+        onCropComplete={handleCropComplete}
+        onUseOriginal={cropModal.rawFile ? handleUseOriginalImage : null}
       />
     </div>
   );
