@@ -139,7 +139,14 @@
     "hot_topics": "Hot Topics",
     "quick_news": "Quick News",
     "reader_comments": "Reader Comments",
-    "other_news": "More News",
+    "other_news": "Other News",
+    "more_news": "More News",
+    "featured_video": "Featured Videos",
+    "watch_latest_video": "Watch the latest video news",
+    "most_commented": "Most Commented",
+    "hottest_discussion": "Readers' hottest discussion topics",
+    "all": "All",
+    "sponsor_badge": "SPONSOR AD",
     "load_more": "Load More",
     "all_loaded": "All Articles Loaded",
     "trending_desc": "Top 10 most popular articles with highest readership",
@@ -204,7 +211,10 @@
     "views": "views",
     "anonymous": "Anonymous",
     "just_now": "Just now",
-    "view_related_article": "View Related Article"
+    "view_related_article": "View Related Article",
+    "of": "of",
+    "news": "articles",
+    "all": "All"
   },
   "user_menu": {
     "profile": "My Profile",

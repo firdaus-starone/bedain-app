@@ -129,7 +129,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Helper cerdas ekstraksi Judul sesuai bahasa aktif (dengan auto-translation realtime)
   const getArticleTitle = (article: any): string => {
     if (!article) return '';
-    const originalTitle = article.title || '';
+    const originalTitle = article.rawTitle || article.title || '';
     if (lang === 'id') return originalTitle;
 
     // 1. Static override in Firestore
@@ -154,7 +154,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Helper cerdas ekstraksi Ringkasan/Excerpt sesuai bahasa aktif (dengan auto-translation realtime)
   const getArticleExcerpt = (article: any): string => {
     if (!article) return '';
-    const originalExcerpt = article.excerpt || article.summary || article.seoDescription || article.description || '';
+    const originalExcerpt = article.rawExcerpt || article.excerpt || article.summary || article.seoDescription || article.description || '';
     if (lang === 'id') return originalExcerpt;
 
     // 1. Static override in Firestore

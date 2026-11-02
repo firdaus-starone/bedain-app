@@ -140,6 +140,13 @@
     "quick_news": "Sekilas Berita",
     "reader_comments": "Komentar Pembaca",
     "other_news": "Berita Lainnya",
+    "more_news": "Lebih Banyak Berita",
+    "featured_video": "Video Pilihan",
+    "watch_latest_video": "Tonton video berita terkini",
+    "most_commented": "Komentar Terbanyak",
+    "hottest_discussion": "Topik diskusi terhangat pembaca",
+    "all": "Semua",
+    "sponsor_badge": "IKLAN SPONSOR",
     "load_more": "Muat Lebih Banyak",
     "all_loaded": "Semua Berita Sudah Ditampilkan",
     "trending_desc": "10 Berita terpopuler dengan pembaca terbanyak",
@@ -204,7 +211,10 @@
     "views": "views",
     "anonymous": "Anonim",
     "just_now": "Baru saja",
-    "view_related_article": "Lihat Artikel Terkait"
+    "view_related_article": "Lihat Artikel Terkait",
+    "of": "dari",
+    "news": "berita",
+    "all": "Semua"
   },
   "user_menu": {
     "profile": "Profil Saya",

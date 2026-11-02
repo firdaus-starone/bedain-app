@@ -46,7 +46,7 @@ const mapArticle = (
   getExcerptFn?: (article: any) => string
 ) => {
   const activeLang = typeof lang === 'string' ? lang : 'id';
-  let dateStr = 'Baru saja';
+  let dateStr = activeLang === 'zh' ? '刚刚' : activeLang === 'en' ? 'Just now' : 'Baru saja';
   if (a.publishedAt) {
     const dateObj = typeof a.publishedAt.toDate === 'function' ? a.publishedAt.toDate() : new Date(a.publishedAt);
     dateStr = dateObj.toLocaleDateString(activeLang === 'en' ? 'en-US' : activeLang === 'zh' ? 'zh-CN' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -95,6 +95,7 @@ const mapArticle = (
     title: finalTitle,
     rawTitle: a.title,
     excerpt: finalExcerpt,
+    rawExcerpt: a.excerpt || a.seoDescription || '',
     date: dateStr,
     image: cover || 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80',
     category: a.category || 'Berita',
@@ -275,7 +276,7 @@ export default function Home() {
         }
       }
 
-      const validDocs = docs.filter(filterPublished).map(d => mapArticle(d, lang, getArticleTitle, getArticleExcerpt));
+      const validDocs = docs.filter(filterPublished);
       setDbRedaksiArticles(validDocs);
     } catch (err) {
       console.error('Error fetching redaksi articles:', err);
@@ -292,7 +293,7 @@ export default function Home() {
       );
       const snapC = await getDocs(qC);
       const docs = snapC.docs.map(d => ({ id: d.id, ...d.data() }));
-      const valid = docs.filter(filterPublished).map(d => mapArticle(d, lang, getArticleTitle, getArticleExcerpt));
+      const valid = docs.filter(filterPublished);
       setDbCommentedArticles(valid);
     } catch (err) {
       console.error('Error fetching commented articles:', err);
@@ -502,8 +503,9 @@ export default function Home() {
       return cat === 'meja redaksi' || cat === 'meja-redaksi';
     });
 
+    const mappedDbRedaksi = dbRedaksiArticles.map(d => (d.rawTitle !== undefined ? d : mapArticle(d, lang, getArticleTitle, getArticleExcerpt)));
     const combinedRedaksiMap = new Map();
-    [...localRedaksi, ...dbRedaksiArticles].forEach(item => {
+    [...localRedaksi, ...mappedDbRedaksi].forEach(item => {
       if (item && item.id && !combinedRedaksiMap.has(item.id)) {
         combinedRedaksiMap.set(item.id, item);
       }
@@ -520,8 +522,9 @@ export default function Home() {
     });
 
     // Gabungkan artikel dari query komentar dan feed utama
+    const mappedDbCommented = dbCommentedArticles.map(d => (d.rawTitle !== undefined ? d : mapArticle(d, lang, getArticleTitle, getArticleExcerpt)));
     const articlePoolMap = new Map();
-    [...dbCommentedArticles, ...allMapped].forEach(item => {
+    [...mappedDbCommented, ...allMapped].forEach(item => {
       if (item && item.id && !articlePoolMap.has(item.id)) {
         articlePoolMap.set(item.id, item);
       }
@@ -853,7 +856,7 @@ export default function Home() {
               <ImageBackground source={{ uri: item.image }} style={styles.terkiniImage} resizeMode="cover">
                 <View style={styles.terkiniOverlay}>
                   <View style={[styles.terkiniBadge, { backgroundColor: item.videoUrl ? 'red' : '#3b82f6' }]}>
-                    <Text style={styles.terkiniBadgeText}>{item.videoUrl ? 'VIDEO' : t('home.tabs.terkini', 'TERKINI')}</Text>
+                    <Text style={styles.terkiniBadgeText}>{item.videoUrl ? 'VIDEO' : (t('home.tabs.terkini', 'TERKINI') || 'TERKINI').toUpperCase()}</Text>
                   </View>
                   <View style={styles.terkiniTextContainer}>
                     <Text style={styles.terkiniTitle} numberOfLines={2}>{item.title}</Text>
@@ -879,13 +882,13 @@ export default function Home() {
                   <Image source={{ uri: FEATURED_ARTICLE.image }} style={styles.featuredImage} />
                   <View style={styles.featuredOverlay}>
                     <Text style={styles.featuredTitle} numberOfLines={3}>{FEATURED_ARTICLE.title}</Text>
-                    <Text style={styles.featuredAuthor}>{FEATURED_ARTICLE.category?.toUpperCase() || 'REDAKSI'} | {FEATURED_ARTICLE.date}</Text>
+                    <Text style={styles.featuredAuthor}>{(getCategoryName(FEATURED_ARTICLE.category) || t('home.tabs.redaksi', 'REDAKSI')).toUpperCase()} | {FEATURED_ARTICLE.date}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
               {RELATED_ARTICLES.length > 0 && (
                 <View style={styles.relatedBox}>
-                  <Text style={styles.relatedTitle}>{t('article.related', 'TERKAIT')}</Text>
+                  <Text style={styles.relatedTitle}>{(t('article.related', 'TERKAIT') || 'TERKAIT').toUpperCase()}</Text>
                   <View style={styles.relatedList}>
                     {RELATED_ARTICLES.map(related => (
                       <TouchableOpacity key={`related-${related.id}`} style={{ flex: 1, marginRight: 8 }} onPress={() => related.videoUrl ? router.push(`/watch/${related.id}` as any) : router.push(`/article/${related.id}`)}>
@@ -903,7 +906,7 @@ export default function Home() {
 
         {/* --- DAFTAR BERITA STANDAR (List) --- */}
         <View style={styles.bottomSectionHeader}>
-          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>{t('home.latest_news', 'Berita Terbaru')}</Text>
+          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>{t('home.latest_news', 'Berita Terkini')}</Text>
         </View>
         <View style={styles.listContainer}>
           {BERITA_LIST.map((item, index) => (
@@ -931,7 +934,7 @@ export default function Home() {
               <DynamicSponsorBanner
                 key={b.id || `feed-banner-${index}`}
                 banner={b}
-                badgeText="IKLAN SPONSOR"
+                badgeText={t('home.sponsor_badge', 'IKLAN SPONSOR')}
                 containerStyle={{ marginBottom: index === feedBanners.length - 1 ? 0 : 12 }}
               />
             ))}
@@ -941,7 +944,7 @@ export default function Home() {
         
         {/* SECTION BERITA TERBARU (MIXED LAYOUT) */}
         <View style={styles.bottomSectionHeader}>
-          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>{t('home.other_news', 'Lebih Banyak Berita')}</Text>
+          <Text style={[styles.bottomSectionTitle, dyn.textMain]}>{t('home.more_news', 'Lebih Banyak Berita')}</Text>
         </View>
         <View style={styles.mixedListContainer}>
           {LATEST_NEWS.map((item, index) => {
@@ -979,8 +982,8 @@ export default function Home() {
                           <Ionicons name="play" size={13} color="#ffffff" style={{ marginLeft: 2 }} />
                         </View>
                         <View>
-                          <Text style={[styles.videoSectionTitle, dyn.videoSectionTitle]}>Video Pilihan</Text>
-                          <Text style={[styles.videoSectionSubtitle, dyn.videoSectionSub]}>Tonton video berita terkini</Text>
+                          <Text style={[styles.videoSectionTitle, dyn.videoSectionTitle]}>{t('home.featured_video', 'Video Pilihan')}</Text>
+                          <Text style={[styles.videoSectionSubtitle, dyn.videoSectionSub]}>{t('home.watch_latest_video', 'Tonton video berita terkini')}</Text>
                         </View>
                       </View>
                       <TouchableOpacity 
@@ -988,7 +991,7 @@ export default function Home() {
                         style={[styles.videoMoreButton, dyn.videoMoreBtn]}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.videoMoreText, dyn.videoMoreTxt]}>Lihat Semua</Text>
+                        <Text style={[styles.videoMoreText, dyn.videoMoreTxt]}>{t('home.view_all', 'Lihat Semua')}</Text>
                         <Ionicons name="chevron-forward" size={13} color={dyn.videoMoreTxt.color} />
                       </TouchableOpacity>
                     </View>
@@ -1036,7 +1039,7 @@ export default function Home() {
                               {vid.title}
                             </Text>
                             <View style={styles.videoCardMeta}>
-                              <Text style={styles.videoCardCategory} numberOfLines={1}>{vid.category}</Text>
+                              <Text style={styles.videoCardCategory} numberOfLines={1}>{(getCategoryName(vid.category) || vid.category || 'VIDEO').toUpperCase()}</Text>
                               <Text style={[styles.videoCardDot, dyn.textMuted]}>•</Text>
                               <Text style={[styles.videoCardDate, dyn.textMuted]}>{vid.date}</Text>
                             </View>
@@ -1060,8 +1063,8 @@ export default function Home() {
                   <Ionicons name="chatbubbles" size={15} color="#ffffff" />
                 </View>
                 <View>
-                  <Text style={[styles.mostCommentedTitle, dyn.textMain]}>Komentar Terbanyak</Text>
-                  <Text style={[styles.mostCommentedSub, dyn.textMuted]}>Topik diskusi terhangat pembaca</Text>
+                  <Text style={[styles.mostCommentedTitle, dyn.textMain]}>{t('home.most_commented', 'Komentar Terbanyak')}</Text>
+                  <Text style={[styles.mostCommentedSub, dyn.textMuted]}>{t('home.hottest_discussion', 'Topik diskusi terhangat pembaca')}</Text>
                 </View>
               </View>
               <TouchableOpacity 
@@ -1069,7 +1072,7 @@ export default function Home() {
                 style={[styles.mostCommentedTabLink, dyn.videoMoreBtn]}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.mostCommentedTabLinkText, dyn.videoMoreTxt]}>Semua</Text>
+                <Text style={[styles.mostCommentedTabLinkText, dyn.videoMoreTxt]}>{t('home.all', 'Semua')}</Text>
                 <Ionicons name="chevron-forward" size={12} color={dyn.videoMoreTxt.color} />
               </TouchableOpacity>
             </View>
@@ -1111,9 +1114,9 @@ export default function Home() {
           <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
             <View style={[styles.bottomSectionHeader, { paddingHorizontal: 0, marginTop: 0, marginBottom: 14 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                <Text style={[styles.bottomSectionTitle, dyn.textMain]}>Berita Lainnya</Text>
+                <Text style={[styles.bottomSectionTitle, dyn.textMain]}>{t('home.other_news', 'Berita Lainnya')}</Text>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
-                  {Math.min(extraVisibleCount, EXTRA_ARTICLES.length)} dari {EXTRA_ARTICLES.length} berita
+                  {Math.min(extraVisibleCount, EXTRA_ARTICLES.length)} {t('common.of', 'dari')} {EXTRA_ARTICLES.length} {t('common.news', 'berita')}
                 </Text>
               </View>
             </View>
@@ -1140,7 +1143,7 @@ export default function Home() {
                       </Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                         <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#1b61d1' }}>
-                          {item.category?.toUpperCase() || 'BERITA'}
+                          {(getCategoryName(item.category) || 'BERITA').toUpperCase()}
                         </Text>
                         <Text style={[styles.videoCardDot, dyn.textMuted]}>•</Text>
                         <Text style={styles.mixedListDate}>{item.date}</Text>
@@ -1221,7 +1224,7 @@ export default function Home() {
                   <View style={styles.recomHeroBody}>
                     <View style={styles.recomBadgeRow}>
                       <View style={styles.recomCategoryBadge}>
-                        <Text style={styles.recomCategoryText}>{REKOMENDASI_ARTICLES[0].category?.toUpperCase() || 'PILIHAN'}</Text>
+                        <Text style={styles.recomCategoryText}>{(getCategoryName(REKOMENDASI_ARTICLES[0].category) || t('home.editorialChoice', 'PILIHAN')).toUpperCase()}</Text>
                       </View>
                       <Text style={[styles.recomHeroDate, dyn.textMuted]}>{REKOMENDASI_ARTICLES[0].date}</Text>
                     </View>
@@ -1241,7 +1244,7 @@ export default function Home() {
                     >
                       <Image source={{ uri: item.image }} style={styles.recomListImage} />
                       <View style={styles.recomListBody}>
-                        <Text style={styles.recomCategorySmall}>{item.category?.toUpperCase() || 'BERITA'}</Text>
+                        <Text style={styles.recomCategorySmall}>{(getCategoryName(item.category) || 'BERITA').toUpperCase()}</Text>
                         <Text style={[styles.recomListTitle, dyn.textMain]} numberOfLines={2}>{item.title}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 }}>
                           <Ionicons name="time-outline" size={12} color={dyn.textMuted.color} />

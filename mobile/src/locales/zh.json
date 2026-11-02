@@ -139,7 +139,14 @@
     "hot_topics": "热门话题",
     "quick_news": "快讯",
     "reader_comments": "读者评论",
-    "other_news": "更多新闻",
+    "other_news": "其他新闻",
+    "more_news": "更多报道",
+    "featured_video": "精选视频",
+    "watch_latest_video": "观看最新要闻视频",
+    "most_commented": "热评排行",
+    "hottest_discussion": "读者讨论最热的话题",
+    "all": "全部",
+    "sponsor_badge": "赞助广告",
     "load_more": "加载更多",
     "all_loaded": "已加载全部新闻",
     "trending_desc": "阅读量最高的十大热门新闻",
@@ -204,7 +211,10 @@
     "views": "次浏览",
     "anonymous": "匿名读者",
     "just_now": "刚刚",
-    "view_related_article": "查看相关文章"
+    "view_related_article": "查看相关文章",
+    "of": "之",
+    "news": "条新闻",
+    "all": "全部"
   },
   "user_menu": {
     "profile": "个人资料",
