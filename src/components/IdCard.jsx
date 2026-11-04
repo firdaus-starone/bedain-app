@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import QRCode from 'react-qr-code';
 
 const IdCard = ({ data, idRef }) => {
-  const { name, regNumber, roleTitle, region, photoURL } = data;
+  const { name, regNumber, roleTitle, region, photoURL } = data || {};
 
   const defaultPhoto = "https://ui-avatars.com/api/?name=" + encodeURIComponent(name || "Bedain News") + "&background=333&color=fff&size=512";
   const verificationUrl = `https://bedainnews.com/verify?id=${encodeURIComponent(regNumber || 'B-00.00-000')}`;
@@ -10,6 +10,9 @@ const IdCard = ({ data, idRef }) => {
   const imageUrl = photoURL || defaultPhoto;
   // Route through our proxy API to guarantee CORS headers for html2canvas
   const proxiedImageUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+
+  // State gambar latar belakang dengan auto-fallback ke GitHub raw jika path lokal gagal di-load
+  const [bgSrc, setBgSrc] = useState('/assets/KARTUPERS.png');
 
   return (
     <div 
@@ -23,13 +26,32 @@ const IdCard = ({ data, idRef }) => {
         fontFamily: "'Arial', 'Helvetica', sans-serif", // Use system font to prevent html2canvas text overlapping
         color: '#fff',
         margin: '0 auto',
-        backgroundImage: 'url(/assets/KARTUPERS.png)',
-        backgroundSize: '100% 100%',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#0a1118', // Fallback warna gelap elegan agar tidak pernah putih polos
         boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
       }}
     >
+      {/* Background Frame Kartu Pers Bedain News */}
+      <img 
+        src={bgSrc}
+        alt="Kartu Pers Background"
+        crossOrigin="anonymous"
+        onError={() => {
+          if (bgSrc !== 'https://raw.githubusercontent.com/firdaus-starone/bedain-app/main/public/assets/KARTUPERS.png') {
+            setBgSrc('https://raw.githubusercontent.com/firdaus-starone/bedain-app/main/public/assets/KARTUPERS.png');
+          }
+        }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 1,
+          pointerEvents: 'none'
+        }}
+      />
+
       {/* Photo Box */}
       <div style={{
         position: 'absolute',
@@ -64,19 +86,19 @@ const IdCard = ({ data, idRef }) => {
         {/* Text */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>NAMA</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(name || 'NAMA LENGKAP').toUpperCase()}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>: {(name || 'NAMA LENGKAP').toUpperCase()}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>NOREG</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(regNumber || 'B-00.00-000').toUpperCase()}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>: {(regNumber || 'B-00.00-000').toUpperCase()}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>JABATAN</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(roleTitle || 'JABATAN').toUpperCase()}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>: {(roleTitle || 'JABATAN').toUpperCase()}</div>
         </div>
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '2px' }}>
           <div style={{ width: '80px', fontSize: '13px', fontWeight: 600, color: '#d4af37' }}>WILAYAH</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>: {(region || 'NASIONAL').toUpperCase()}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>: {(region || 'NASIONAL').toUpperCase()}</div>
         </div>
       </div>
 
