@@ -5,6 +5,28 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { ShieldAlert, Trash2, Search, User } from 'lucide-react';
 
+const formatDate = (val) => {
+  if (!val) return '-';
+  try {
+    let d;
+    if (typeof val.toDate === 'function') {
+      d = val.toDate();
+    } else if (typeof val.toMillis === 'function') {
+      d = new Date(val.toMillis());
+    } else if (val.seconds !== undefined) {
+      d = new Date(val.seconds * 1000);
+    } else if (val._seconds !== undefined) {
+      d = new Date(val._seconds * 1000);
+    } else {
+      d = new Date(val);
+    }
+    if (!d || isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('id-ID');
+  } catch {
+    return '-';
+  }
+};
+
 const AdminReaders = () => {
   const { userRole, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
@@ -159,7 +181,7 @@ const AdminReaders = () => {
                       </td>
                       <td>
                         <span style={{ color: 'var(--admin-text-secondary)', fontSize: '13px' }}>
-                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString('id-ID') : '-'}
+                          {formatDate(user.createdAt)}
                         </span>
                       </td>
                       <td className="admin-table-actions">

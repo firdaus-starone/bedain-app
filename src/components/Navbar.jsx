@@ -1154,7 +1154,11 @@ const Navbar = () => {
                         </h5>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                            {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tersimpan'}
+                            {(() => {
+                              if (!item.publishedAt) return 'Tersimpan';
+                              const d = item.publishedAt?.toDate ? item.publishedAt.toDate() : (item.publishedAt.seconds ? new Date(item.publishedAt.seconds * 1000) : new Date(item.publishedAt));
+                              return isNaN(d.getTime()) ? 'Tersimpan' : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                            })()}
                           </span>
                           <button
                             onClick={(e) => removeBookmark(item.id || item.slug, e)}
